@@ -3,7 +3,6 @@ package io.github.lamspace.generator;
 import io.github.lamspace.ClassFilter;
 import org.objectweb.asm.*;
 
-import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -12,8 +11,10 @@ import java.util.List;
 /**
  * Generates method override bytecode for a proxy subclass.
  * Each override marshals arguments into an {@code Object[]}, calls
- * {@code Callback.intercept(...)}, and unboxes the return value.
- * Superclass invocations are pre-bound as static MethodHandle fields.
+ * {@code Callback.intercept(proxy, method, index, args)}, and unboxes the
+ * return value. Superclass invocations go through the generated
+ * {@code invokeSuper(int, Object[])} method backed by a static
+ * {@code MethodHandle[]} dispatch table.
  */
 public class MethodDispatcher {
 
@@ -23,7 +24,7 @@ public class MethodDispatcher {
     }
 
     /**
-     * Generates method overrides, static Method/MethodHandle fields,
+     * Generates method overrides and per-method static Method fields,
      * and registers clinit entries for all proxyable methods on the target class.
      *
      * @param cw                the ClassWriter for the generated subclass
@@ -48,18 +49,16 @@ public class MethodDispatcher {
 
             boolean shouldIntercept = (filter == null) || filter.accept(method);
 
-            String suffix = "$" + dispatchedMethods.size();
-            String methodFieldName = "_method$" + method.getName() + suffix;
-            String handleFieldName = "_handle$" + method.getName() + suffix;
+            int index = dispatchedMethods.size();
+            String methodFieldName = "_method$" + index;
 
             addStaticField(cw, methodFieldName, "Ljava/lang/reflect/Method;");
-            addStaticField(cw, handleFieldName, "Ljava/lang/invoke/MethodHandle;");
 
             ClinitRegistry.register(targetClass, method, generatedInternal,
-                    methodFieldName, handleFieldName);
+                    methodFieldName, index);
 
             generateOverride(cw, method, generatedInternal, shouldIntercept,
-                    methodFieldName, handleFieldName);
+                    methodFieldName, index);
 
             dispatchedMethods.add(method.getName());
         }
@@ -77,7 +76,7 @@ public class MethodDispatcher {
                                          String generatedInternal,
                                          boolean shouldIntercept,
                                          String methodFieldName,
-                                         String handleFieldName) {
+                                         int methodIndex) {
         String name = method.getName();
         String desc = Type.getMethodDescriptor(method);
         String targetInternal = Type.getInternalName(method.getDeclaringClass());
@@ -110,7 +109,7 @@ public class MethodDispatcher {
             return;
         }
 
-        // -- Try block: bind handle + call callback --
+        // -- Try block: call callback.intercept(proxy, method, index, args) --
         Label tryStart = new Label();
         Label tryEnd = new Label();
         Label catchRuntime = new Label();
@@ -123,47 +122,25 @@ public class MethodDispatcher {
 
         mv.visitLabel(tryStart);
 
-        // Calculate total slots used by method parameters
-        int totalParamSlots = 0;
-        for (Class<?> paramType : method.getParameterTypes()) {
-            totalParamSlots += (paramType == double.class || paramType == long.class) ? 2 : 1;
-        }
-
         Class<?>[] paramTypes = method.getParameterTypes();
 
-        // Bind the pre-spread handle: _handle$X.bindTo(this).
-        // asSpreader was already applied in <clinit>, so only bindTo
-        // remains on the hot path.
-        mv.visitFieldInsn(Opcodes.GETSTATIC, generatedInternal,
-                handleFieldName, "Ljava/lang/invoke/MethodHandle;");
-        mv.visitVarInsn(Opcodes.ALOAD, 0);
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
-                "java/lang/invoke/MethodHandle",
-                "bindTo",
-                "(Ljava/lang/Object;)Ljava/lang/invoke/MethodHandle;",
-                false);
-
-        // Store bound handle in a temp local variable
-        int spreadHandleSlot = totalParamSlots + 1; // after 'this' + all params
-        mv.visitVarInsn(Opcodes.ASTORE, spreadHandleSlot);
-        int exceptionSlot = spreadHandleSlot + 1; // next available slot for caught exception
-
-        // 3. Load callback
+        // 1. Load callback field
         mv.visitVarInsn(Opcodes.ALOAD, 0);
         mv.visitFieldInsn(Opcodes.GETFIELD, generatedInternal,
                 CALLBACK_FIELD, "Lio/github/lamspace/Callback;");
 
-        // Arg 1: proxy = this
+        // 2. Arg 1: proxy = this
         mv.visitVarInsn(Opcodes.ALOAD, 0);
 
-        // Arg 2: _method$X
+        // 3. Arg 2: _method$N (static Method field)
         mv.visitFieldInsn(Opcodes.GETSTATIC, generatedInternal,
                 methodFieldName, "Ljava/lang/reflect/Method;");
 
-        // Arg 3: spread handle
-        mv.visitVarInsn(Opcodes.ALOAD, spreadHandleSlot);
+        // 4. Arg 3: method index (int constant) — replaces the old
+        //    bound MethodHandle. No bindTo allocation on this path.
+        BytecodeUtils.pushInt(mv, methodIndex);
 
-        // Arg 4: new Object[] { arg0, arg1, ... }
+        // 5. Arg 4: new Object[] { arg0, arg1, ... }
         BytecodeUtils.pushInt(mv, paramTypes.length);
         mv.visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/Object");
 
@@ -182,16 +159,16 @@ public class MethodDispatcher {
             slot += (type == double.class || type == long.class) ? 2 : 1;
         }
 
-        // 4. Call callback.intercept
+        // 6. Call callback.intercept(proxy, method, index, args)
         mv.visitMethodInsn(Opcodes.INVOKEINTERFACE,
                 "io/github/lamspace/Callback",
                 "intercept",
                 "(Ljava/lang/Object;Ljava/lang/reflect/Method;"
-                        + "Ljava/lang/invoke/MethodHandle;"
+                        + "I"
                         + "[Ljava/lang/Object;)Ljava/lang/Object;",
                 true);
 
-        // 5. Unbox return value
+        // 7. Unbox return value
         Class<?> returnType = method.getReturnType();
         if (returnType == void.class) {
             mv.visitInsn(Opcodes.POP);
@@ -216,12 +193,11 @@ public class MethodDispatcher {
 
         // -- Catch checked Exceptions: wrap in UndeclaredThrowableException --
         mv.visitLabel(catchChecked);
-        // Store caught exception
-        mv.visitVarInsn(Opcodes.ASTORE, exceptionSlot);
-        // new UndeclaredThrowableException(caught)
+        int excSlot = slot + 1;
+        mv.visitVarInsn(Opcodes.ASTORE, excSlot);
         mv.visitTypeInsn(Opcodes.NEW, "java/lang/reflect/UndeclaredThrowableException");
         mv.visitInsn(Opcodes.DUP);
-        mv.visitVarInsn(Opcodes.ALOAD, exceptionSlot);
+        mv.visitVarInsn(Opcodes.ALOAD, excSlot);
         mv.visitMethodInsn(Opcodes.INVOKESPECIAL,
                 "java/lang/reflect/UndeclaredThrowableException",
                 "<init>",
@@ -242,4 +218,3 @@ public class MethodDispatcher {
     }
 
 }
-

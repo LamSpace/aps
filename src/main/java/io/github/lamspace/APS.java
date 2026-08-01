@@ -17,9 +17,9 @@ import java.lang.reflect.Constructor;
  * and route method calls through the provided {@link Callback}.
  *
  * <pre>{@code
- *   Greeter proxy = APS.create(Greeter.class, (obj, method, superHandle, args) -> {
+ *   Greeter proxy = APS.create(Greeter.class, (obj, method, index, args) -> {
  *       System.out.println("before " + method.getName());
- *       return superHandle.invoke(args);
+ *       return APS.invokeSuper(obj, index, args);
  *   });
  * }</pre>
  *
@@ -29,6 +29,21 @@ import java.lang.reflect.Constructor;
 public final class APS {
 
     private APS() {
+    }
+
+    /**
+     * Invokes the superclass method at the given dispatch-table index.
+     * Convenience wrapper around the proxy's {@code invokeSuper} method.
+     *
+     * @param proxy the proxy instance (must be an APS-generated class proxy)
+     * @param index zero-based method index received in {@link Callback#intercept}
+     * @param args  boxed arguments to pass to the superclass method
+     * @return the superclass method's return value
+     * @throws Throwable any throwable from the superclass method
+     */
+    public static Object invokeSuper(Object proxy, int index,
+                                      Object[] args) throws Throwable {
+        return ((SuperDispatcher) proxy).invokeSuper(index, args);
     }
 
     /**

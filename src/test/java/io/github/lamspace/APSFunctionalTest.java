@@ -25,8 +25,8 @@ class APSFunctionalTest {
 
     @Test
     void shouldInterceptAndReturnModifiedValue() {
-        Greeter proxy = APS.create(Greeter.class, (obj, method, superHandle, args) -> {
-            String original = (String) superHandle.invoke(args);
+        Greeter proxy = APS.create(Greeter.class, (obj, method, index, args) -> {
+            String original = (String) APS.invokeSuper(obj, index, args);
             return "[intercepted] " + original;
         });
 
@@ -37,16 +37,16 @@ class APSFunctionalTest {
 
     @Test
     void shouldPassThroughToSuperWhenNotModified() {
-        Greeter proxy = APS.create(Greeter.class, (obj, method, superHandle, args) ->
-                superHandle.invoke(args));
+        Greeter proxy = APS.create(Greeter.class, (obj, method, index, args) ->
+                APS.invokeSuper(obj, index, args));
 
         assertEquals("Hello, APS", proxy.hello("APS"));
     }
 
     @Test
     void shouldHandlePrimitiveReturnType() {
-        Greeter proxy = APS.create(Greeter.class, (obj, method, superHandle, args) ->
-                superHandle.invoke(args));
+        Greeter proxy = APS.create(Greeter.class, (obj, method, index, args) ->
+                APS.invokeSuper(obj, index, args));
 
         assertEquals(7, proxy.add(3, 4));
     }
@@ -54,9 +54,9 @@ class APSFunctionalTest {
     @Test
     void shouldHandleVoidReturnType() {
         AtomicBoolean called = new AtomicBoolean(false);
-        Greeter proxy = APS.create(Greeter.class, (obj, method, superHandle, args) -> {
+        Greeter proxy = APS.create(Greeter.class, (obj, method, index, args) -> {
             called.set(true);
-            return superHandle.invoke(args);
+            return APS.invokeSuper(obj, index, args);
         });
 
         proxy.sideEffect();
@@ -65,8 +65,8 @@ class APSFunctionalTest {
 
     @Test
     void shouldWorkWithClassFilter() {
-        Greeter proxy = APS.create(Greeter.class, (obj, method, superHandle, args) ->
-                        "[filtered] " + superHandle.invoke(args),
+        Greeter proxy = APS.create(Greeter.class, (obj, method, index, args) ->
+                        "[filtered] " + APS.invokeSuper(obj, index, args),
                 method -> method.getName().startsWith("hello"));
 
         assertEquals("[filtered] Hello, Alice", proxy.hello("Alice"));
@@ -89,7 +89,7 @@ class APSFunctionalTest {
     void shouldProxyClassWithoutDefaultConstructor() {
         BeanWithNoDefaultConstructor proxy = APS.create(
                 BeanWithNoDefaultConstructor.class,
-                (obj, method, superHandle, args) -> superHandle.invoke(args),
+                (obj, method, index, args) -> APS.invokeSuper(obj, index, args),
                 null,
                 "Bob"
         );
@@ -99,7 +99,7 @@ class APSFunctionalTest {
 
     @Test
     void shouldHandleMethodThatThrows() {
-        Greeter proxy = APS.create(Greeter.class, (obj, method, superHandle, args) -> {
+        Greeter proxy = APS.create(Greeter.class, (obj, method, index, args) -> {
             throw new RuntimeException("test exception");
         });
 
@@ -108,7 +108,7 @@ class APSFunctionalTest {
 
     @Test
     void shouldPropagateCheckedExceptionViaUndeclaredThrowable() {
-        Greeter proxy = APS.create(Greeter.class, (obj, method, superHandle, args) -> {
+        Greeter proxy = APS.create(Greeter.class, (obj, method, index, args) -> {
             throw new Exception("checked exception from interceptor");
         });
 

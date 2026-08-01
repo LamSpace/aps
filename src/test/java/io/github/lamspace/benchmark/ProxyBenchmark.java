@@ -85,9 +85,9 @@ public class ProxyBenchmark {
                     (proxy, method, args1) -> "fixed"
             );
 
-            // APS — no superHandle call
+            // APS — no super call
             apsProxy = APS.create(StringOpImpl.class,
-                    (obj, method, superHandle, args) -> "fixed");
+                    (obj, method, index, args) -> "fixed");
 
             // CGLib — no invokeSuper call
             Enhancer enhancer = new Enhancer();
@@ -140,9 +140,9 @@ public class ProxyBenchmark {
                     }
             );
 
-            // APS — superHandle.invoke(args) to call original method
+            // APS — APS.invokeSuper to call original method
             apsProxy = APS.create(StringOpImpl.class,
-                    (obj, method, superHandle, args) -> superHandle.invoke(args));
+                    (obj, method, index, args) -> APS.invokeSuper(obj, index, args));
 
             // CGLib — proxy.invokeSuper(obj, args) to call original method
             Enhancer enhancer = new Enhancer();
@@ -198,9 +198,9 @@ public class ProxyBenchmark {
             );
 
             apsProxy = APS.create(StringOpImpl.class,
-                    (obj, method, superHandle, args) -> {
+                    (obj, method, index, args) -> {
                         args[0] = "[" + args[0] + "]";
-                        return superHandle.invoke(args);
+                        return APS.invokeSuper(obj, index, args);
                     });
 
             Enhancer enhancer = new Enhancer();
@@ -256,7 +256,7 @@ public class ProxyBenchmark {
             );
 
             apsProxy = APS.create(IntOpImpl.class,
-                    (obj, method, superHandle, args) -> superHandle.invoke(args));
+                    (obj, method, index, args) -> APS.invokeSuper(obj, index, args));
 
             Enhancer enhancer = new Enhancer();
             enhancer.setSuperclass(IntOpImpl.class);
@@ -311,7 +311,7 @@ public class ProxyBenchmark {
             );
 
             apsProxy = APS.create(VoidOpImpl.class,
-                    (obj, method, superHandle, args) -> superHandle.invoke(args));
+                    (obj, method, index, args) -> APS.invokeSuper(obj, index, args));
 
             Enhancer enhancer = new Enhancer();
             enhancer.setSuperclass(VoidOpImpl.class);
@@ -364,7 +364,7 @@ public class ProxyBenchmark {
             );
 
             apsProxy = APS.create(MultiOpImpl.class,
-                    (obj, method, superHandle, args) -> superHandle.invoke(args));
+                    (obj, method, index, args) -> APS.invokeSuper(obj, index, args));
 
             Enhancer enhancer = new Enhancer();
             enhancer.setSuperclass(MultiOpImpl.class);

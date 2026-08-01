@@ -46,15 +46,14 @@ final class InterfaceDispatcher {
 
             boolean shouldIntercept = (filter == null) || filter.accept(method);
 
-            String suffix = "$" + dispatchedMethods.size();
+            int index = dispatchedMethods.size();
+            String suffix = "$" + index;
             String methodFieldName = "_method$" + method.getName() + suffix;
-            // No handle field for interfaces — pass empty string
-            String handleFieldName = "";
 
             addStaticField(cw, methodFieldName, "Ljava/lang/reflect/Method;");
 
             ClinitRegistry.register(interfaceClass, method, generatedInternal,
-                    methodFieldName, handleFieldName);
+                    methodFieldName, index);
 
             generateImplementation(cw, method, generatedInternal,
                     shouldIntercept, methodFieldName);
