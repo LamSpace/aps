@@ -46,13 +46,12 @@ public class InterfaceGenerator {
      */
     public byte[] generate() {
         String targetInternal = Type.getInternalName(interfaceClass);
-        String packagePrefix = targetInternal.contains("/")
-                ? targetInternal.substring(0, targetInternal.lastIndexOf('/') + 1)
-                : "";
         String simpleName = targetInternal.substring(
                 targetInternal.lastIndexOf('/') + 1);
-        String generatedInternal = packagePrefix + simpleName
-                + "$$APS$$" + COUNTER.getAndIncrement();
+        // Place generated class in the APS package. The interface may be in a
+        // restricted module (e.g., java.lang) where we cannot define classes.
+        String generatedInternal = "io/github/lamspace/"
+                + simpleName + "$$APS$$" + COUNTER.getAndIncrement();
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 

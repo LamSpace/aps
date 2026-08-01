@@ -183,9 +183,13 @@ public final class APS {
                     interfaceClass, filter);
             byte[] bytecode = generator.generate();
 
-            HiddenClassLoader loader = new HiddenClassLoader();
-            Class<?> proxyClass = loader.defineClass(interfaceClass,
-                    bytecode);
+            // Use APS's own Lookup to define the hidden class — the
+            // interface may be in a restricted module (e.g., java.lang)
+            // where we cannot obtain a package-appropriate Lookup.
+            java.lang.invoke.MethodHandles.Lookup lookup =
+                    java.lang.invoke.MethodHandles.lookup();
+            Class<?> proxyClass = lookup.defineHiddenClass(bytecode, true)
+                    .lookupClass();
 
             return (T) proxyClass.getConstructor(InterfaceCallback.class)
                     .newInstance(callback);
