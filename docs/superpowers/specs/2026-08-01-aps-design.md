@@ -1,7 +1,6 @@
 # APS Design — Accelerated Proxy Solution
 
-Date: 2026-08-01
-Status: draft
+Date: 2026-08-01 Status: draft
 
 ## 1. 定位
 
@@ -11,16 +10,16 @@ APS 是一个高性能 Java 运行时动态代理库，面向框架作者，目�
 
 ## 2. 设计决策汇总
 
-| 决策点 | 选择 | 原因 |
-|--------|------|------|
-| 优先级 | 性能 → 能力边界 → API 体验 | 先用极致性能站稳脚 |
-| 生成策略 | 纯运行时，零编译期生成 | 动态代理场景不需要编译期代码 |
-| 字节码生成 | ASM | 成熟稳定，生态完善 |
-| 类装载 | `Lookup.defineHiddenClass()` | 无 ClassLoader 泄漏，类可 GC |
-| 方法分派 | MethodHandle 绑定超类 | 替代 `Method.invoke` 反射调用 |
-| 安全/访问 | 自动提升权限 + 优雅降级 | 内部尝试提升，失败时降级 |
-| API 风格 | 函数式简洁，对标 `Enhancer.create` | 减少学习成本 |
-| 拦截模型 | 单 Callback，所有方法经一个入口 | 与 Proxy/CGLib 一致 |
+| 决策点     | 选择                               | 原因                          |
+|------------|------------------------------------|-------------------------------|
+| 优先级     | 性能 → 能力边界 → API 体验         | 先用极致性能站稳脚            |
+| 生成策略   | 纯运行时，零编译期生成             | 动态代理场景不需要编译期代码  |
+| 字节码生成 | ASM                                | 成熟稳定，生态完善            |
+| 类装载     | `Lookup.defineHiddenClass()`       | 无 ClassLoader 泄漏，类可 GC  |
+| 方法分派   | MethodHandle 绑定超类              | 替代 `Method.invoke` 反射调用 |
+| 安全/访问  | 自动提升权限 + 优雅降级            | 内部尝试提升，失败时降级      |
+| API 风格   | 函数式简洁，对标 `Enhancer.create` | 减少学习成本                  |
+| 拦截模型   | 单 Callback，所有方法经一个入口    | 与 Proxy/CGLib 一致           |
 
 ## 3. 架构
 
@@ -51,12 +50,12 @@ APS 是一个高性能 Java 运行时动态代理库，面向框架作者，目�
 └─────────────────────────────────┘
 ```
 
-| 层 | 组件 | 职责 |
-|----|------|------|
-| Public API | `APS` | 单一入口，静态工厂方法 |
-| Bytecode Engine | `ClassGenerator` | ASM 访问目标类元数据，生成子类字节码 |
-| | `MethodDispatcher` | 生成每个重写方法的分派逻辑 + MethodHandle 超类绑定 |
-| Class Definition | `HiddenClassLoader` | 用 `defineHiddenClass` 装载字节码，管理类生命周期 |
+| 层               | 组件                | 职责                                               |
+|------------------|---------------------|----------------------------------------------------|
+| Public API       | `APS`               | 单一入口，静态工厂方法                             |
+| Bytecode Engine  | `ClassGenerator`    | ASM 访问目标类元数据，生成子类字节码               |
+|                  | `MethodDispatcher`  | 生成每个重写方法的分派逻辑 + MethodHandle 超类绑定 |
+| Class Definition | `HiddenClassLoader` | 用 `defineHiddenClass` 装载字节码，管理类生命周期  |
 
 ### 调用路径
 
@@ -67,13 +66,15 @@ user.method()  →  [生成的子类].method()
     →  superHandle.invoke(args) // MethodHandle 绑定到超类，零反射
 ```
 
-`superHandle` 是预先绑定到父类 `method` 的 MethodHandle，handler 可以直接调用，无需 `Method.invoke`。这是 APS 相比 CGLib 性能差异化的关键。
+`superHandle` 是预先绑定到父类 `method` 的 MethodHandle，handler 可以直接调用，无需 `Method.invoke`。这是 APS 相比 CGLib
+性能差异化的关键。
 
 ## 4. API 设计
 
 ### Callback 接口
 
 ```java
+
 @FunctionalInterface
 public interface Callback {
     Object intercept(Object proxy, Method method, MethodHandle superHandle,
@@ -86,16 +87,16 @@ public interface Callback {
 ```java
 // 最简形式：代理一个类，所有方法经 handler
 T proxy = APS.create(TargetClass.class, (Callback)
-    (obj, method, superHandle, args) -> {
-        System.out.println("before " + method.getName());
-        Object result = superHandle.invoke(args);
-        System.out.println("after " + method.getName());
-        return result;
-    });
+                (obj, method, superHandle, args) -> {
+                    System.out.println("before " + method.getName());
+                    Object result = superHandle.invoke(args);
+                    System.out.println("after " + method.getName());
+                    return result;
+                });
 
 // 带过滤器：只拦截匹配的方法
 T proxy = APS.create(TargetClass.class, callbacks, method ->
-    method.getName().startsWith("get"));
+        method.getName().startsWith("get"));
 ```
 
 - `superHandle` 是 MethodHandle，不是 Method。用户调 `superHandle.invoke(args)` 走 MethodHandle，非 `Method.invoke`。
@@ -103,6 +104,7 @@ T proxy = APS.create(TargetClass.class, callbacks, method ->
 - 过滤器可选。不传 filter → 全量拦截；传了 → 只拦截匹配方法，其余走超类直达（零拦截开销）。
 
 ```java
+
 @FunctionalInterface
 public interface ClassFilter {
     boolean accept(Method method);
@@ -144,11 +146,11 @@ public interface ClassFilter {
 
 ### 测试层面
 
-| 层面 | 内容 | 工具 |
-|------|------|------|
+| 层面     | 内容                                             | 工具    |
+|----------|--------------------------------------------------|---------|
 | 单元测试 | 代理类生成、方法拦截、参数传递、返回值、异常穿透 | JUnit 5 |
-| 性能基准 | APS vs CGLib vs Proxy 直调和代理调用的每操作延迟 | JMH |
-| 正确性 | Public API 行为契约 | JUnit 5 |
+| 性能基准 | APS vs CGLib vs Proxy 直调和代理调用的每操作延迟 | JMH     |
+| 正确性   | Public API 行为契约                              | JUnit 5 |
 
 ### v1 成功标准
 

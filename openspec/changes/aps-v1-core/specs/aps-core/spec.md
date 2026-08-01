@@ -1,12 +1,14 @@
 ## Purpose
 
-A high-performance, MethodHandle-based dynamic proxy engine for Java that proxies concrete classes at runtime, offering a drop-in replacement for CGLib with better call-site performance.
+A high-performance, MethodHandle-based dynamic proxy engine for Java that proxies concrete classes at runtime, offering
+a drop-in replacement for CGLib with better call-site performance.
 
 ## ADDED Requirements
 
 ### Requirement: Proxy class creation
 
-The system SHALL generate a runtime subclass of any non-final concrete class and route all non-final instance method calls through a user-provided single Callback handler.
+The system SHALL generate a runtime subclass of any non-final concrete class and route all non-final instance method
+calls through a user-provided single Callback handler.
 
 #### Scenario: Basic proxy creation and interception
 
@@ -23,7 +25,8 @@ The system SHALL generate a runtime subclass of any non-final concrete class and
 
 ### Requirement: MethodHandle super-call binding
 
-The system SHALL pre-compute and cache a `java.lang.invoke.MethodHandle` for each proxyable method, bound to the superclass implementation using `MethodHandles.Lookup.findSpecial`.
+The system SHALL pre-compute and cache a `java.lang.invoke.MethodHandle` for each proxyable method, bound to the
+superclass implementation using `MethodHandles.Lookup.findSpecial`.
 
 #### Scenario: MethodHandle is available in callback
 
@@ -33,7 +36,8 @@ The system SHALL pre-compute and cache a `java.lang.invoke.MethodHandle` for eac
 
 ### Requirement: Hidden class loading
 
-The system SHALL use `MethodHandles.Lookup.defineHiddenClass(byte[], true)` to load generated proxy classes, avoiding custom ClassLoader usage and ensuring proxy classes are eligible for garbage collection.
+The system SHALL use `MethodHandles.Lookup.defineHiddenClass(byte[], true)` to load generated proxy classes, avoiding
+custom ClassLoader usage and ensuring proxy classes are eligible for garbage collection.
 
 #### Scenario: Proxy class is garbage collectable
 
@@ -42,11 +46,13 @@ The system SHALL use `MethodHandles.Lookup.defineHiddenClass(byte[], true)` to l
 
 ### Requirement: Method filtering
 
-The system SHALL support an optional ClassFilter that determines which methods pass through the Callback. Methods not accepted by the filter SHALL call the superclass implementation directly with zero interception overhead.
+The system SHALL support an optional ClassFilter that determines which methods pass through the Callback. Methods not
+accepted by the filter SHALL call the superclass implementation directly with zero interception overhead.
 
 #### Scenario: Filtered method skips interception
 
-- **WHEN** user creates a proxy with `APS.create(TargetClass.class, callback, method -> method.getName().startsWith("get"))`
+- **WHEN** user creates a proxy with
+  `APS.create(TargetClass.class, callback, method -> method.getName().startsWith("get"))`
 - **AND** a method not matching the filter is called (e.g., `setValue`)
 - **THEN** the method executes the superclass implementation directly without invoking the callback
 
@@ -57,7 +63,8 @@ The system SHALL support an optional ClassFilter that determines which methods p
 
 ### Requirement: Primitive type handling
 
-The system SHALL correctly box primitive arguments into Object[] for callback delivery and unbox the Object return value back to the expected primitive type.
+The system SHALL correctly box primitive arguments into Object[] for callback delivery and unbox the Object return value
+back to the expected primitive type.
 
 #### Scenario: Primitive argument boxing
 
@@ -81,7 +88,8 @@ The system SHALL handle methods with void return type by discarding the callback
 
 ### Requirement: Exception propagation
 
-The system SHALL propagate unchecked exceptions thrown by the callback directly to the caller. Checked exceptions SHALL be wrapped in `java.lang.reflect.UndeclaredThrowableException`.
+The system SHALL propagate unchecked exceptions thrown by the callback directly to the caller. Checked exceptions SHALL
+be wrapped in `java.lang.reflect.UndeclaredThrowableException`.
 
 #### Scenario: RuntimeException from callback
 
@@ -95,7 +103,8 @@ The system SHALL propagate unchecked exceptions thrown by the callback directly 
 
 ### Requirement: Access control with graceful degradation
 
-The system SHALL attempt to obtain full private access to the target class via `MethodHandles.privateLookupIn`. If the target module is not open, the system SHALL fall back to a regular public Lookup without failing.
+The system SHALL attempt to obtain full private access to the target class via `MethodHandles.privateLookupIn`. If the
+target module is not open, the system SHALL fall back to a regular public Lookup without failing.
 
 #### Scenario: Private access succeeds
 
@@ -109,11 +118,12 @@ The system SHALL attempt to obtain full private access to the target class via `
 
 ### Requirement: No-default-constructor support
 
-The system SHALL support proxying classes that lack a no-argument constructor by accepting constructor arguments at proxy creation time.
+The system SHALL support proxying classes that lack a no-argument constructor by accepting constructor arguments at
+proxy creation time.
 
 #### Scenario: Proxy class with constructor arguments
 
 - **WHEN** user calls `APS.create(BeanWithArgs.class, callback, null, "arg1", 42)`
 - **THEN** the system finds a matching constructor on the target class
-- **AND** generates a proxy constructor that delegates the arguments to super()
+- **AND** generates a proxy constructor that delegates the arguments to super ()
 - **AND** returns a properly initialized proxy instance
