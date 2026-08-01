@@ -6,16 +6,11 @@ A high-performance, MethodHandle-powered dynamic proxy library for Java, designe
 
 - **MethodHandle dispatch** — pre-computed index-based dispatch tables replace
   `Method.invoke()` reflection, delivering near-direct-call performance
-- **Interface proxy support** — `APS.createInterface()` generates runtime
-  implementations for any interface, backed by the same MethodHandle dispatch
-- **No ClassLoader leaks** — uses `Lookup.defineHiddenClass()` so proxy classes
-  are GC-eligible when no longer referenced
-- **One-line API** — `APS.create(MyClass.class, callback)` with generic type
-  inference, no casts needed
-- **Zero-overhead filtering** — methods excluded by `ClassFilter` call the
-  superclass directly with no interception cost
-- **Constructor arguments** — supports proxying classes without a no-arg
-  constructor
+- **Interface proxy support** — `APS.createInterface()` generates runtime implementations for any interface, backed by the same MethodHandle dispatch
+- **No ClassLoader leaks** — uses `Lookup.defineHiddenClass()` so proxy classes are GC-eligible when no longer referenced
+- **One-line API** — `APS.create(MyClass.class, callback)` with generic type inference, no casts needed
+- **Zero-overhead filtering** — methods excluded by `ClassFilter` call the superclass directly with no interception cost
+- **Constructor arguments** — supports proxying classes without a no-arg constructor
 
 ## ⚡ Quick Start
 
@@ -78,8 +73,7 @@ JMH benchmarks on Java 25, 4 implementations × 6 scenarios:
 *ns/op, lower is better. Full results: [docs/benchmark-results.md](docs/benchmark-results.md)*
 
 APS is competitive with CGLib across all class-proxy scenarios and on par with
-`java.lang.reflect.Proxy` for interface proxies — all without reflection overhead
-or ClassLoader leaks.
+`java.lang.reflect.Proxy` for interface proxies — all without reflection overhead or ClassLoader leaks.
 
 ## 📋 Requirements
 
@@ -99,6 +93,7 @@ mvn install -DskipTests
 ### Maven (coming soon)
 
 ```xml
+
 <dependency>
     <groupId>io.github.lamspace</groupId>
     <artifactId>aps</artifactId>
@@ -126,22 +121,21 @@ Maven Central publishing is on the [roadmap](docs/aps-future-roadmap.md).
 
 ## 🆚 APS vs JavaProxy
 
-| Feature                     | APS                               | `java.lang.reflect.Proxy`        |
-|-----------------------------|-----------------------------------|----------------------------------|
-| Proxy target                | Classes **and** interfaces        | Interfaces only                  |
-| Dispatch mechanism          | MethodHandle (JVM-native)         | Reflection (`Method.invoke`)     |
-| Class loading               | `defineHiddenClass()` (GC-safe)   | `defineClass` + proxy cache      |
-| API style                   | Functional (lambda-friendly)      | `InvocationHandler` (single-method) |
-| Selective interception      | `ClassFilter` per method          | All-or-nothing                   |
-| Exception propagation       | Checked → `UndeclaredThrowable`   | Checked → `InvocationTarget`     |
-| Constructor args (classes)  | Yes                               | N/A (interfaces only)            |
-| Performance overhead        | Minimal (pre-computed handles)    | Reflection call per invocation   |
-| Dependencies                | Third-party (APS + ASM)           | Built into JDK                   |
+| Feature                    | APS                             | `java.lang.reflect.Proxy`           |
+|----------------------------|---------------------------------|-------------------------------------|
+| Proxy target               | Classes **and** interfaces      | Interfaces only                     |
+| Dispatch mechanism         | MethodHandle (JVM-native)       | Reflection (`Method.invoke`)        |
+| Class loading              | `defineHiddenClass()` (GC-safe) | `defineClass` + proxy cache         |
+| API style                  | Functional (lambda-friendly)    | `InvocationHandler` (single-method) |
+| Selective interception     | `ClassFilter` per method        | All-or-nothing                      |
+| Exception propagation      | Checked → `UndeclaredThrowable` | Checked → `InvocationTarget`        |
+| Constructor args (classes) | Yes                             | N/A (interfaces only)               |
+| Performance overhead       | Minimal (pre-computed handles)  | Reflection call per invocation      |
+| Dependencies               | Third-party (APS + ASM)         | Built into JDK                      |
 
 ## 🔄 Migration from CGLib
 
-See [docs/migration-guide.md](docs/migration-guide.md) for step-by-step migration
-guides from both CGLib and `java.lang.reflect.Proxy`.
+See [docs/migration-guide.md](docs/migration-guide.md) for step-by-step migration guides from both CGLib and `java.lang.reflect.Proxy`.
 
 ## 📖 Documentation
 

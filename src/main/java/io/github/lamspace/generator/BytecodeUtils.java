@@ -26,8 +26,17 @@ import org.objectweb.asm.Type;
  */
 final class BytecodeUtils {
 
-    private BytecodeUtils() {}
+    private BytecodeUtils() {
+    }
 
+    /**
+     * Emits the most compact bytecode sequence to push an int constant
+     * onto the stack. Uses iconst for -1..5, bipush for byte range,
+     * sipush for short range, and ldc for larger values.
+     *
+     * @param mv    the method visitor to emit instructions into
+     * @param value the int constant to push
+     */
     static void pushInt(MethodVisitor mv, int value) {
         if (value >= -1 && value <= 5) {
             mv.visitInsn(Opcodes.ICONST_0 + value);
@@ -40,16 +49,32 @@ final class BytecodeUtils {
         }
     }
 
+    /**
+     * Returns the appropriate XLOAD opcode for the given primitive or
+     * reference type. Returns ALOAD for reference types, and the
+     * type-specific opcode (DLOAD, FLOAD, LLOAD, ILOAD) for primitives.
+     *
+     * @param type the type to get the load opcode for
+     * @return the JVM load opcode for the type
+     */
     static int loadOpcode(Class<?> type) {
         if (type == double.class) return Opcodes.DLOAD;
         if (type == float.class) return Opcodes.FLOAD;
         if (type == long.class) return Opcodes.LLOAD;
-        if (type == int.class || type == boolean.class || type == byte.class
-                || type == char.class || type == short.class)
+        if (type == int.class || type == boolean.class || type == byte.class || type == char.class || type == short.class)
             return Opcodes.ILOAD;
         return Opcodes.ALOAD;
     }
 
+    /**
+     * Emits bytecode to auto-box a primitive value on the stack into its
+     * corresponding wrapper type. Calls {@code valueOf} on the wrapper
+     * class (e.g., {@code Integer.valueOf} for int). Does nothing if the
+     * type is not a primitive.
+     *
+     * @param mv   the method visitor to emit instructions into
+     * @param type the primitive type to box
+     */
     static void boxPrimitive(MethodVisitor mv, Class<?> type) {
         String wrapper;
         String desc;
@@ -83,6 +108,15 @@ final class BytecodeUtils {
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, wrapper, "valueOf", desc, false);
     }
 
+    /**
+     * Emits bytecode to auto-unbox a wrapper value on the stack to its
+     * primitive type. Emits a CHECKCAST to the wrapper type followed by
+     * the appropriate unbox method call (e.g., {@code intValue()} for
+     * Integer). Does nothing if the type is not a primitive.
+     *
+     * @param mv   the method visitor to emit instructions into
+     * @param type the primitive type to unbox to
+     */
     static void unboxPrimitive(MethodVisitor mv, Class<?> type) {
         String wrapper;
         String unboxMethod;

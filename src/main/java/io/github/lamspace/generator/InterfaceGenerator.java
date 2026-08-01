@@ -95,7 +95,7 @@ public class InterfaceGenerator {
     }
 
     private void generateConstructor(ClassWriter cw, String generatedInternal,
-                                      String callbackDesc) {
+                                     String callbackDesc) {
         MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>",
                 "(" + callbackDesc + ")V", null, null);
         mv.visitCode();

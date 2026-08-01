@@ -16,8 +16,6 @@
 
 package io.github.lamspace;
 
-import io.github.lamspace.Callback;
-import io.github.lamspace.ClassFilter;
 import io.github.lamspace.generator.ClassGenerator;
 import io.github.lamspace.generator.InterfaceGenerator;
 import io.github.lamspace.loader.HiddenClassLoader;
@@ -58,7 +56,7 @@ public final class APS {
      * @throws Throwable any throwable from the superclass method
      */
     public static Object invokeSuper(Object proxy, int index,
-                                      Object[] args) throws Throwable {
+                                     Object[] args) throws Throwable {
         return ((SuperDispatcher) proxy).invokeSuper(index, args);
     }
 
@@ -170,7 +168,7 @@ public final class APS {
      * @throws RuntimeException         if bytecode generation or class loading fails
      */
     public static <T> T createInterface(Class<T> interfaceClass,
-                                         InterfaceCallback callback) {
+                                        InterfaceCallback callback) {
         return createInterface(interfaceClass, callback, null);
     }
 
@@ -193,8 +191,8 @@ public final class APS {
      */
     @SuppressWarnings("unchecked")
     public static <T> T createInterface(Class<T> interfaceClass,
-                                         InterfaceCallback callback,
-                                         ClassFilter filter) {
+                                        InterfaceCallback callback,
+                                        ClassFilter filter) {
         if (interfaceClass == null) {
             throw new IllegalArgumentException(
                     "interfaceClass must not be null");

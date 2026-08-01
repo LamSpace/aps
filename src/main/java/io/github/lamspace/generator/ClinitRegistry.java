@@ -28,6 +28,15 @@ import java.util.List;
  */
 final class ClinitRegistry {
 
+    /**
+     * A tuple recording a single method dispatch registration.
+     *
+     * @param targetClass       the original class or interface declaring the method
+     * @param method            the method being proxied
+     * @param generatedInternal the internal name of the generated proxy class
+     * @param methodFieldName   the name of the static field holding the {@code Method} object
+     * @param index             the dispatch table index for this method
+     */
     record Entry(Class<?> targetClass, Method method, String generatedInternal,
                  String methodFieldName, int index) {
     }
@@ -37,6 +46,17 @@ final class ClinitRegistry {
     private ClinitRegistry() {
     }
 
+    /**
+     * Registers a method dispatch entry. Called during bytecode generation
+     * for each proxied method. The registered entries are later consumed
+     * by {@link #drain()} to emit the {@code <clinit>} block.
+     *
+     * @param targetClass       the original class or interface declaring the method
+     * @param method            the method being proxied
+     * @param generatedInternal the internal name of the generated proxy class
+     * @param methodFieldName   the name of the static field holding the {@code Method} object
+     * @param index             the dispatch table index for this method
+     */
     static void register(Class<?> targetClass, Method method,
                          String generatedInternal,
                          String methodFieldName, int index) {
@@ -44,6 +64,14 @@ final class ClinitRegistry {
                 methodFieldName, index));
     }
 
+    /**
+     * Drains all registered entries and clears the internal registry.
+     * Returns a snapshot of the entries in registration order so the
+     * caller can emit the {@code <clinit>} block. After this call the
+     * registry is empty and ready for the next class generation.
+     *
+     * @return a list of all registered entries in registration order
+     */
     static List<Entry> drain() {
         List<Entry> result = new ArrayList<>(entries);
         entries.clear();

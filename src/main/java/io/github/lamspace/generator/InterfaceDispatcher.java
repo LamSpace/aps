@@ -34,7 +34,8 @@ final class InterfaceDispatcher {
 
     private static final String CALLBACK_FIELD = "_callback";
 
-    private InterfaceDispatcher() {}
+    private InterfaceDispatcher() {
+    }
 
     /**
      * Generates method implementations, static Method fields, and registers
@@ -49,8 +50,8 @@ final class InterfaceDispatcher {
      * @return list of method names for which dispatchers were generated
      */
     static List<String> dispatchMethods(ClassWriter cw, Class<?> interfaceClass,
-                                         String generatedInternal,
-                                         ClassFilter filter) {
+                                        String generatedInternal,
+                                        ClassFilter filter) {
         List<String> dispatchedMethods = new ArrayList<>();
 
         for (Method method : interfaceClass.getMethods()) {
@@ -87,9 +88,9 @@ final class InterfaceDispatcher {
     }
 
     private static void generateImplementation(ClassWriter cw, Method method,
-                                                String generatedInternal,
-                                                boolean shouldIntercept,
-                                                String methodFieldName) {
+                                               String generatedInternal,
+                                               boolean shouldIntercept,
+                                               String methodFieldName) {
         String name = method.getName();
         String desc = Type.getMethodDescriptor(method);
 

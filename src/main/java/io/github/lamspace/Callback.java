@@ -41,12 +41,12 @@ public interface Callback {
     /**
      * Called for every method invocation on the proxy.
      *
-     * @param proxy   the proxy instance
-     * @param method  the intercepted method (for metadata: name, annotations, etc.)
-     * @param index   zero-based index of the method in the proxy's dispatch table;
-     *                pass to the proxy's {@code invokeSuper(int, Object[])} or
-     *                to {@link APS#invokeSuper(Object, int, Object[])}
-     * @param args    the method arguments, boxed; empty array for no-arg methods
+     * @param proxy  the proxy instance
+     * @param method the intercepted method (for metadata: name, annotations, etc.)
+     * @param index  zero-based index of the method in the proxy's dispatch table;
+     *               pass to the proxy's {@code invokeSuper(int, Object[])} or
+     *               to {@link APS#invokeSuper(Object, int, Object[])}
+     * @param args   the method arguments, boxed; empty array for no-arg methods
      * @return the method's return value (null for void methods, boxed for primitives)
      * @throws Throwable any throwable the interceptor wishes to propagate
      */
