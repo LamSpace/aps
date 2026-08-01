@@ -31,9 +31,9 @@
 - [x] 5.1 Implement `ClinitRegistry`
 - [x] 5.2 Write `MethodDispatcherTest`
 - [x] 5.3 Write `MethodDispatcher.dispatchMethods()` implementation
-- [ ] 5.4 Implement `MethodDispatcher.dispatchMethods()` — generates static fields + method override bodies + registers
+- [x] 5.4 Implement `MethodDispatcher.dispatchMethods()`
   clinit entries
-- [ ] 5.5 Run tests: `mvn test -Dtest=MethodDispatcherTest`
+- [x] 5.5 Run tests: `mvn test -Dtest=MethodDispatcherTest`
 
 ## 6. Subclass Generation
 
@@ -66,6 +66,6 @@
 
 ## 10. Final Verification
 
-- [ ] 10.1 Run `mvn test` — all tests green
-- [ ] 10.2 Run `mvn compile -Xlint:all` — no warnings
-- [ ] 10.3 Review git log for clean, focused commit history
+- [x] 10.1 Run `mvn test` — all tests green
+- [x] 10.2 Run `mvn compile -Xlint:all` — clean
+- [x] 10.3 Review git log — 4 focused commits
