@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Generates a proxy subclass of {@code targetClass} using ASM.
- *
+ * <p>
  * For each non-final, non-static instance method:
  * <ul>
  *   <li>Generates an override that delegates to {@link Callback#intercept}</li>
@@ -31,6 +31,8 @@ public class ClassGenerator {
     private final Object[] constructorArgs;
 
     /**
+     * Creates a generator for the given target class with no constructor arguments.
+     *
      * @param targetClass the class to proxy
      * @param filter      method filter; {@code null} means all methods are intercepted
      */
@@ -39,13 +41,15 @@ public class ClassGenerator {
     }
 
     /**
+     * Creates a generator for the given target class with constructor arguments.
+     *
      * @param targetClass     the class to proxy
      * @param filter          method filter; {@code null} means all methods are intercepted
      * @param constructorArgs arguments to pass to the superclass constructor;
      *                        empty array for the default no-arg constructor
      */
     public ClassGenerator(Class<?> targetClass, ClassFilter filter,
-                           Object... constructorArgs) {
+                          Object... constructorArgs) {
         this.targetClass = targetClass;
         this.filter = filter;
         this.constructorArgs = (constructorArgs == null) ? new Object[0] : constructorArgs;
@@ -53,6 +57,9 @@ public class ClassGenerator {
 
     /**
      * Returns the parameter types for the generated class constructor.
+     *
+     * @return an array starting with {@link Callback}{@code .class} followed by
+     * the types of the constructor arguments
      */
     public Class<?>[] constructorArgs() {
         Class<?>[] all = new Class<?>[1 + constructorArgs.length];
@@ -131,12 +138,12 @@ public class ClassGenerator {
             mv.visitLdcInsn(method.getName());
 
             Class<?>[] paramTypes = method.getParameterTypes();
-            pushInt(mv, paramTypes.length);
+            BytecodeUtils.pushInt(mv, paramTypes.length);
             mv.visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/Class");
             for (int i = 0; i < paramTypes.length; i++) {
                 mv.visitInsn(Opcodes.DUP);
-                pushInt(mv, i);
-                pushClassConstant(mv, paramTypes[i]);
+                BytecodeUtils.pushInt(mv, i);
+                BytecodeUtils.pushClassConstant(mv, paramTypes[i]);
                 mv.visitInsn(Opcodes.AASTORE);
             }
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Class",
@@ -154,7 +161,7 @@ public class ClassGenerator {
 
             // Build MethodType: MethodType.methodType(returnType, paramTypes...)
             Class<?> returnType = method.getReturnType();
-            pushClassConstant(mv, returnType);
+            BytecodeUtils.pushClassConstant(mv, returnType);
             if (paramTypes.length == 0) {
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC,
                         "java/lang/invoke/MethodType",
@@ -163,12 +170,12 @@ public class ClassGenerator {
                         false);
             } else {
                 // Build Class[] for param types
-                pushInt(mv, paramTypes.length);
+                BytecodeUtils.pushInt(mv, paramTypes.length);
                 mv.visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/Class");
                 for (int i = 0; i < paramTypes.length; i++) {
                     mv.visitInsn(Opcodes.DUP);
-                    pushInt(mv, i);
-                    pushClassConstant(mv, paramTypes[i]);
+                    BytecodeUtils.pushInt(mv, i);
+                    BytecodeUtils.pushClassConstant(mv, paramTypes[i]);
                     mv.visitInsn(Opcodes.AASTORE);
                 }
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC,
@@ -185,6 +192,17 @@ public class ClassGenerator {
                             + "Ljava/lang/invoke/MethodType;"
                             + "Ljava/lang/Class;)Ljava/lang/invoke/MethodHandle;",
                     false);
+
+            // Pre-compute asSpreader so per-invocation hot path avoids
+            // MethodHandle allocation.
+            mv.visitLdcInsn(Type.getType("[Ljava/lang/Object;"));
+            BytecodeUtils.pushInt(mv, method.getParameterTypes().length);
+            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
+                    "java/lang/invoke/MethodHandle",
+                    "asSpreader",
+                    "(Ljava/lang/Class;I)Ljava/lang/invoke/MethodHandle;",
+                    false);
+
             mv.visitFieldInsn(Opcodes.PUTSTATIC, generatedInternal,
                     handleField, "Ljava/lang/invoke/MethodHandle;");
         }
@@ -195,7 +213,7 @@ public class ClassGenerator {
     }
 
     private void generateConstructor(ClassWriter cw, String generatedInternal,
-                                      String targetInternal, String callbackDesc) {
+                                     String targetInternal, String callbackDesc) {
         if (constructorArgs.length == 0) {
             generateNoArgConstructor(cw, generatedInternal, targetInternal, callbackDesc);
         } else {
@@ -204,7 +222,7 @@ public class ClassGenerator {
     }
 
     private void generateNoArgConstructor(ClassWriter cw, String generatedInternal,
-                                           String targetInternal, String callbackDesc) {
+                                          String targetInternal, String callbackDesc) {
         MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>",
                 "(" + callbackDesc + ")V", null, null);
         mv.visitCode();
@@ -221,7 +239,7 @@ public class ClassGenerator {
     }
 
     private void generateArgConstructor(ClassWriter cw, String generatedInternal,
-                                         String targetInternal, String callbackDesc) {
+                                        String targetInternal, String callbackDesc) {
         // Build descriptor
         StringBuilder descBuilder = new StringBuilder("(");
         descBuilder.append(callbackDesc); // Callback param
@@ -249,15 +267,20 @@ public class ClassGenerator {
                     || argType == byte.class || argType == Byte.class
                     || argType == char.class || argType == Character.class
                     || argType == short.class || argType == Short.class) {
-                mv.visitVarInsn(Opcodes.ILOAD, superArgSlot); superArgSlot++;
+                mv.visitVarInsn(Opcodes.ILOAD, superArgSlot);
+                superArgSlot++;
             } else if (argType == long.class || argType == Long.class) {
-                mv.visitVarInsn(Opcodes.LLOAD, superArgSlot); superArgSlot += 2;
+                mv.visitVarInsn(Opcodes.LLOAD, superArgSlot);
+                superArgSlot += 2;
             } else if (argType == float.class || argType == Float.class) {
-                mv.visitVarInsn(Opcodes.FLOAD, superArgSlot); superArgSlot++;
+                mv.visitVarInsn(Opcodes.FLOAD, superArgSlot);
+                superArgSlot++;
             } else if (argType == double.class || argType == Double.class) {
-                mv.visitVarInsn(Opcodes.DLOAD, superArgSlot); superArgSlot += 2;
+                mv.visitVarInsn(Opcodes.DLOAD, superArgSlot);
+                superArgSlot += 2;
             } else {
-                mv.visitVarInsn(Opcodes.ALOAD, superArgSlot); superArgSlot++;
+                mv.visitVarInsn(Opcodes.ALOAD, superArgSlot);
+                superArgSlot++;
             }
         }
 
@@ -302,42 +325,5 @@ public class ClassGenerator {
         if (type == char.class) return Character.class;
         if (type == short.class) return Short.class;
         return type;
-    }
-
-    private static void pushInt(MethodVisitor mv, int value) {
-        if (value >= -1 && value <= 5) {
-            mv.visitInsn(Opcodes.ICONST_0 + value);
-        } else if (value >= Byte.MIN_VALUE && value <= Byte.MAX_VALUE) {
-            mv.visitIntInsn(Opcodes.BIPUSH, value);
-        } else {
-            mv.visitIntInsn(Opcodes.SIPUSH, value);
-        }
-    }
-
-    /**
-     * Pushes a Class constant onto the stack.
-     * For primitives, uses wrapper.TYPE (e.g., Integer.TYPE).
-     * For reference types, uses LDC.
-     */
-    private static void pushClassConstant(MethodVisitor mv, Class<?> type) {
-        if (type.isPrimitive()) {
-            String wrapper = getWrapperInternalName(type);
-            mv.visitFieldInsn(Opcodes.GETSTATIC, wrapper, "TYPE", "Ljava/lang/Class;");
-        } else {
-            mv.visitLdcInsn(Type.getType(type));
-        }
-    }
-
-    private static String getWrapperInternalName(Class<?> primitiveType) {
-        if (primitiveType == int.class) return "java/lang/Integer";
-        if (primitiveType == long.class) return "java/lang/Long";
-        if (primitiveType == double.class) return "java/lang/Double";
-        if (primitiveType == float.class) return "java/lang/Float";
-        if (primitiveType == boolean.class) return "java/lang/Boolean";
-        if (primitiveType == byte.class) return "java/lang/Byte";
-        if (primitiveType == char.class) return "java/lang/Character";
-        if (primitiveType == short.class) return "java/lang/Short";
-        if (primitiveType == void.class) return "java/lang/Void";
-        throw new IllegalArgumentException("Unknown primitive: " + primitiveType);
     }
 }
