@@ -124,6 +124,20 @@ Maven Central publishing is on the [roadmap](docs/aps-future-roadmap.md).
 | Constructor interception       | Roadmap                         | Yes                        |
 | Maven Central                  | Roadmap                         | Yes                        |
 
+## 🆚 APS vs JavaProxy
+
+| Feature                     | APS                               | `java.lang.reflect.Proxy`        |
+|-----------------------------|-----------------------------------|----------------------------------|
+| Proxy target                | Classes **and** interfaces        | Interfaces only                  |
+| Dispatch mechanism          | MethodHandle (JVM-native)         | Reflection (`Method.invoke`)     |
+| Class loading               | `defineHiddenClass()` (GC-safe)   | `defineClass` + proxy cache      |
+| API style                   | Functional (lambda-friendly)      | `InvocationHandler` (single-method) |
+| Selective interception      | `ClassFilter` per method          | All-or-nothing                   |
+| Exception propagation       | Checked → `UndeclaredThrowable`   | Checked → `InvocationTarget`     |
+| Constructor args (classes)  | Yes                               | N/A (interfaces only)            |
+| Performance overhead        | Minimal (pre-computed handles)    | Reflection call per invocation   |
+| Dependencies                | Third-party (APS + ASM)           | Built into JDK                   |
+
 ## 🔄 Migration from CGLib
 
 See [docs/migration-guide.md](docs/migration-guide.md) for step-by-step migration
