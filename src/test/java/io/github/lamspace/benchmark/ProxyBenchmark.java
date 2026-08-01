@@ -23,19 +23,19 @@ public class ProxyBenchmark {
     // Shared interfaces & concrete classes
     // ---------------------------------------------------------------
 
-    interface StringOp {
+    public interface StringOp {
         String call(String input);
     }
 
-    interface IntOp {
+    public interface IntOp {
         int call(int a, int b);
     }
 
-    interface VoidOp {
+    public interface VoidOp {
         void call();
     }
 
-    interface MultiOp {
+    public interface MultiOp {
         String call(String a, int b, long c, double d);
     }
 
@@ -392,5 +392,218 @@ public class ProxyBenchmark {
     @Benchmark
     public String multiparam_cglib(MultiParamState s) {
         return s.cglibProxy.call("a", 1, 2L, 3.0);
+    }
+
+    // ===============================================================
+    // Scenario 7: Interface no-op — callback returns fixed value
+    // ===============================================================
+
+    @State(Scope.Thread)
+    public static class IfaceNoopState {
+        StringOp direct;
+        StringOp javaProxy;
+        StringOp apsIface;
+
+        @Setup
+        public void setup() {
+            direct = new StringOpImpl();
+
+            javaProxy = (StringOp) Proxy.newProxyInstance(
+                    StringOp.class.getClassLoader(),
+                    new Class<?>[]{StringOp.class},
+                    (proxy, method, args1) -> "fixed"
+            );
+
+            apsIface = APS.createInterface(StringOp.class,
+                    (obj, method, args) -> "fixed");
+        }
+    }
+
+    @Benchmark
+    public String iface_noop_direct(IfaceNoopState s) {
+        return s.direct.call("World");
+    }
+
+    @Benchmark
+    public String iface_noop_javaProxy(IfaceNoopState s) {
+        return s.javaProxy.call("World");
+    }
+
+    @Benchmark
+    public String iface_noop_aps(IfaceNoopState s) {
+        return s.apsIface.call("World");
+    }
+
+    // ===============================================================
+    // Scenario 8: Interface passthrough — callback returns computed value
+    // ===============================================================
+
+    @State(Scope.Thread)
+    public static class IfacePassthroughState {
+        StringOp javaProxy;
+        StringOp apsIface;
+
+        @Setup
+        public void setup() {
+            javaProxy = (StringOp) Proxy.newProxyInstance(
+                    StringOp.class.getClassLoader(),
+                    new Class<?>[]{StringOp.class},
+                    (proxy, method, args1) ->
+                            "Hello, " + args1[0]
+            );
+
+            apsIface = APS.createInterface(StringOp.class,
+                    (obj, method, args) -> "Hello, " + args[0]);
+        }
+    }
+
+    @Benchmark
+    public String iface_passthrough_javaProxy(IfacePassthroughState s) {
+        return s.javaProxy.call("World");
+    }
+
+    @Benchmark
+    public String iface_passthrough_aps(IfacePassthroughState s) {
+        return s.apsIface.call("World");
+    }
+
+    // ===============================================================
+    // Scenario 9: Interface arg modify — modify argument in callback
+    // ===============================================================
+
+    @State(Scope.Thread)
+    public static class IfaceArgModifyState {
+        StringOp javaProxy;
+        StringOp apsIface;
+
+        @Setup
+        public void setup() {
+            javaProxy = (StringOp) Proxy.newProxyInstance(
+                    StringOp.class.getClassLoader(),
+                    new Class<?>[]{StringOp.class},
+                    (proxy, method, args1) -> {
+                        args1[0] = "[" + args1[0] + "]";
+                        return args1[0];
+                    }
+            );
+
+            apsIface = APS.createInterface(StringOp.class,
+                    (obj, method, args) -> {
+                        args[0] = "[" + args[0] + "]";
+                        return args[0];
+                    });
+        }
+    }
+
+    @Benchmark
+    public String iface_argmod_javaProxy(IfaceArgModifyState s) {
+        return s.javaProxy.call("World");
+    }
+
+    @Benchmark
+    public String iface_argmod_aps(IfaceArgModifyState s) {
+        return s.apsIface.call("World");
+    }
+
+    // ===============================================================
+    // Scenario 10: Interface primitive return
+    // ===============================================================
+
+    @State(Scope.Thread)
+    public static class IfacePrimitiveState {
+        IntOp javaProxy;
+        IntOp apsIface;
+
+        @Setup
+        public void setup() {
+            javaProxy = (IntOp) Proxy.newProxyInstance(
+                    IntOp.class.getClassLoader(),
+                    new Class<?>[]{IntOp.class},
+                    (proxy, method, args1) ->
+                            (int) args1[0] + (int) args1[1]
+            );
+
+            apsIface = APS.createInterface(IntOp.class,
+                    (obj, method, args) ->
+                            (int) args[0] + (int) args[1]);
+        }
+    }
+
+    @Benchmark
+    public int iface_primitive_javaProxy(IfacePrimitiveState s) {
+        return s.javaProxy.call(3, 4);
+    }
+
+    @Benchmark
+    public int iface_primitive_aps(IfacePrimitiveState s) {
+        return s.apsIface.call(3, 4);
+    }
+
+    // ===============================================================
+    // Scenario 11: Interface void method
+    // ===============================================================
+
+    @State(Scope.Thread)
+    public static class IfaceVoidState {
+        VoidOp javaProxy;
+        VoidOp apsIface;
+
+        @Setup
+        public void setup() {
+            javaProxy = (VoidOp) Proxy.newProxyInstance(
+                    VoidOp.class.getClassLoader(),
+                    new Class<?>[]{VoidOp.class},
+                    (proxy, method, args1) -> null
+            );
+
+            apsIface = APS.createInterface(VoidOp.class,
+                    (obj, method, args) -> null);
+        }
+    }
+
+    @Benchmark
+    public void iface_void_javaProxy(IfaceVoidState s) {
+        s.javaProxy.call();
+    }
+
+    @Benchmark
+    public void iface_void_aps(IfaceVoidState s) {
+        s.apsIface.call();
+    }
+
+    // ===============================================================
+    // Scenario 12: Interface multi-param
+    // ===============================================================
+
+    @State(Scope.Thread)
+    public static class IfaceMultiParamState {
+        MultiOp javaProxy;
+        MultiOp apsIface;
+
+        @Setup
+        public void setup() {
+            javaProxy = (MultiOp) Proxy.newProxyInstance(
+                    MultiOp.class.getClassLoader(),
+                    new Class<?>[]{MultiOp.class},
+                    (proxy, method, args1) ->
+                            args1[0] + "-" + args1[1] + "-" + args1[2]
+                                    + "-" + args1[3]
+            );
+
+            apsIface = APS.createInterface(MultiOp.class,
+                    (obj, method, args) ->
+                            args[0] + "-" + args[1] + "-" + args[2]
+                                    + "-" + args[3]);
+        }
+    }
+
+    @Benchmark
+    public String iface_multiparam_javaProxy(IfaceMultiParamState s) {
+        return s.javaProxy.call("a", 1, 2L, 3.0);
+    }
+
+    @Benchmark
+    public String iface_multiparam_aps(IfaceMultiParamState s) {
+        return s.apsIface.call("a", 1, 2L, 3.0);
     }
 }
