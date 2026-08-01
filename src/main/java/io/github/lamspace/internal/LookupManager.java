@@ -15,7 +15,7 @@ public final class LookupManager {
 
     /**
      * Returns a Lookup with the maximum available access for {@code targetClass}.
-     *
+     * <p>
      * Attempts {@link MethodHandles#privateLookupIn(Class, MethodHandles.Lookup)}
      * first (full private access). If the target module is not open, falls back
      * to a regular {@link MethodHandles#lookup() public Lookup}.

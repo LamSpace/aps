@@ -12,11 +12,13 @@ import java.util.List;
 final class ClinitRegistry {
 
     record Entry(Class<?> targetClass, Method method, String generatedInternal,
-                 String methodFieldName, String handleFieldName) {}
+                 String methodFieldName, String handleFieldName) {
+    }
 
     private static final List<Entry> entries = new ArrayList<>();
 
-    private ClinitRegistry() {}
+    private ClinitRegistry() {
+    }
 
     static void register(Class<?> targetClass, Method method,
                          String generatedInternal,

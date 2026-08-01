@@ -1,7 +1,6 @@
 # APS Interface Proxy Support — Design Spec
 
-Date: 2026-08-01
-Status: draft
+Date: 2026-08-01 Status: draft
 
 ## Motivation
 
@@ -38,10 +37,11 @@ New entry point on `APS`:
 ```java
 // Interface proxy (no constructorArgs — always extends Object)
 public static <T> T createInterface(Class<T> interfaceClass,
-                                     InterfaceCallback callback);
+                                    InterfaceCallback callback);
+
 public static <T> T createInterface(Class<T> interfaceClass,
-                                     InterfaceCallback callback,
-                                     ClassFilter filter);
+                                    InterfaceCallback callback,
+                                    ClassFilter filter);
 ```
 
 - `createInterface` validates that `interfaceClass.isInterface()` is true
@@ -51,16 +51,24 @@ Usage comparison:
 
 ```java
 // Class proxy (4 args, superHandle available)
-APS.create(UserService.class, (obj, method, superHandle, args) -> {
-    System.out.println("before");
-    return superHandle.invoke(args);
+APS.create(UserService .class, (obj, method, superHandle, args) ->{
+        System.out.
+
+println("before");
+    return superHandle.
+
+invoke(args);
 });
 
 // Interface proxy (3 args, no superHandle)
-APS.createInterface(Runnable.class, (proxy, method, args) -> {
-    System.out.println("running");
+        APS.
+
+createInterface(Runnable .class, (proxy, method, args) ->{
+        System.out.
+
+println("running");
     return null;
-});
+            });
 ```
 
 ### 2. Generated Class Structure
@@ -88,42 +96,42 @@ No MethodHandle fields or `<clinit>` MethodHandle setup — only `Method` object
 
 ### 3. Class vs Interface Generation — Key Differences
 
-| | Class (ClassGenerator) | Interface (InterfaceGenerator) |
-|---|---|---|
-| Superclass | `extends TargetClass` | `extends java.lang.Object` |
-| Interfaces | none | `implements TargetInterface` |
-| Constructor | may pass args to `super(...)` | always `super()` |
-| Static fields | `Method` + `MethodHandle` per method | `Method` only per method |
-| `<clinit>` | `findSpecial` + `asSpreader` + store Method | store Method only (no MethodHandle) |
-| Method body | `_callback.intercept(proxy, method, spreader.bindTo(this), args)` | `_callback.intercept(proxy, method, args)` |
-| Exception handler | try/catch for Runtime/Error/checked | same pattern |
+|                   | Class (ClassGenerator)                                            | Interface (InterfaceGenerator)             |
+|-------------------|-------------------------------------------------------------------|--------------------------------------------|
+| Superclass        | `extends TargetClass`                                             | `extends java.lang.Object`                 |
+| Interfaces        | none                                                              | `implements TargetInterface`               |
+| Constructor       | may pass args to `super(...)`                                     | always `super()`                           |
+| Static fields     | `Method` + `MethodHandle` per method                              | `Method` only per method                   |
+| `<clinit>`        | `findSpecial` + `asSpreader` + store Method                       | store Method only (no MethodHandle)        |
+| Method body       | `_callback.intercept(proxy, method, spreader.bindTo(this), args)` | `_callback.intercept(proxy, method, args)` |
+| Exception handler | try/catch for Runtime/Error/checked                               | same pattern                               |
 
 ### 4. Implementation Plan — New Files & Changes
 
 **New files:**
 
-| File | Role |
-|---|---|
-| `InterfaceCallback.java` | 3-arg callback functional interface |
+| File                                 | Role                                                                  |
+|--------------------------------------|-----------------------------------------------------------------------|
+| `InterfaceCallback.java`             | 3-arg callback functional interface                                   |
 | `generator/InterfaceDispatcher.java` | Generates method bodies for interface impls (no MethodHandle binding) |
-| `generator/InterfaceGenerator.java` | Orchestrates bytecode generation for interface proxies |
+| `generator/InterfaceGenerator.java`  | Orchestrates bytecode generation for interface proxies                |
 
 **Changed files:**
 
-| File | Change |
-|---|---|
+| File       | Change                                                       |
+|------------|--------------------------------------------------------------|
 | `APS.java` | Add `createInterface()` overloads with `isInterface()` guard |
 
 **Untouched files:**
 
-| File | Reason |
-|---|---|
-| `Callback.java` | Stays as-is for class proxies |
-| `ClassGenerator.java` | Stays as-is |
-| `MethodDispatcher.java` | Stays as-is |
-| `ClinitRegistry.java` | Reused by InterfaceGenerator for Method registration |
-| `HiddenClassLoader.java` | Works for both classes and interfaces |
-| `LookupManager.java` | Works for both |
+| File                     | Reason                                               |
+|--------------------------|------------------------------------------------------|
+| `Callback.java`          | Stays as-is for class proxies                        |
+| `ClassGenerator.java`    | Stays as-is                                          |
+| `MethodDispatcher.java`  | Stays as-is                                          |
+| `ClinitRegistry.java`    | Reused by InterfaceGenerator for Method registration |
+| `HiddenClassLoader.java` | Works for both classes and interfaces                |
+| `LookupManager.java`     | Works for both                                       |
 
 ### 5. Method Body Generation (InterfaceDispatcher)
 

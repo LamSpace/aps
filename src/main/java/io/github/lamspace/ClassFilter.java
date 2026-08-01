@@ -11,9 +11,11 @@ import java.lang.reflect.Method;
 public interface ClassFilter {
 
     /**
+     * Decides whether the given method should be intercepted.
+     *
      * @param method a method declared by the target class
      * @return {@code true} to route this method through the Callback,
-     *         {@code false} to skip interception
+     * {@code false} to skip interception
      */
     boolean accept(Method method);
 }

@@ -7,12 +7,18 @@ import java.lang.invoke.MethodHandles;
 /**
  * Loads generated proxy class bytecode using
  * {@link MethodHandles.Lookup#defineHiddenClass(byte[], boolean, MethodHandles.Lookup.ClassOption...)}.
- *
+ * <p>
  * Hidden classes are not discoverable by name, do not leak via ClassLoader
  * references, and are eligible for GC when no longer referenced — avoiding
  * the permgen/metaspace leaks common with custom ClassLoader approaches.
  */
 public class HiddenClassLoader {
+
+    /**
+     * Creates a new HiddenClassLoader.
+     */
+    public HiddenClassLoader() {
+    }
 
     /**
      * Defines a hidden class from the given bytecode, using a Lookup

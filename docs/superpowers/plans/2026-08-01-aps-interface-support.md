@@ -21,9 +21,11 @@
 ### Task 1: Create InterfaceCallback functional interface
 
 **Files:**
+
 - Create: `src/main/java/io/github/lamspace/InterfaceCallback.java`
 
 **Interfaces:**
+
 - Produces: `InterfaceCallback.intercept(Object proxy, Method method, Object[] args) throws Throwable`
 
 - [ ] **Step 1: Write InterfaceCallback.java**
@@ -77,17 +79,19 @@ git commit -m "feat: add InterfaceCallback functional interface"
 ### Task 2: Extract shared bytecode utilities
 
 **Files:**
+
 - Create: `src/main/java/io/github/lamspace/generator/BytecodeUtils.java`
 - Modify: `src/main/java/io/github/lamspace/generator/MethodDispatcher.java` — replace private helpers with BytecodeUtils calls
 - Modify: `src/main/java/io/github/lamspace/generator/ClassGenerator.java` — replace private `pushInt`, `pushClassConstant`, `getWrapperInternalName` with BytecodeUtils calls
 
 **Interfaces:**
+
 - Produces:
-  - `BytecodeUtils.pushInt(MethodVisitor, int)` — push int constant
-  - `BytecodeUtils.loadOpcode(Class<?>)` — get load instruction for type
-  - `BytecodeUtils.boxPrimitive(MethodVisitor, Class<?>)` — box primitive on stack
-  - `BytecodeUtils.unboxPrimitive(MethodVisitor, Class<?>)` — unbox wrapper on stack
-  - `BytecodeUtils.pushClassConstant(MethodVisitor, Class<?>)` — push Class constant (uses TYPE field for primitives)
+    - `BytecodeUtils.pushInt(MethodVisitor, int)` — push int constant
+    - `BytecodeUtils.loadOpcode(Class<?>)` — get load instruction for type
+    - `BytecodeUtils.boxPrimitive(MethodVisitor, Class<?>)` — box primitive on stack
+    - `BytecodeUtils.unboxPrimitive(MethodVisitor, Class<?>)` — unbox wrapper on stack
+    - `BytecodeUtils.pushClassConstant(MethodVisitor, Class<?>)` — push Class constant (uses TYPE field for primitives)
 
 - [ ] **Step 1: Create BytecodeUtils.java**
 
@@ -104,7 +108,8 @@ import org.objectweb.asm.Type;
  */
 final class BytecodeUtils {
 
-    private BytecodeUtils() {}
+    private BytecodeUtils() {
+    }
 
     static void pushInt(MethodVisitor mv, int value) {
         if (value >= -1 && value <= 5) {
@@ -236,12 +241,14 @@ final class BytecodeUtils {
 - [ ] **Step 2: Refactor MethodDispatcher — replace private helpers with BytecodeUtils calls**
 
 Remove these private methods from `MethodDispatcher.java`:
+
 - `pushInt` (lines 246-256)
 - `loadOpcode` (lines 258-266)
 - `boxPrimitive` (lines 268-299)
 - `unboxPrimitive` (lines 301-342)
 
 Replace calls:
+
 - `pushInt(mv, ...)` → `BytecodeUtils.pushInt(mv, ...)`
 - `loadOpcode(type)` → `BytecodeUtils.loadOpcode(type)`
 - `boxPrimitive(mv, type)` → `BytecodeUtils.boxPrimitive(mv, type)`
@@ -252,11 +259,13 @@ Note: `loadArguments` stays in MethodDispatcher (only used for non-intercept dir
 - [ ] **Step 3: Refactor ClassGenerator — replace private helpers with BytecodeUtils calls**
 
 Remove these private methods from `ClassGenerator.java`:
+
 - `pushInt` (lines 319-327)
 - `pushClassConstant` (lines 334-341)
 - `getWrapperInternalName` (lines 343-354)
 
 Replace calls:
+
 - `pushInt(mv, ...)` → `BytecodeUtils.pushInt(mv, ...)`
 - `pushClassConstant(mv, type)` → `BytecodeUtils.pushClassConstant(mv, type)`
 
@@ -279,9 +288,11 @@ git commit -m "refactor: extract shared bytecode utilities to BytecodeUtils"
 ### Task 3: Create InterfaceDispatcher
 
 **Files:**
+
 - Create: `src/main/java/io/github/lamspace/generator/InterfaceDispatcher.java`
 
 **Interfaces:**
+
 - Consumes: `BytecodeUtils.pushInt`, `BytecodeUtils.loadOpcode`, `BytecodeUtils.boxPrimitive`, `BytecodeUtils.unboxPrimitive`
 - Consumes: `ClinitRegistry.register(targetClass, method, generatedInternal, methodFieldName, handleFieldName)`
 - Produces: `InterfaceDispatcher.dispatchMethods(ClassWriter, Class<?>, String, ClassFilter)` — returns `List<String>` dispatched method names
@@ -309,7 +320,8 @@ final class InterfaceDispatcher {
 
     private static final String CALLBACK_FIELD = "_callback";
 
-    private InterfaceDispatcher() {}
+    private InterfaceDispatcher() {
+    }
 
     /**
      * Generates method implementations (no overrides — these implement
@@ -325,8 +337,8 @@ final class InterfaceDispatcher {
      * @return list of method names for which dispatchers were generated
      */
     static List<String> dispatchMethods(ClassWriter cw, Class<?> interfaceClass,
-                                         String generatedInternal,
-                                         ClassFilter filter) {
+                                        String generatedInternal,
+                                        ClassFilter filter) {
         List<String> dispatchedMethods = new ArrayList<>();
 
         for (Method method : interfaceClass.getMethods()) {
@@ -364,9 +376,9 @@ final class InterfaceDispatcher {
     }
 
     private static void generateImplementation(ClassWriter cw, Method method,
-                                                String generatedInternal,
-                                                boolean shouldIntercept,
-                                                String methodFieldName) {
+                                               String generatedInternal,
+                                               boolean shouldIntercept,
+                                               String methodFieldName) {
         String name = method.getName();
         String desc = Type.getMethodDescriptor(method);
 
@@ -516,9 +528,11 @@ git commit -m "feat: add InterfaceDispatcher for interface method body generatio
 ### Task 4: Create InterfaceGenerator
 
 **Files:**
+
 - Create: `src/main/java/io/github/lamspace/generator/InterfaceGenerator.java`
 
 **Interfaces:**
+
 - Consumes: `InterfaceDispatcher.dispatchMethods(cw, interfaceClass, generatedInternal, filter)`
 - Consumes: `ClinitRegistry.drain()` — returns entries; only `method`, `methodFieldName`, `targetClass` fields used
 - Consumes: `BytecodeUtils.pushInt`, `BytecodeUtils.pushClassConstant`
@@ -609,7 +623,7 @@ public class InterfaceGenerator {
     }
 
     private void generateConstructor(ClassWriter cw, String generatedInternal,
-                                      String callbackDesc) {
+                                     String callbackDesc) {
         MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>",
                 "(" + callbackDesc + ")V", null, null);
         mv.visitCode();
@@ -688,12 +702,14 @@ git commit -m "feat: add InterfaceGenerator for interface proxy bytecode"
 
 ---
 
-### Task 5: Add createInterface() to APS
+### Task 5: Add createInterface () to APS
 
 **Files:**
+
 - Modify: `src/main/java/io/github/lamspace/APS.java` — add two `createInterface` overloads + `isInterface()` guard
 
 **Interfaces:**
+
 - Consumes: `InterfaceGenerator(interfaceClass, filter).generate()` → `byte[]`
 - Consumes: `HiddenClassLoader.defineClass(targetClass, bytecode)` → `Class<?>`
 - Produces: `APS.createInterface(Class<T>, InterfaceCallback)` → `T`
@@ -705,77 +721,77 @@ Insert after the existing `create(...)` methods and before the closing `}` of th
 
 ```java
     /**
-     * Creates a proxy implementation for the given interface. All interface
-     * methods (including defaults) are routed through the callback.
-     * <p>
-     * This is the interface counterpart to {@link #create(Class, Callback)}.
-     * Unlike class proxies, there is no {@code superHandle} — interface
-     * methods have no super implementation.
-     *
-     * @param interfaceClass the interface to implement
-     * @param callback       invoked for every method call on the proxy
-     * @param <T>            the proxy type
-     * @return a proxy instance implementing {@code T}
-     * @throws IllegalArgumentException if the target is not an interface
-     * @throws RuntimeException         if bytecode generation or class loading fails
-     */
-    public static <T> T createInterface(Class<T> interfaceClass,
-                                         InterfaceCallback callback) {
-        return createInterface(interfaceClass, callback, null);
+ * Creates a proxy implementation for the given interface. All interface
+ * methods (including defaults) are routed through the callback.
+ * <p>
+ * This is the interface counterpart to {@link #create(Class, Callback)}.
+ * Unlike class proxies, there is no {@code superHandle} — interface
+ * methods have no super implementation.
+ *
+ * @param interfaceClass the interface to implement
+ * @param callback       invoked for every method call on the proxy
+ * @param <T>            the proxy type
+ * @return a proxy instance implementing {@code T}
+ * @throws IllegalArgumentException if the target is not an interface
+ * @throws RuntimeException         if bytecode generation or class loading fails
+ */
+public static <T> T createInterface(Class<T> interfaceClass,
+                                    InterfaceCallback callback) {
+    return createInterface(interfaceClass, callback, null);
+}
+
+/**
+ * Creates a proxy implementation for the given interface. Only methods
+ * accepted by the {@code filter} are routed through the callback;
+ * all other methods throw {@code AbstractMethodError} when called.
+ *
+ * @param interfaceClass the interface to implement (must be non-null)
+ * @param callback       invoked for every FILTERED method call on the proxy;
+ *                       must not be {@code null}
+ * @param filter         decides which methods pass through the callback;
+ *                       {@code null} means all methods are intercepted
+ * @param <T>            the proxy type
+ * @return a proxy instance implementing {@code T}
+ * @throws IllegalArgumentException if {@code interfaceClass} is not an
+ *                                  interface, or either arg is null
+ * @throws RuntimeException         if bytecode generation or hidden-class
+ *                                  loading fails
+ */
+@SuppressWarnings("unchecked")
+public static <T> T createInterface(Class<T> interfaceClass,
+                                    InterfaceCallback callback,
+                                    ClassFilter filter) {
+    if (interfaceClass == null) {
+        throw new IllegalArgumentException(
+                "interfaceClass must not be null");
+    }
+    if (!interfaceClass.isInterface()) {
+        throw new IllegalArgumentException(
+                "interfaceClass must be an interface: "
+                        + interfaceClass.getName());
+    }
+    if (callback == null) {
+        throw new IllegalArgumentException(
+                "callback must not be null");
     }
 
-    /**
-     * Creates a proxy implementation for the given interface. Only methods
-     * accepted by the {@code filter} are routed through the callback;
-     * all other methods throw {@code AbstractMethodError} when called.
-     *
-     * @param interfaceClass the interface to implement (must be non-null)
-     * @param callback       invoked for every FILTERED method call on the proxy;
-     *                       must not be {@code null}
-     * @param filter         decides which methods pass through the callback;
-     *                       {@code null} means all methods are intercepted
-     * @param <T>            the proxy type
-     * @return a proxy instance implementing {@code T}
-     * @throws IllegalArgumentException if {@code interfaceClass} is not an
-     *                                  interface, or either arg is null
-     * @throws RuntimeException         if bytecode generation or hidden-class
-     *                                  loading fails
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> T createInterface(Class<T> interfaceClass,
-                                         InterfaceCallback callback,
-                                         ClassFilter filter) {
-        if (interfaceClass == null) {
-            throw new IllegalArgumentException(
-                    "interfaceClass must not be null");
-        }
-        if (!interfaceClass.isInterface()) {
-            throw new IllegalArgumentException(
-                    "interfaceClass must be an interface: "
-                            + interfaceClass.getName());
-        }
-        if (callback == null) {
-            throw new IllegalArgumentException(
-                    "callback must not be null");
-        }
+    try {
+        InterfaceGenerator generator = new InterfaceGenerator(
+                interfaceClass, filter);
+        byte[] bytecode = generator.generate();
 
-        try {
-            InterfaceGenerator generator = new InterfaceGenerator(
-                    interfaceClass, filter);
-            byte[] bytecode = generator.generate();
+        HiddenClassLoader loader = new HiddenClassLoader();
+        Class<?> proxyClass = loader.defineClass(interfaceClass,
+                bytecode);
 
-            HiddenClassLoader loader = new HiddenClassLoader();
-            Class<?> proxyClass = loader.defineClass(interfaceClass,
-                    bytecode);
-
-            return (T) proxyClass.getConstructor(InterfaceCallback.class)
-                    .newInstance(callback);
-        } catch (Exception e) {
-            throw new RuntimeException(
-                    "Failed to create interface proxy for "
-                            + interfaceClass.getName(), e);
-        }
+        return (T) proxyClass.getConstructor(InterfaceCallback.class)
+                .newInstance(callback);
+    } catch (Exception e) {
+        throw new RuntimeException(
+                "Failed to create interface proxy for "
+                        + interfaceClass.getName(), e);
     }
+}
 ```
 
 Add the import at the top of APS.java:
@@ -801,10 +817,12 @@ git commit -m "feat: add APS.createInterface() for interface proxies"
 ### Task 6: Write integration tests
 
 **Files:**
+
 - Create: `src/test/java/io/github/lamspace/APSInterfaceFunctionalTest.java`
 - Modify: `src/test/java/io/github/lamspace/APSFunctionalTest.java` — add test for `createInterface` with non-interface guard
 
 **Interfaces:**
+
 - Consumes: `APS.createInterface(Class<T>, InterfaceCallback)`
 - Consumes: `APS.createInterface(Class<T>, InterfaceCallback, ClassFilter)`
 
@@ -839,6 +857,7 @@ class APSInterfaceFunctionalTest {
 
     interface MultiMethod {
         String greet(String name);
+
         int compute(int x, int y);
     }
 
