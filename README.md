@@ -57,27 +57,27 @@ JMH benchmarks on Java 25. Best result per row **bolded**.
 
 ### Class Proxy Highlights
 
-| Scenario          | Direct | APS      | CGLib |
-|-------------------|--------|----------|-------|
-| int return        | 0.66   | 1.83     | 12.36 |
-| String return     | 4.68   | **4.71** | 19.89 |
-| void return       | 0.65   | 3.94     | 3.72  |
-| 0-arg passthrough | 0.66   | 2.11     | 3.96  |
-| 4-arg passthrough | 56.34  | 61.32    | 71.38 |
-| No-op             | —      | 1.32     | 1.05  |
-| Passthrough       | —      | **4.76** | 14.01 |
-| Arg modify        | —      | **5.33** | 18.69 |
+| Scenario          | Direct    | APS      | CGLib    |
+|-------------------|-----------|----------|----------|
+| int return        | **0.66**  | 1.83     | 12.36    |
+| String return     | **4.68**  | 4.71     | 19.89    |
+| void return       | **0.65**  | 3.94     | 3.72     |
+| 0-arg passthrough | **0.66**  | 2.11     | 3.96     |
+| 4-arg passthrough | **56.34** | 61.32    | 71.38    |
+| No-op             | —         | 1.32     | **1.05** |
+| Passthrough       | —         | **4.76** | 14.01    |
+| Arg modify        | —         | **5.33** | 18.69    |
 
 ### Interface Proxy Highlights
 
-| Scenario      | APS      | Java Proxy |
-|---------------|----------|------------|
-| int return    | 1.30     | **1.05**   |
-| String return | **5.69** | 5.77       |
-| void return   | 1.30     | **1.05**   |
-| No-op         | 1.31     | **1.05**   |
-| Passthrough   | **5.69** | 5.77       |
-| Arg modify    | 5.30     | **5.29**   |
+| Scenario      | APS       | Java Proxy |
+|---------------|-----------|------------|
+| int return    | 1.30      | **1.05**   |
+| String return | **5.69**  | 5.77       |
+| void return   | 1.30      | **1.05**   |
+| No-op         | 1.31      | **1.05**   |
+| Passthrough   | **5.69**  | 5.77       |
+| Arg modify    | 5.30      | **5.29**   |
 
 *ns/op, lower is better. Full results: [docs/benchmark-results.md](docs/benchmark-results.md)*
 
