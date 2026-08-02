@@ -50,7 +50,7 @@ JMH 基准测试 | Java 25 | 4 种实现 × 6 个场景。每行最优结果 **�
 
 ### 类代理
 
-| 场景      | 直接调用 | APS       | CGLib | JavaProxy |
+| 场景      | 直接调用 | APS       | CGLib | Java Proxy |
 |-----------|----------|-----------|-------|-----------|
 | 空操作    | 5.72     | 1.32      | 1.06  | **1.05**  |
 | 透传      | 5.66     | **5.69**  | 13.87 | 5.79      |
@@ -61,7 +61,7 @@ JMH 基准测试 | Java 25 | 4 种实现 × 6 个场景。每行最优结果 **�
 
 ### 接口代理
 
-| 场景      | APS      | JavaProxy |
+| 场景      | APS      | Java Proxy |
 |-----------|----------|-----------|
 | 空操作    | 1.33     | **1.05**  |
 | 透传      | **5.69** | 5.77      |
@@ -71,7 +71,7 @@ JMH 基准测试 | Java 25 | 4 种实现 × 6 个场景。每行最优结果 **�
 | 多参数    | 80.50    | **80.09** |
 
 *单位: ns/op，越低越好。完整报告：[docs/benchmark-results_cn.md](docs/benchmark-results_cn.md)*  
-*JavaProxy = `java.lang.reflect.Proxy`（JDK 内置动态代理）*
+*Java Proxy = `java.lang.reflect.Proxy`（JDK 内置动态代理）*
 
 APS 在拦截器中有实际工作发生的最真实场景（透传、参数修改、多参数）中类代理性能领先，接口代理性能与 `java.lang.reflect.Proxy` 接近持平。
 
@@ -118,7 +118,7 @@ Maven Central 发布已列入[路线图](docs/aps-future-roadmap.md)。
 | final 类/方法代理  | 不支持（JVM 限制）               | 不支持（JVM 限制）          |
 | Maven Central      | 规划中                           | 已有                        |
 
-## 🆚 APS vs JavaProxy
+## 🆚 APS vs Java Proxy
 
 | 特性           | APS                              | `java.lang.reflect.Proxy`        |
 |----------------|----------------------------------|----------------------------------|

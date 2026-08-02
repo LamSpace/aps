@@ -50,7 +50,7 @@ JMH benchmarks on Java 25, 4 implementations × 6 scenarios. Best result per row
 
 ### Class Proxy
 
-| Scenario         | Direct | APS       | CGLib | JavaProxy |
+| Scenario         | Direct | APS       | CGLib | Java Proxy |
 |------------------|--------|-----------|-------|-----------|
 | No-op            | 5.72   | 1.32      | 1.06  | **1.05**  |
 | Passthrough      | 5.66   | **5.69**  | 13.87 | 5.79      |
@@ -61,7 +61,7 @@ JMH benchmarks on Java 25, 4 implementations × 6 scenarios. Best result per row
 
 ### Interface Proxy
 
-| Scenario         | APS      | JavaProxy |
+| Scenario         | APS      | Java Proxy |
 |------------------|----------|-----------|
 | No-op            | 1.33     | **1.05**  |
 | Passthrough      | **5.69** | 5.77      |
@@ -71,7 +71,7 @@ JMH benchmarks on Java 25, 4 implementations × 6 scenarios. Best result per row
 | Multi-param      | 80.50    | **80.09** |
 
 *ns/op, lower is better. Full results: [docs/benchmark-results.md](docs/benchmark-results.md)*  
-*JavaProxy = `java.lang.reflect.Proxy` (JDK built-in dynamic proxy)*
+*Java Proxy = `java.lang.reflect.Proxy` (JDK built-in dynamic proxy)*
 
 APS leads class proxy performance in the most realistic scenarios (passthrough, arg modify, multi-param) where actual work happens inside the interceptor, and runs at near-parity with `java.lang.reflect.Proxy` for interface proxies.
 
@@ -118,7 +118,7 @@ Maven Central publishing is on the [roadmap](docs/aps-future-roadmap.md).
 | Final class/method proxy       | No (JVM limit)                    | No (JVM limit)             |
 | Maven Central                  | Roadmap                           | Yes                        |
 
-## 🆚 APS vs JavaProxy
+## 🆚 APS vs Java Proxy
 
 | Feature                     | APS                                 | `java.lang.reflect.Proxy`                |
 |-----------------------------|-------------------------------------|------------------------------------------|
