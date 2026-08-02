@@ -28,10 +28,11 @@ import java.util.List;
 /**
  * Generates method override bytecode for a proxy subclass.
  * Each override marshals arguments into an {@code Object[]}, calls
- * {@code Callback.intercept(proxy, method, index, args)}, and unboxes the
+ * {@link io.github.lamspace.Interceptor#intercept}, and unboxes the
  * return value. Superclass invocations go through the generated
- * {@code invokeSuper(int, Object[])} method backed by a static
- * {@code MethodHandle[]} dispatch table.
+ * {@code dispatch(Method, Object[])} method (see {@link DispatchGenerator})
+ * which uses a hashCode-driven if-else chain with direct
+ * {@code INVOKESPECIAL} super calls.
  */
 public class MethodDispatcher {
 
@@ -48,7 +49,7 @@ public class MethodDispatcher {
      * @param targetClass       the class being proxied
      * @param generatedInternal ASM internal name of the generated class
      * @param filter            if non-null, only methods accepted by the filter
-     *                          are routed through the Callback; others call
+     *                          are routed through the Interceptor; others call
      *                          super directly
      * @return list of method names for which dispatchers were generated
      */

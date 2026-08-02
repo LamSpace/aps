@@ -26,9 +26,9 @@ import java.lang.reflect.Method;
 /**
  * Entry point for creating dynamic proxies.
  *
- * <p>All {@code create(...)} overloads generate a runtime subclass of the
- * target class, load it via
- * {@code MethodHandles.Lookup.defineHiddenClass(byte[], boolean)},
+ * <p>All {@code proxy(...)} overloads generate a runtime proxy class
+ * (subclass for concrete classes, implementation for interfaces), load it
+ * via {@code MethodHandles.Lookup.defineHiddenClass(byte[], boolean)},
  * and route method calls through the provided {@link Interceptor}.
  *
  * <pre>{@code
@@ -92,7 +92,7 @@ public final class APS {
      */
     @SuppressWarnings("unchecked")
     public static <T> T proxy(Class<T> target, Interceptor interceptor,
-                               ClassFilter filter) {
+                              ClassFilter filter) {
         return proxy(target, interceptor, filter, new Object[0]);
     }
 
@@ -112,7 +112,7 @@ public final class APS {
      */
     @SuppressWarnings("unchecked")
     public static <T> T proxy(Class<T> target, Interceptor interceptor,
-                               ClassFilter filter, Object... constructorArgs) {
+                              ClassFilter filter, Object... constructorArgs) {
         if (target == null) {
             throw new IllegalArgumentException("target must not be null");
         }

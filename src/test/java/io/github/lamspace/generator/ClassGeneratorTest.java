@@ -83,7 +83,7 @@ class ClassGeneratorTest {
         ClassGenerator gen = new ClassGenerator(Sample.class, null);
         byte[] bytecode = gen.generate();
         // Verify it doesn't crash; package correctness is validated
-        // functionally when the class is loaded via HiddenClassLoader
+        // functionally when the class is loaded via defineHiddenClass
         assertNotNull(bytecode);
     }
 }

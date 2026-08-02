@@ -51,24 +51,24 @@ JMH benchmarks on Java 25, 4 implementations × 6 scenarios. Best result per row
 ### Class Proxy
 
 | Scenario         | Direct | APS       | CGLib | Java Proxy |
-|------------------|--------|-----------|-------|-----------|
-| No-op            | 5.72   | 1.32      | 1.06  | **1.05**  |
-| Passthrough      | 5.66   | **5.69**  | 13.87 | 5.79      |
-| Arg modify       | 5.69   | **6.11**  | 19.11 | 33.73     |
-| Primitive return | 0.67   | 2.08      | 12.58 | **1.83**  |
-| Void method      | 0.66   | 2.34      | 3.68  | **1.64**  |
-| Multi-param      | 58.40  | **58.76** | 71.32 | 59.30     |
+|------------------|--------|-----------|-------|------------|
+| No-op            | 5.72   | 1.32      | 1.06  | **1.05**   |
+| Passthrough      | 5.66   | **5.69**  | 13.87 | 5.79       |
+| Arg modify       | 5.69   | **6.11**  | 19.11 | 33.73      |
+| Primitive return | 0.67   | 2.08      | 12.58 | **1.83**   |
+| Void method      | 0.66   | 2.34      | 3.68  | **1.64**   |
+| Multi-param      | 58.40  | **58.76** | 71.32 | 59.30      |
 
 ### Interface Proxy
 
 | Scenario         | APS      | Java Proxy |
-|------------------|----------|-----------|
-| No-op            | 1.33     | **1.05**  |
-| Passthrough      | **5.69** | 5.77      |
-| Arg modify       | 5.30     | **5.29**  |
-| Primitive return | 1.32     | **1.05**  |
-| Void method      | 1.30     | **1.05**  |
-| Multi-param      | 80.50    | **80.09** |
+|------------------|----------|------------|
+| No-op            | 1.33     | **1.05**   |
+| Passthrough      | **5.69** | 5.77       |
+| Arg modify       | 5.30     | **5.29**   |
+| Primitive return | 1.32     | **1.05**   |
+| Void method      | 1.30     | **1.05**   |
+| Multi-param      | 80.50    | **80.09**  |
 
 *ns/op, lower is better. Full results: [docs/benchmark-results.md](docs/benchmark-results.md)*  
 *Java Proxy = `java.lang.reflect.Proxy` (JDK built-in dynamic proxy)*

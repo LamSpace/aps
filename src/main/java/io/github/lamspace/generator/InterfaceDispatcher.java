@@ -28,8 +28,10 @@ import java.util.List;
 /**
  * Generates method implementation bodies for an interface proxy class.
  * Each implementation marshals arguments into an {@code Object[]} and
- * calls {@code InterfaceCallback.intercept(...)}. No MethodHandle binding
- * is needed — interface methods have no super implementation.
+ * calls {@link io.github.lamspace.Interceptor#intercept}. The generated
+ * {@code dispatch()} method (see {@link DispatchGenerator}) routes super
+ * calls for Object methods and throws {@code AbstractMethodError} for
+ * interface methods.
  */
 final class InterfaceDispatcher {
 
@@ -46,7 +48,7 @@ final class InterfaceDispatcher {
      * @param interfaceClass    the interface being implemented
      * @param generatedInternal ASM internal name of the generated class
      * @param filter            if non-null, only methods accepted by the
-     *                          filter are routed through the callback;
+     *                          filter are routed through the interceptor;
      *                          others throw AbstractMethodError
      * @return list of method names for which dispatchers were generated
      */

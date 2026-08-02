@@ -30,11 +30,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Generates a proxy implementation class that {@code extends Object}
- * and {@code implements} the target interface.
+ * and {@code implements} the target interface and {@code DispatchTarget}.
  * <p>
  * For each interface method, generates an implementation that delegates
- * to {@link InterfaceCallback#intercept}. No MethodHandle binding is
- * performed — interface methods have no super implementation.
+ * to {@link io.github.lamspace.Interceptor#intercept}. The generated
+ * {@code dispatch(Method, Object[])} method routes Object methods
+ * ({@code equals}, {@code hashCode}, {@code toString}) to direct
+ * {@code INVOKESPECIAL} super calls; all other methods throw
+ * {@code AbstractMethodError}.
  */
 public class InterfaceGenerator {
 
@@ -48,7 +51,7 @@ public class InterfaceGenerator {
      *
      * @param interfaceClass the interface to implement
      * @param filter         method filter; {@code null} means all methods
-     *                       are routed through the callback
+     *                       are routed through the interceptor
      */
     public InterfaceGenerator(Class<?> interfaceClass, ClassFilter filter) {
         this.interfaceClass = interfaceClass;
@@ -128,7 +131,7 @@ public class InterfaceGenerator {
     }
 
     private void generateClinit(ClassWriter cw, String generatedInternal,
-                               List<ClinitRegistry.Entry> entries) {
+                                List<ClinitRegistry.Entry> entries) {
         if (entries.isEmpty()) {
             return;
         }

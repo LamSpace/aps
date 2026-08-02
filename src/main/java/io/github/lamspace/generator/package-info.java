@@ -15,15 +15,20 @@
  */
 
 /**
- * Bytecode generation engine. Uses ASM to generate proxy subclasses at runtime.
+ * Bytecode generation engine. Uses ASM to generate proxy classes at runtime.
  *
- * <p>The two main components are:
+ * <p>The core components are:
  * <ul>
  *   <li>{@link io.github.lamspace.generator.ClassGenerator} — orchestrates
- *       subclass bytecode generation (constructors, fields, methods, clinit)</li>
+ *       subclass bytecode generation (fields, constructor, methods, dispatch, clinit)</li>
+ *   <li>{@link io.github.lamspace.generator.InterfaceGenerator} — orchestrates
+ *       interface implementation bytecode generation</li>
  *   <li>{@link io.github.lamspace.generator.MethodDispatcher} — generates
- *       per-method override bytecode with Callback delegation and
- *       MethodHandle super-call binding</li>
+ *       per-method override bytecode with Interceptor delegation</li>
+ *   <li>{@link io.github.lamspace.generator.InterfaceDispatcher} — generates
+ *       per-method implementation bytecode for interface proxies</li>
+ *   <li>{@link io.github.lamspace.generator.DispatchGenerator} — generates
+ *       the hashCode-driven {@code dispatch()} method for super-method invocation</li>
  * </ul>
  */
 package io.github.lamspace.generator;

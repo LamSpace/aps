@@ -32,18 +32,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Generates a proxy subclass of {@code targetClass} using ASM.
  * <p>
- * The generated class implements {@link SuperDispatcher} for index-based
+ * The generated class implements {@code DispatchTarget} for hashCode-based
  * super-method dispatch. For each non-final, non-static instance method:
  * <ul>
- *   <li>Generates an override that delegates to {@link Callback#intercept}</li>
- *   <li>Pre-computes a type-erased {@code MethodHandle} stored in a static
- *       {@code _handles} array</li>
- *   <li>Stores a {@code Method} reference in a per-method static field</li>
+ *   <li>Generates an override that delegates to {@link io.github.lamspace.Interceptor#intercept}</li>
+ *   <li>Stores a {@code java.lang.reflect.Method} reference in a per-method
+ *       static field for metadata</li>
  * </ul>
  * <p>
- * The static {@code MethodHandle[]} dispatch table eliminates per-call
- * {@code bindTo(this)} allocation — super methods are invoked via
- * {@code invokeSuper(index, args)} which indexes directly into the array.
+ * Super methods are invoked via the generated {@code dispatch(Method, Object[])}
+ * method, which uses a hashCode-driven if-else chain with direct
+ * {@code INVOKESPECIAL} super calls — no MethodHandle involvement.
  */
 public class ClassGenerator {
 
@@ -81,7 +80,7 @@ public class ClassGenerator {
     /**
      * Returns the parameter types for the generated class constructor.
      *
-     * @return an array starting with {@link Callback}{@code .class} followed by
+     * @return an array starting with {@link io.github.lamspace.Interceptor Interceptor}{@code .class} followed by
      * the types of the constructor arguments
      */
     public Class<?>[] constructorArgs() {
