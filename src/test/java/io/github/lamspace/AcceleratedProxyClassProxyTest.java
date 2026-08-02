@@ -91,8 +91,8 @@ class APSClassProxyTest {
 
     @Test
     void shouldInterceptAndModifyReturn() {
-        Greeter proxy = APS.proxy(Greeter.class, (obj, method, args) -> {
-            Object result = APS.invokeSuper(obj, method, args);
+        Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
+            Object result = AcceleratedProxy.invokeSuper(obj, method, args);
             return "[" + result + "]";
         });
 
@@ -101,18 +101,18 @@ class APSClassProxyTest {
 
     @Test
     void shouldPassThroughToSuper() {
-        Greeter proxy = APS.proxy(Greeter.class,
-                (obj, method, args) -> APS.invokeSuper(obj, method, args));
+        Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
+                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
 
         assertEquals("Hello, APS", proxy.hello("APS"));
     }
 
     @Test
     void shouldModifyArguments() {
-        Calculator proxy = APS.proxy(Calculator.class, (obj, method, args) -> {
+        Calculator proxy = AcceleratedProxy.proxy(Calculator.class, (obj, method, args) -> {
             args[0] = ((int) args[0]) * 10;
             args[1] = ((int) args[1]) * 10;
-            return APS.invokeSuper(obj, method, args);
+            return AcceleratedProxy.invokeSuper(obj, method, args);
         });
 
         assertEquals(70, proxy.add(3, 4));
@@ -122,58 +122,58 @@ class APSClassProxyTest {
 
     @Test
     void shouldHandleIntReturn() {
-        Calculator proxy = APS.proxy(Calculator.class,
-                (obj, method, args) -> APS.invokeSuper(obj, method, args));
+        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
+                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
         assertEquals(7, proxy.add(3, 4));
     }
 
     @Test
     void shouldHandleLongReturn() {
-        Calculator proxy = APS.proxy(Calculator.class,
-                (obj, method, args) -> APS.invokeSuper(obj, method, args));
+        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
+                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
         assertEquals(12L, proxy.multiply(3L, 4L));
     }
 
     @Test
     void shouldHandleDoubleReturn() {
-        Calculator proxy = APS.proxy(Calculator.class,
-                (obj, method, args) -> APS.invokeSuper(obj, method, args));
+        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
+                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
         assertEquals(2.5, proxy.divide(5.0, 2.0), 0.001);
     }
 
     @Test
     void shouldHandleFloatReturn() {
-        Calculator proxy = APS.proxy(Calculator.class,
-                (obj, method, args) -> APS.invokeSuper(obj, method, args));
+        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
+                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
         assertEquals(7.0f, proxy.sum(3.0f, 4.0f), 0.001f);
     }
 
     @Test
     void shouldHandleBooleanReturn() {
-        Calculator proxy = APS.proxy(Calculator.class,
-                (obj, method, args) -> APS.invokeSuper(obj, method, args));
+        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
+                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
         assertTrue(proxy.isPositive(5));
         assertFalse(proxy.isPositive(-1));
     }
 
     @Test
     void shouldHandleByteReturn() {
-        Calculator proxy = APS.proxy(Calculator.class,
-                (obj, method, args) -> APS.invokeSuper(obj, method, args));
+        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
+                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
         assertEquals((byte) 6, proxy.nextByte((byte) 5));
     }
 
     @Test
     void shouldHandleCharReturn() {
-        Calculator proxy = APS.proxy(Calculator.class,
-                (obj, method, args) -> APS.invokeSuper(obj, method, args));
+        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
+                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
         assertEquals('A', proxy.toUpper('a'));
     }
 
     @Test
     void shouldHandleShortReturn() {
-        Calculator proxy = APS.proxy(Calculator.class,
-                (obj, method, args) -> APS.invokeSuper(obj, method, args));
+        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
+                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
         assertEquals((short) 20, proxy.doubleShort((short) 10));
     }
 
@@ -182,9 +182,9 @@ class APSClassProxyTest {
     @Test
     void shouldHandleVoidMethod() {
         boolean[] called = {false};
-        VoidOps proxy = APS.proxy(VoidOps.class, (obj, method, args) -> {
+        VoidOps proxy = AcceleratedProxy.proxy(VoidOps.class, (obj, method, args) -> {
             called[0] = true;
-            return APS.invokeSuper(obj, method, args);
+            return AcceleratedProxy.invokeSuper(obj, method, args);
         });
 
         proxy.run();
@@ -195,8 +195,8 @@ class APSClassProxyTest {
 
     @Test
     void shouldHandleStringReturn() {
-        StringOps proxy = APS.proxy(StringOps.class,
-                (obj, method, args) -> APS.invokeSuper(obj, method, args));
+        StringOps proxy = AcceleratedProxy.proxy(StringOps.class,
+                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
         assertEquals("ab", proxy.concat("a", "b"));
     }
 
@@ -204,8 +204,8 @@ class APSClassProxyTest {
 
     @Test
     void shouldProxyClassWithoutDefaultConstructor() {
-        Bean proxy = APS.proxy(Bean.class,
-                (obj, method, args) -> APS.invokeSuper(obj, method, args),
+        Bean proxy = AcceleratedProxy.proxy(Bean.class,
+                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args),
                 null, "Bob");
 
         assertEquals("Bob", proxy.getName());
@@ -215,7 +215,7 @@ class APSClassProxyTest {
 
     @Test
     void shouldSkipFilteredMethods() {
-        Calculator proxy = APS.proxy(Calculator.class,
+        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
                 (obj, method, args) -> 999,
                 method -> method.getName().startsWith("add"));
 
@@ -228,7 +228,7 @@ class APSClassProxyTest {
 
     @Test
     void shouldPropagateRuntimeException() {
-        Greeter proxy = APS.proxy(Greeter.class, (obj, method, args) -> {
+        Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
             throw new RuntimeException("test error");
         });
 
@@ -237,7 +237,7 @@ class APSClassProxyTest {
 
     @Test
     void shouldWrapCheckedException() {
-        Greeter proxy = APS.proxy(Greeter.class, (obj, method, args) -> {
+        Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
             throw new Exception("checked error");
         });
 
@@ -250,12 +250,12 @@ class APSClassProxyTest {
     @Test
     void shouldRejectNullTarget() {
         assertThrows(IllegalArgumentException.class,
-                () -> APS.proxy(null, (obj, method, args) -> null));
+                () -> AcceleratedProxy.proxy(null, (obj, method, args) -> null));
     }
 
     @Test
     void shouldRejectNullInterceptor() {
         assertThrows(IllegalArgumentException.class,
-                () -> APS.proxy(Greeter.class, null));
+                () -> AcceleratedProxy.proxy(Greeter.class, null));
     }
 }

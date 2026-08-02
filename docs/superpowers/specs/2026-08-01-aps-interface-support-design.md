@@ -51,7 +51,7 @@ Usage comparison:
 
 ```java
 // Class proxy (4 args, superHandle available)
-APS.create(UserService .class, (obj, method, superHandle, args) ->{
+AcceleratedProxy.create(UserService .class, (obj, method, superHandle, args) ->{
         System.out.
 
 println("before");

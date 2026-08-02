@@ -16,7 +16,7 @@
 
 package io.github.lamspace.benchmark;
 
-import io.github.lamspace.APS;
+import io.github.lamspace.AcceleratedProxy;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import org.openjdk.jmh.annotations.*;
@@ -121,8 +121,8 @@ public class ProxyBenchmark {
         @Setup
         public void setup() {
             direct = new RetOpsImpl();
-            aps = APS.proxy(RetOpsImpl.class,
-                    (obj, method, args) -> APS.invokeSuper(obj, method, args));
+            aps = AcceleratedProxy.proxy(RetOpsImpl.class,
+                    (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
             Enhancer e = new Enhancer();
             e.setSuperclass(RetOpsImpl.class);
             e.setCallback((MethodInterceptor) (obj, method, args, proxy) ->
@@ -237,7 +237,7 @@ public class ProxyBenchmark {
 
         @Setup
         public void setup() {
-            aps = APS.proxy(RetOps.class,
+            aps = AcceleratedProxy.proxy(RetOps.class,
                     (obj, method, args) -> {
                         if (method.getName().equals("intOp")) return (int) args[0] + (int) args[1];
                         if (method.getName().equals("strOp")) return (String) args[0] + (String) args[1];
@@ -357,8 +357,8 @@ public class ProxyBenchmark {
         @Setup
         public void setup() {
             direct = new ParamCountImpl();
-            aps = APS.proxy(ParamCountImpl.class,
-                    (obj, method, args) -> APS.invokeSuper(obj, method, args));
+            aps = AcceleratedProxy.proxy(ParamCountImpl.class,
+                    (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
             Enhancer e = new Enhancer();
             e.setSuperclass(ParamCountImpl.class);
             e.setCallback((MethodInterceptor) (obj, method, args, proxy) ->
@@ -435,7 +435,7 @@ public class ProxyBenchmark {
 
         @Setup
         public void setup() {
-            aps = APS.proxy(ParamCount.class, (obj, method, args) -> {
+            aps = AcceleratedProxy.proxy(ParamCount.class, (obj, method, args) -> {
                 if (method.getName().equals("zeroArg")) return "ok";
                 if (method.getName().equals("oneArg")) return args[0];
                 if (method.getName().equals("twoArgs")) return (int) args[0] + (int) args[1];
@@ -520,13 +520,13 @@ public class ProxyBenchmark {
 
         @Setup
         public void setup() {
-            apsNoop = APS.proxy(EchoImpl.class,
+            apsNoop = AcceleratedProxy.proxy(EchoImpl.class,
                     (obj, method, args) -> "fixed");
-            apsPassthrough = APS.proxy(EchoImpl.class,
-                    (obj, method, args) -> APS.invokeSuper(obj, method, args));
-            apsArgMod = APS.proxy(EchoImpl.class, (obj, method, args) -> {
+            apsPassthrough = AcceleratedProxy.proxy(EchoImpl.class,
+                    (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+            apsArgMod = AcceleratedProxy.proxy(EchoImpl.class, (obj, method, args) -> {
                 args[0] = "[" + args[0] + "]";
-                return APS.invokeSuper(obj, method, args);
+                return AcceleratedProxy.invokeSuper(obj, method, args);
             });
 
             Enhancer e1 = new Enhancer();
@@ -592,10 +592,10 @@ public class ProxyBenchmark {
 
         @Setup
         public void setup() {
-            apsNoop = APS.proxy(Echo.class, (obj, method, args) -> "fixed");
-            apsPassthrough = APS.proxy(Echo.class,
+            apsNoop = AcceleratedProxy.proxy(Echo.class, (obj, method, args) -> "fixed");
+            apsPassthrough = AcceleratedProxy.proxy(Echo.class,
                     (obj, method, args) -> "Hello, " + args[0]);
-            apsArgMod = APS.proxy(Echo.class, (obj, method, args) -> {
+            apsArgMod = AcceleratedProxy.proxy(Echo.class, (obj, method, args) -> {
                 args[0] = "[" + args[0] + "]";
                 return "Hello, " + args[0];
             });

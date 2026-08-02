@@ -13,7 +13,7 @@ See proposal.md for the performance motivation.
 - Eliminate `bindTo(this)` allocation from the class proxy hot path
 - Replace bound MethodHandle in `Callback.intercept` with a stable integer index
 - Provide `invokeSuper(int, Object[])` on generated proxies for callback-driven super dispatch
-- Keep the existing `APS.create()` API unchanged (internal optimization)
+- Keep the existing `AcceleratedProxy.create()` API unchanged (internal optimization)
 - Maintain interface proxy behavior unchanged
 
 **Non-Goals:**
@@ -79,6 +79,6 @@ Since the hidden class is nestmate of the target class, it has access to `invoke
 ## Risks / Trade-offs
 
 - **Callback interface breakage:** All user Callback implementations must change from `(proxy, method, superHandle, args)` to `(proxy, method, index, args)`. This is a source-incompatible change. Mitigation: APS is pre-1.0; the API is explicitly unstable.
-- **Index stability:** If methods are reordered during bytecode generation (e.g., different iteration order), indices could shift between runs. Mitigation: `getDeclaredMethods()` order is not guaranteed but is stable within the same JVM launch. Indices are per-proxy-class, not cross-class. For a given `APS.create()` call, index order is deterministic.
+- **Index stability:** If methods are reordered during bytecode generation (e.g., different iteration order), indices could shift between runs. Mitigation: `getDeclaredMethods()` order is not guaranteed but is stable within the same JVM launch. Indices are per-proxy-class, not cross-class. For a given `AcceleratedProxy.create()` call, index order is deterministic.
 - **Primitive return type boxing in invokeSuper:** The type-erased handle returns `Object`, so `int` methods return `Integer`. The generated override already unboxes after `Callback.intercept` returns — no change here.
 - **Array bounds check:** `_handles[index]` has a bounds check. Cost is negligible (~1ns with JIT) compared to the `bindTo` allocation it replaces.

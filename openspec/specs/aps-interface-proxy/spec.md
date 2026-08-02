@@ -8,14 +8,14 @@ The system SHALL generate a runtime class that `extends Object` and `implements`
 
 #### Scenario: Basic interface proxy creation
 
-- **WHEN** user calls `APS.proxy(TargetInterface.class, interceptor)`
+- **WHEN** user calls `AcceleratedProxy.proxy(TargetInterface.class, interceptor)`
 - **THEN** system returns a proxy instance implementing `TargetInterface`
 - **AND** any method call on the proxy invokes `interceptor.intercept(proxy, method, args)`
 - **AND** the callback receives three arguments: the proxy instance, the `java.lang.reflect.Method`, and the boxed argument array
 
 #### Scenario: Null arguments rejected
 
-- **WHEN** user calls `APS.proxy(null, interceptor)` or `APS.proxy(TargetInterface.class, null)`
+- **WHEN** user calls `AcceleratedProxy.proxy(null, interceptor)` or `AcceleratedProxy.proxy(TargetInterface.class, null)`
 - **THEN** system throws `IllegalArgumentException`
 
 ### Requirement: Unified Interceptor callback
@@ -34,12 +34,12 @@ The system SHALL implement `DispatchTarget.dispatch(Method, Object[])` on interf
 
 #### Scenario: invokeSuper on interface method throws
 
-- **WHEN** user calls `APS.invokeSuper(interfaceProxy, method, args)` where `method` is an interface method
+- **WHEN** user calls `AcceleratedProxy.invokeSuper(interfaceProxy, method, args)` where `method` is an interface method
 - **THEN** system throws `AbstractMethodError`
 
 #### Scenario: invokeSuper on Object method succeeds
 
-- **WHEN** user calls `APS.invokeSuper(interfaceProxy, method, args)` where `method` is `toString`, `hashCode`, or `equals`
+- **WHEN** user calls `AcceleratedProxy.invokeSuper(interfaceProxy, method, args)` where `method` is `toString`, `hashCode`, or `equals`
 - **THEN** the corresponding `Object` method executes and returns the result
 
 ### Requirement: All interface methods intercepted
@@ -69,13 +69,13 @@ The system SHALL support an optional `ClassFilter` that determines which methods
 
 #### Scenario: Filtered method throws AbstractMethodError
 
-- **WHEN** user creates a proxy with `APS.proxy(MultiMethod.class, callback, m -> m.getName().startsWith("get"))`
+- **WHEN** user creates a proxy with `AcceleratedProxy.proxy(MultiMethod.class, callback, m -> m.getName().startsWith("get"))`
 - **AND** a method not matching the filter is called
 - **THEN** the method throws `AbstractMethodError`
 
 #### Scenario: Unfiltered proxy intercepts all methods
 
-- **WHEN** user creates a proxy with `APS.proxy(TargetInterface.class, callback)` (no filter)
+- **WHEN** user creates a proxy with `AcceleratedProxy.proxy(TargetInterface.class, callback)` (no filter)
 - **THEN** all eligible interface methods are routed through the callback
 
 ### Requirement: Primitive type handling (interface)

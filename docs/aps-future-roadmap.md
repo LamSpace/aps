@@ -12,7 +12,7 @@
 
 ```java
 // 当前 API（v1）
-Greeter proxy = APS.create(Greeter.class, (obj, method, superHandle, args) -> {
+Greeter proxy = AcceleratedProxy.create(Greeter.class, (obj, method, superHandle, args) -> {
             System.out.println("before " + method.getName());
             return superHandle.invoke(args);
         });
@@ -40,7 +40,7 @@ Greeter proxy = APS.intercept(Greeter.class, new MyInterceptor());
 
 ```java
 // 设想：不同方法组绑定不同 Callback
-APS.create(Greeter .class,
+AcceleratedProxy.create(Greeter .class,
            Group.of(m ->m.
 
 getName().

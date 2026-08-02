@@ -9,7 +9,7 @@ See proposal.md for full motivation and spec files for behavioral requirements.
 
 **Goals:**
 
-- Single `APS.proxy()` entry point for both classes and interfaces
+- Single `AcceleratedProxy.proxy()` entry point for both classes and interfaces
 - Single `Interceptor` callback interface replacing `Callback` and `InterfaceCallback`
 - Replace type-erased `MethodHandle` dispatch with hashCode-based switch using direct `INVOKESPECIAL` super calls
 - Eliminate `MethodHandle[]` array, `asSpreader`, and `asType` from the codebase
@@ -34,7 +34,7 @@ Collision risk: within a single proxy class, two methods with the same name can 
 
 ### Decision 2: `DispatchTarget` as package-private internal interface
 
-`DispatchTarget` is not part of the public API. Users never cast to it — they call `APS.invokeSuper(proxy, method, args)` which internally casts to `DispatchTarget`. This keeps the public API surface minimal (just `Interceptor` + `APS.proxy()` + `APS.invokeSuper()`).
+`DispatchTarget` is not part of the public API. Users never cast to it — they call `AcceleratedProxy.invokeSuper(proxy, method, args)` which internally casts to `DispatchTarget`. This keeps the public API surface minimal (just `Interceptor` + `AcceleratedProxy.proxy()` + `AcceleratedProxy.invokeSuper()`).
 
 ### Decision 3: One `dispatch()` method vs per-method fields
 

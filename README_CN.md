@@ -11,10 +11,10 @@
 ## ✨ 特性
 
 - **零开销父类调度** — hashCode 驱动的 `dispatch()` 开关直接调用 `super.method(args)`；无 MethodHandle、无反射、JIT 可内联
-- **统一 API** — 单一入口 `APS.proxy(target, interceptor)` 同时支持类和接口
+- **统一 API** — 单一入口 `AcceleratedProxy.proxy(target, interceptor)` 同时支持类和接口
 - **接口代理支持** — 运行时生成接口实现，性能与 `java.lang.reflect.Proxy` 接近持平
 - **无 ClassLoader 泄漏** — 使用 `Lookup.defineHiddenClass()`，代理类在无引用时可被 GC 回收
-- **一行代码** — `APS.proxy(MyClass.class, interceptor)` 泛型自动推导，无需手动转型
+- **一行代码** — `AcceleratedProxy.proxy(MyClass.class, interceptor)` 泛型自动推导，无需手动转型
 - **零开销过滤** — `ClassFilter` 排除的方法直接调用父类，无任何拦截开销
 - **构造参数支持** — 支持代理无默认构造方法的类
 
@@ -23,9 +23,9 @@
 ### 类代理
 
 ```java
-Greeter proxy = APS.proxy(Greeter.class, (obj, method, args) -> {
+Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
     System.out.println("调用前 " + method.getName());
-    Object result = APS.invokeSuper(obj, method, args);
+    Object result = AcceleratedProxy.invokeSuper(obj, method, args);
     System.out.println("调用后 " + method.getName());
     return result;
 });
@@ -39,7 +39,7 @@ String greeting = proxy.hello("World");
 ### 接口代理
 
 ```java
-Calculator calc = APS.proxy(Calculator.class, (obj, method, args) -> {
+Calculator calc = AcceleratedProxy.proxy(Calculator.class, (obj, method, args) -> {
     System.out.println("正在调用 " + method.getName());
     // 实现自定义逻辑，或返回预设值
     return 42;
@@ -117,7 +117,7 @@ Maven Central 发布已列入[路线图](docs/aps-future-roadmap.md)。
 | 父类调用开销       | 零（直接 `super.method()`）      | MethodProxy + FastClass     |
 | 类加载             | `defineHiddenClass()`（GC 安全） | 自定义 ClassLoader          |
 | API 风格           | 函数式（`Interceptor` lambda）   | 回调 + MethodProxy          |
-| 接口代理           | 支持（`APS.proxy()`）            | 不支持（需 Objenesis）      |
+| 接口代理           | 支持（`AcceleratedProxy.proxy()`）            | 不支持（需 Objenesis）      |
 | 原语装箱           | 自动                             | 自动                        |
 | 异常传播           | 受检异常 → `UndeclaredThrowable` | 受检异常 → InvocationTarget |
 | 无默认构造方法支持 | 支持                             | 支持                        |
@@ -149,8 +149,6 @@ Maven Central 发布已列入[路线图](docs/aps-future-roadmap.md)。
 - [基准测试报告（中文）](docs/benchmark-results_cn.md)
 - [基准测试报告（英文）](docs/benchmark-results.md)
 - [迁移指南](docs/migration-guide.md)
-- [设计文档](docs/superpowers/specs/2026-08-02-aps-unified-proxy-design.md)
-- [未来路线图](docs/aps-future-roadmap.md)
 - [设计文档](docs/superpowers/specs/2026-08-02-aps-unified-proxy-design.md)
 - [未来路线图](docs/aps-future-roadmap.md)
 

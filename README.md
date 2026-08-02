@@ -11,10 +11,10 @@ A high-performance dynamic proxy library for Java, designed as a drop-in replace
 ## ✨ Features
 
 - **Zero-overhead super dispatch** — hashCode-driven `dispatch()` switch calls `super.method(args)` directly; no MethodHandle, no reflection, JIT-inlinable
-- **Unified API** — single `APS.proxy(target, interceptor)` entry point for both classes and interfaces
+- **Unified API** — single `AcceleratedProxy.proxy(target, interceptor)` entry point for both classes and interfaces
 - **Interface proxy support** — generates runtime interface implementations at near-parity with `java.lang.reflect.Proxy`
 - **No ClassLoader leaks** — uses `Lookup.defineHiddenClass()` so proxy classes are GC-eligible when no longer referenced
-- **One-line API** — `APS.proxy(MyClass.class, interceptor)` with generic type inference, no casts needed
+- **One-line API** — `AcceleratedProxy.proxy(MyClass.class, interceptor)` with generic type inference, no casts needed
 - **Zero-overhead filtering** — methods excluded by `ClassFilter` call the superclass directly with no interception cost
 - **Constructor arguments** — supports proxying classes without a no-arg constructor
 
@@ -23,9 +23,9 @@ A high-performance dynamic proxy library for Java, designed as a drop-in replace
 ### Class Proxy
 
 ```java
-Greeter proxy = APS.proxy(Greeter.class, (obj, method, args) -> {
+Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
     System.out.println("before " + method.getName());
-    Object result = APS.invokeSuper(obj, method, args);
+    Object result = AcceleratedProxy.invokeSuper(obj, method, args);
     System.out.println("after " + method.getName());
     return result;
 });
@@ -39,7 +39,7 @@ String greeting = proxy.hello("World");
 ### Interface Proxy
 
 ```java
-Calculator calc = APS.proxy(Calculator.class, (obj, method, args) -> {
+Calculator calc = AcceleratedProxy.proxy(Calculator.class, (obj, method, args) -> {
     System.out.println("calling " + method.getName());
     // implement custom logic, or return a canned response
     return 42;
@@ -117,7 +117,7 @@ Maven Central publishing is on the [roadmap](docs/aps-future-roadmap.md).
 | Super call overhead            | Zero (direct `super.method()`)    | MethodProxy + FastClass    |
 | Class loading                  | `defineHiddenClass()` (GC-safe)   | Custom ClassLoader         |
 | API style                      | Functional (`Interceptor` lambda) | Callback + MethodProxy     |
-| Interface proxy                | Yes (`APS.proxy()`)               | No (requires Objenesis)    |
+| Interface proxy                | Yes (`AcceleratedProxy.proxy()`)               | No (requires Objenesis)    |
 | Primitive boxing               | Automatic                         | Automatic                  |
 | Exception propagation          | Checked → `UndeclaredThrowable`   | Checked → InvocationTarget |
 | No-default-constructor support | Yes                               | Yes                        |
@@ -150,8 +150,6 @@ See [docs/migration-guide.md](docs/migration-guide.md) for step-by-step migratio
 - [Benchmark Results (中文)](docs/benchmark-results_cn.md)
 - [Migration Guide](docs/migration-guide.md)
 - [Design Spec](docs/superpowers/specs/2026-08-02-aps-unified-proxy-design.md)
-- [Future Roadmap](docs/aps-future-roadmap.md)
-- [Design Spec](docs/superpowers/specs/2026-08-01-aps-design.md)
 - [Future Roadmap](docs/aps-future-roadmap.md)
 
 ## 📄 License

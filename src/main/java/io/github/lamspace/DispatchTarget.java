@@ -23,7 +23,7 @@ import java.lang.reflect.Method;
  * Provides hashCode-based method dispatch for super-method invocation.
  *
  * <p>Not part of the public API — users call
- * {@link APS#invokeSuper(Object, Method, Object[])} instead.
+ * {@link AcceleratedProxy#invokeSuper(Object, Method, Object[])} instead.
  */
 public interface DispatchTarget {
 

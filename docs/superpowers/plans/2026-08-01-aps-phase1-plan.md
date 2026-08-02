@@ -77,7 +77,7 @@ git commit -m "build: add CGLib 3.3.0 test dependency for benchmarks"
 
 **Interfaces:**
 
-- Consumes: CGLib 3.3.0 (from Task 1), APS.create (), Callback
+- Consumes: CGLib 3.3.0 (from Task 1), AcceleratedProxy.create (), Callback
 - Produces: 6 inner @State classes × 4 @Benchmark methods = 24 measured operations
 
 **Design:** Six inner `@State(Scope.Thread)` classes, one per scenario. Each sets up all 4 implementations (Direct, APS, CGLib, JavaProxy) for its target bean. Each has 4 `@Benchmark` methods.
@@ -213,7 +213,7 @@ public class ProxyBenchmark {
             );
 
             // APS — no superHandle call
-            apsProxy = APS.create(StringOpImpl.class,
+            apsProxy = AcceleratedProxy.create(StringOpImpl.class,
                     (obj, method, superHandle, args) -> "fixed");
 
             // CGLib — no invokeSuper call
@@ -269,7 +269,7 @@ public class ProxyBenchmark {
             );
 
             // APS — superHandle.invoke(args) to call original method
-            apsProxy = APS.create(StringOpImpl.class,
+            apsProxy = AcceleratedProxy.create(StringOpImpl.class,
                     (obj, method, superHandle, args) -> superHandle.invoke(args));
 
             // CGLib — proxy.invokeSuper(obj, args) to call original method
@@ -325,7 +325,7 @@ public class ProxyBenchmark {
                     }
             );
 
-            apsProxy = APS.create(StringOpImpl.class,
+            apsProxy = AcceleratedProxy.create(StringOpImpl.class,
                     (obj, method, superHandle, args) -> {
                         args[0] = "[" + args[0] + "]";
                         return superHandle.invoke(args);
@@ -383,7 +383,7 @@ public class ProxyBenchmark {
                             method.invoke(new IntOpImpl(), args1)
             );
 
-            apsProxy = APS.create(IntOpImpl.class,
+            apsProxy = AcceleratedProxy.create(IntOpImpl.class,
                     (obj, method, superHandle, args) -> superHandle.invoke(args));
 
             Enhancer enhancer = new Enhancer();
@@ -438,7 +438,7 @@ public class ProxyBenchmark {
                     }
             );
 
-            apsProxy = APS.create(VoidOpImpl.class,
+            apsProxy = AcceleratedProxy.create(VoidOpImpl.class,
                     (obj, method, superHandle, args) -> superHandle.invoke(args));
 
             Enhancer enhancer = new Enhancer();
@@ -491,7 +491,7 @@ public class ProxyBenchmark {
                             method.invoke(new MultiOpImpl(), args1)
             );
 
-            apsProxy = APS.create(MultiOpImpl.class,
+            apsProxy = AcceleratedProxy.create(MultiOpImpl.class,
                     (obj, method, superHandle, args) -> superHandle.invoke(args));
 
             Enhancer enhancer = new Enhancer();
@@ -656,13 +656,13 @@ A high-performance, MethodHandle-powered dynamic proxy library for Java, designe
 - **MethodHandle dispatch** — pre-computed MethodHandle bindings replace
   `Method.invoke()` reflection, delivering near-direct-call performance
 - **No ClassLoader leaks** — uses `Lookup.defineHiddenClass()` so proxy classes are GC-eligible when no longer referenced
-- **One-line API** — `APS.create(MyClass.class, callback)` with generic type inference, no casts needed
+- **One-line API** — `AcceleratedProxy.create(MyClass.class, callback)` with generic type inference, no casts needed
 - **Zero-overhead filtering** — methods excluded by `ClassFilter` call the superclass directly with no interception cost
 
 ## Quick Start
 
 ```java
-Greeter proxy = APS.create(Greeter.class, (obj, method, superHandle, args) -> {
+Greeter proxy = AcceleratedProxy.create(Greeter.class, (obj, method, superHandle, args) -> {
     System.out.println("before " + method.getName());
     Object result = superHandle.invoke(args);
     System.out.println("after " + method.getName());
@@ -804,7 +804,7 @@ Create four files:
  *
  * <h2>Quick start</h2>
  * <pre>{@code
- *   MyClass proxy = APS.create(MyClass.class, (obj, method, superHandle, args) -> {
+ *   MyClass proxy = AcceleratedProxy.create(MyClass.class, (obj, method, superHandle, args) -> {
  *       System.out.println("before " + method.getName());
  *       return superHandle.invoke(args);
  *   });
@@ -873,7 +873,7 @@ Replace the existing class-level javadoc (lines 10-18) with:
  * and route method calls through the provided {@link Callback}.
  *
  * <pre>{@code
- *   Greeter proxy = APS.create(Greeter.class, (obj, method, superHandle, args) -> {
+ *   Greeter proxy = AcceleratedProxy.create(Greeter.class, (obj, method, superHandle, args) -> {
  *       System.out.println("before " + method.getName());
  *       return superHandle.invoke(args);
  *   });
@@ -985,7 +985,7 @@ MyService proxy = (MyService) enhancer.create();
 ```java
 import io.github.lamspace.APS;
 
-MyService proxy = APS.create(MyService.class, (obj, method, superHandle, args) -> {
+MyService proxy = AcceleratedProxy.create(MyService.class, (obj, method, superHandle, args) -> {
     System.out.println("before " + method.getName());
     Object result = superHandle.invoke(args);
     System.out.println("after " + method.getName());
@@ -998,7 +998,7 @@ MyService proxy = APS.create(MyService.class, (obj, method, superHandle, args) -
 
 | CGLib                          | APS                                 |
 |--------------------------------|-------------------------------------|
-| `Enhancer` builder             | `APS.create()` static factory       |
+| `Enhancer` builder             | `AcceleratedProxy.create()` static factory       |
 | `MethodInterceptor` (3 args)   | `Callback` (4 args, includes proxy) |
 | `proxy.invokeSuper(obj, args)` | `superHandle.invoke(args)`          |
 | Requires explicit cast         | Generic inference, no cast          |
@@ -1025,7 +1025,7 @@ startsWith("get") ?0:1);
 **APS:**
 
 ```java
-MyService proxy = APS.create(MyService.class, interceptor,
+MyService proxy = AcceleratedProxy.create(MyService.class, interceptor,
         method -> method.getName().startsWith("get"));
 // Methods not matching the filter skip interception entirely — zero overhead
 ```
@@ -1043,7 +1043,7 @@ enhancer.create(new Class[] {
 **APS:**
 
 ```java
-APS.create(MyService .class, callback, null,"arg");
+AcceleratedProxy.create(MyService .class, callback, null,"arg");
 ```
 
 ---
@@ -1071,7 +1071,7 @@ Service proxy = (Service) Proxy.newProxyInstance(
 ```java
 import io.github.lamspace.APS;
 
-ServiceImpl proxy = APS.create(ServiceImpl.class,
+ServiceImpl proxy = AcceleratedProxy.create(ServiceImpl.class,
         (obj, method, superHandle, args) -> {
             System.out.println("before " + method.getName());
             return superHandle.invoke(args);
@@ -1087,7 +1087,7 @@ ServiceImpl proxy = APS.create(ServiceImpl.class,
 | `InvocationHandler` (3 args)  | `Callback` (4 args, includes MethodHandle) |
 | `method.invoke(target, args)` | `superHandle.invoke(args)`                 |
 | Requires target instance      | Built-in super-call binding                |
-| `Proxy.newProxyInstance(...)` | `APS.create(Class, Callback)`              |
+| `Proxy.newProxyInstance(...)` | `AcceleratedProxy.create(Class, Callback)`              |
 
 ---
 
@@ -1192,4 +1192,4 @@ If no changes needed, skip this step.
 
 **2. Placeholder scan:** The only placeholders are the benchmark scores in Task 4 README — these are marked with placeholder comments and filled from Task 3 data. No TBDs, TODOs, or vague instructions.
 
-**3. Type consistency:** All Java code examples use correct APS API signatures (`Callback`, `ClassFilter`, `APS.create()`), correct CGLib API (`Enhancer`, `MethodInterceptor`, `MethodProxy`), correct JMH annotations. Javadoc `@see` references match actual class names.
+**3. Type consistency:** All Java code examples use correct APS API signatures (`Callback`, `ClassFilter`, `AcceleratedProxy.create()`), correct CGLib API (`Enhancer`, `MethodInterceptor`, `MethodProxy`), correct JMH annotations. Javadoc `@see` references match actual class names.

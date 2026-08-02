@@ -6,13 +6,13 @@ The system SHALL generate a runtime subclass of any non-final concrete class and
 
 #### Scenario: Basic proxy creation and interception
 
-- **WHEN** user calls `APS.proxy(TargetClass.class, interceptor)`
+- **WHEN** user calls `AcceleratedProxy.proxy(TargetClass.class, interceptor)`
 - **THEN** system returns a proxy instance of type `TargetClass`
 - **AND** any method call on the proxy invokes `interceptor.intercept(proxy, method, args)`
 
 #### Scenario: Super method invocation via invokeSuper
 
-- **WHEN** callback calls `APS.invokeSuper(proxy, method, args)`
+- **WHEN** callback calls `AcceleratedProxy.invokeSuper(proxy, method, args)`
 - **THEN** the original superclass method executes via direct `INVOKESPECIAL` (no reflection, no MethodHandle)
 - **AND** the return value is returned to the callback
 
@@ -42,13 +42,13 @@ The system SHALL support an optional `ClassFilter` that determines which methods
 
 #### Scenario: Filtered method skips interception
 
-- **WHEN** user creates a proxy with `APS.proxy(TargetClass.class, interceptor, method -> method.getName().startsWith("get"))`
+- **WHEN** user creates a proxy with `AcceleratedProxy.proxy(TargetClass.class, interceptor, method -> method.getName().startsWith("get"))`
 - **AND** a method not matching the filter is called (e.g., `setValue`)
 - **THEN** the method executes the superclass implementation directly without invoking the interceptor
 
 #### Scenario: Unfiltered proxy intercepts all methods
 
-- **WHEN** user creates a proxy with `APS.proxy(TargetClass.class, interceptor)` (no filter)
+- **WHEN** user creates a proxy with `AcceleratedProxy.proxy(TargetClass.class, interceptor)` (no filter)
 - **THEN** all non-final instance method calls are routed through the interceptor
 
 ### Requirement: Proxy class caching
@@ -57,7 +57,7 @@ The system SHALL cache generated proxy classes keyed by `{targetClass, filter}` 
 
 #### Scenario: Repeated proxy creation reuses class
 
-- **WHEN** user calls `APS.proxy(SomeClass.class, interceptor)` twice
+- **WHEN** user calls `AcceleratedProxy.proxy(SomeClass.class, interceptor)` twice
 - **THEN** the system reuses the previously generated proxy class
 
 ## REMOVED Requirements
@@ -66,4 +66,4 @@ The system SHALL cache generated proxy classes keyed by `{targetClass, filter}` 
 
 **Reason**: Replaced by hashCode-based `dispatch()` method that uses direct `INVOKESPECIAL` super calls instead of pre-computed `MethodHandle[]` array with type erasure. This eliminates the MethodHandle dispatch overhead entirely.
 
-**Migration**: No user-facing migration required. The `Interceptor` callback no longer receives a MethodHandle — use `APS.invokeSuper(proxy, method, args)` instead.
+**Migration**: No user-facing migration required. The `Interceptor` callback no longer receives a MethodHandle — use `AcceleratedProxy.invokeSuper(proxy, method, args)` instead.

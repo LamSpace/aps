@@ -17,9 +17,9 @@
 
 ## 4. Entry Point
 
-- [x] 4.1 Replace `APS.create()` and `APS.createInterface()` with `APS.proxy()` — auto-detects class vs interface, generates appropriate proxy, unified class loading via `LookupManager.getLookup(target).defineHiddenClass()`
-- [x] 4.2 Update `APS.invokeSuper()` — change signature from `(Object proxy, int index, Object[] args)` to `(Object proxy, Method method, Object[] args)`, cast to `DispatchTarget.dispatch(method, args)`
-- [x] 4.3 Add `WeakCache` — proxy class cache keyed by `{targetClass, filter}`, integrate into `APS.proxy()`
+- [x] 4.1 Replace `AcceleratedProxy.create()` and `AcceleratedProxy.createInterface()` with `AcceleratedProxy.proxy()` — auto-detects class vs interface, generates appropriate proxy, unified class loading via `LookupManager.getLookup(target).defineHiddenClass()`
+- [x] 4.2 Update `AcceleratedProxy.invokeSuper()` — change signature from `(Object proxy, int index, Object[] args)` to `(Object proxy, Method method, Object[] args)`, cast to `DispatchTarget.dispatch(method, args)`
+- [x] 4.3 Add `WeakCache` — proxy class cache keyed by `{targetClass, filter}`, integrate into `AcceleratedProxy.proxy()`
 
 ## 5. Cleanup
 
@@ -31,8 +31,8 @@
 
 ## 6. Tests
 
-- [x] 6.1 Update `APSFunctionalTest.java` — migrate from `APS.create`/`Callback` to `APS.proxy`/`Interceptor`, update `invokeSuper` calls
-- [x] 6.2 Update `APSInterfaceFunctionalTest.java` — migrate from `APS.createInterface`/`InterfaceCallback` to `APS.proxy`/`Interceptor`
+- [x] 6.1 Update `APSFunctionalTest.java` — migrate from `AcceleratedProxy.create`/`Callback` to `AcceleratedProxy.proxy`/`Interceptor`, update `invokeSuper` calls
+- [x] 6.2 Update `APSInterfaceFunctionalTest.java` — migrate from `AcceleratedProxy.createInterface`/`InterfaceCallback` to `AcceleratedProxy.proxy`/`Interceptor`
 - [x] 6.3 Create `APSUnifiedTest.java` — tests for `proxy()` with both class and interface, `invokeSuper` dispatch behavior (class methods succeed, interface methods throw `AbstractMethodError`), `ClassFilter` integration, cache reuse
 
 ## 7. Benchmarks

@@ -1,13 +1,13 @@
 ## Why
 
-APS currently has two separate APIs (`APS.create` for class proxies, `APS.createInterface` for interface proxies) with different callback interfaces (`Callback` with an index parameter vs `InterfaceCallback` without). The class proxy `invokeSuper` path goes through a type-erased `MethodHandle.invoke()` which adds ~10ns overhead per call compared to a direct `super.method(args)` call. This proposal unifies the API into a single entry point and replaces the MethodHandle dispatch with direct
+APS currently has two separate APIs (`AcceleratedProxy.create` for class proxies, `AcceleratedProxy.createInterface` for interface proxies) with different callback interfaces (`Callback` with an index parameter vs `InterfaceCallback` without). The class proxy `invokeSuper` path goes through a type-erased `MethodHandle.invoke()` which adds ~10ns overhead per call compared to a direct `super.method(args)` call. This proposal unifies the API into a single entry point and replaces the MethodHandle dispatch with direct
 `INVOKESPECIAL` super calls.
 
 ## What Changes
 
-- **BREAKING**: Replace `APS.create(Class, Callback)` and `APS.createInterface(Class, InterfaceCallback)` with a single `APS.proxy(Class, Interceptor)` method
+- **BREAKING**: Replace `AcceleratedProxy.create(Class, Callback)` and `AcceleratedProxy.createInterface(Class, InterfaceCallback)` with a single `AcceleratedProxy.proxy(Class, Interceptor)` method
 - **BREAKING**: Replace `Callback` and `InterfaceCallback` interfaces with a unified `Interceptor` interface (signature: `intercept(Object proxy, Method method, Object[] args)`)
-- **BREAKING**: Replace `APS.invokeSuper(Object, int, Object[])` with `APS.invokeSuper(Object, Method, Object[])` — uses Method object for dispatch instead of index
+- **BREAKING**: Replace `AcceleratedProxy.invokeSuper(Object, int, Object[])` with `AcceleratedProxy.invokeSuper(Object, Method, Object[])` — uses Method object for dispatch instead of index
 - Replace the `SuperDispatcher` internal interface and `MethodHandle[]` dispatch table with a `DispatchTarget` interface and hashCode-based switch
 - Replace type-erased `MethodHandle.invoke()` super calls with direct `super.method(args)` calls (INVOKESPECIAL, JIT-inlinable)
 - Add proxy class caching via `WeakCache` to avoid re-generating bytecode for the same target
@@ -18,7 +18,7 @@ APS currently has two separate APIs (`APS.create` for class proxies, `APS.create
 
 ### New Capabilities
 
-- `aps-unified-proxy`: Unified proxy creation API (`APS.proxy()`) supporting both class and interface targets through a single entry point with a single `Interceptor` callback interface
+- `aps-unified-proxy`: Unified proxy creation API (`AcceleratedProxy.proxy()`) supporting both class and interface targets through a single entry point with a single `Interceptor` callback interface
 
 ### Modified Capabilities
 

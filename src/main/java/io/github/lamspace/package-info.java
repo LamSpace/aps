@@ -21,13 +21,13 @@
  *
  * <h2>Quick start</h2>
  * <pre>{@code
- *   MyClass proxy = APS.proxy(MyClass.class, (obj, method, args) -> {
+ *   MyClass proxy = AcceleratedProxy.proxy(MyClass.class, (obj, method, args) -> {
  *       System.out.println("before " + method.getName());
- *       return APS.invokeSuper(obj, method, args);
+ *       return AcceleratedProxy.invokeSuper(obj, method, args);
  *   });
  * }</pre>
  *
- * @see io.github.lamspace.APS
+ * @see io.github.lamspace.AcceleratedProxy
  * @see io.github.lamspace.Interceptor
  * @see io.github.lamspace.ClassFilter
  */

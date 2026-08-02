@@ -5,10 +5,10 @@ APS currently only supports proxying concrete classes (generating subclasses). U
 ## What Changes
 
 - New `InterfaceCallback` functional interface — a 3-arg callback (proxy, method, args) for interface proxies, mirroring `java.lang.reflect.InvocationHandler`
-- New `APS.createInterface()` public entry point — generates and returns an interface proxy implementation
+- New `AcceleratedProxy.createInterface()` public entry point — generates and returns an interface proxy implementation
 - New `InterfaceGenerator` and `InterfaceDispatcher` — ASM-based bytecode generators for `implements Interface` (vs existing `extends Class`)
 - Shared bytecode utilities extracted from `MethodDispatcher` and `ClassGenerator` into `BytecodeUtils` to avoid duplication
-- No changes to existing `Callback`, `APS.create()`, or class-proxy behavior
+- No changes to existing `Callback`, `AcceleratedProxy.create()`, or class-proxy behavior
 
 ## Capabilities
 
@@ -25,4 +25,4 @@ APS currently only supports proxying concrete classes (generating subclasses). U
 - **New files:** `InterfaceCallback.java`, `InterfaceDispatcher.java`, `InterfaceGenerator.java`, `BytecodeUtils.java`
 - **Modified files:** `APS.java` (add `createInterface()` overloads), `MethodDispatcher.java` (delegate to BytecodeUtils), `ClassGenerator.java` (delegate to BytecodeUtils)
 - **Dependencies:** No new external dependencies
-- **API surface:** Two new public types (`InterfaceCallback`, `APS.createInterface()` overloads); existing API unchanged
+- **API surface:** Two new public types (`InterfaceCallback`, `AcceleratedProxy.createInterface()` overloads); existing API unchanged

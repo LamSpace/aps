@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add interface proxy support to APS via `APS.createInterface()`, complementing the existing class proxy `APS.create()`.
+**Goal:** Add interface proxy support to APS via `AcceleratedProxy.createInterface()`, complementing the existing class proxy `AcceleratedProxy.create()`.
 
 **Architecture:** New `InterfaceGenerator` and `InterfaceDispatcher` mirror the existing `ClassGenerator`/`MethodDispatcher` pair, generating bytecode for `class X extends Object implements Interface` instead of `class X extends TargetClass`. Shared bytecode utilities (`pushInt`, `boxPrimitive`, etc.) are extracted to a new `BytecodeUtils` class to avoid duplication. The existing `Callback` interface is unchanged; interface proxies use a new 3-arg `InterfaceCallback` without `superHandle`.
 
@@ -12,7 +12,7 @@
 
 - Packaging: `io.github.lamspace` (main API), `io.github.lamspace.generator` (bytecode generation)
 - No new external dependencies
-- Existing public API (`APS.create()`, `Callback`) must not change signature
+- Existing public API (`AcceleratedProxy.create()`, `Callback`) must not change signature
 - Tests mirror existing `APSFunctionalTest` patterns
 - Maven settings: `-s /home/lam/repo/settings.xml`
 
@@ -712,8 +712,8 @@ git commit -m "feat: add InterfaceGenerator for interface proxy bytecode"
 
 - Consumes: `InterfaceGenerator(interfaceClass, filter).generate()` → `byte[]`
 - Consumes: `HiddenClassLoader.defineClass(targetClass, bytecode)` → `Class<?>`
-- Produces: `APS.createInterface(Class<T>, InterfaceCallback)` → `T`
-- Produces: `APS.createInterface(Class<T>, InterfaceCallback, ClassFilter)` → `T`
+- Produces: `AcceleratedProxy.createInterface(Class<T>, InterfaceCallback)` → `T`
+- Produces: `AcceleratedProxy.createInterface(Class<T>, InterfaceCallback, ClassFilter)` → `T`
 
 - [ ] **Step 1: Add createInterface methods to APS.java**
 
@@ -809,7 +809,7 @@ Expected: All 16 tests pass, BUILD SUCCESS
 
 ```bash
 git add src/main/java/io/github/lamspace/APS.java
-git commit -m "feat: add APS.createInterface() for interface proxies"
+git commit -m "feat: add AcceleratedProxy.createInterface() for interface proxies"
 ```
 
 ---
@@ -823,8 +823,8 @@ git commit -m "feat: add APS.createInterface() for interface proxies"
 
 **Interfaces:**
 
-- Consumes: `APS.createInterface(Class<T>, InterfaceCallback)`
-- Consumes: `APS.createInterface(Class<T>, InterfaceCallback, ClassFilter)`
+- Consumes: `AcceleratedProxy.createInterface(Class<T>, InterfaceCallback)`
+- Consumes: `AcceleratedProxy.createInterface(Class<T>, InterfaceCallback, ClassFilter)`
 
 - [ ] **Step 1: Write APSInterfaceFunctionalTest.java**
 
@@ -875,7 +875,7 @@ class APSInterfaceFunctionalTest {
 
     @Test
     void shouldInterceptAndReturnModifiedValue() {
-        Greeter proxy = APS.createInterface(Greeter.class,
+        Greeter proxy = AcceleratedProxy.createInterface(Greeter.class,
                 (obj, method, args) -> {
                     String original = (String) args[0];
                     return "[intercepted] " + original;
@@ -887,7 +887,7 @@ class APSInterfaceFunctionalTest {
 
     @Test
     void shouldReturnFixedValueFromCallback() {
-        Greeter proxy = APS.createInterface(Greeter.class,
+        Greeter proxy = AcceleratedProxy.createInterface(Greeter.class,
                 (obj, method, args) -> "fixed");
 
         assertEquals("fixed", proxy.hello("anything"));
@@ -895,7 +895,7 @@ class APSInterfaceFunctionalTest {
 
     @Test
     void shouldHandlePrimitiveReturnType() {
-        Calculator proxy = APS.createInterface(Calculator.class,
+        Calculator proxy = AcceleratedProxy.createInterface(Calculator.class,
                 (obj, method, args) -> {
                     int a = (int) args[0];
                     int b = (int) args[1];
@@ -908,7 +908,7 @@ class APSInterfaceFunctionalTest {
     @Test
     void shouldHandleVoidReturnType() {
         AtomicBoolean called = new AtomicBoolean(false);
-        SideEffectRunner proxy = APS.createInterface(
+        SideEffectRunner proxy = AcceleratedProxy.createInterface(
                 SideEffectRunner.class, (obj, method, args) -> {
                     called.set(true);
                     return null;
@@ -920,7 +920,7 @@ class APSInterfaceFunctionalTest {
 
     @Test
     void shouldModifyArgumentsInCallback() {
-        Greeter proxy = APS.createInterface(Greeter.class,
+        Greeter proxy = AcceleratedProxy.createInterface(Greeter.class,
                 (obj, method, args) -> {
                     args[0] = "[" + args[0] + "]";
                     return args[0];
@@ -931,7 +931,7 @@ class APSInterfaceFunctionalTest {
 
     @Test
     void shouldWorkWithClassFilter() {
-        MultiMethod proxy = APS.createInterface(MultiMethod.class,
+        MultiMethod proxy = AcceleratedProxy.createInterface(MultiMethod.class,
                 (obj, method, args) -> "[filtered] " + args[0],
                 method -> method.getName().startsWith("greet"));
 
@@ -943,7 +943,7 @@ class APSInterfaceFunctionalTest {
 
     @Test
     void shouldHandleDefaultMethodAsRegularCallbackInvocation() {
-        GreeterWithDefault proxy = APS.createInterface(
+        GreeterWithDefault proxy = AcceleratedProxy.createInterface(
                 GreeterWithDefault.class,
                 (obj, method, args) -> {
                     if (method.getName().equals("greet")) {
@@ -960,25 +960,25 @@ class APSInterfaceFunctionalTest {
     @Test
     void shouldThrowForNonInterfaceClass() {
         assertThrows(IllegalArgumentException.class, () ->
-                APS.createInterface(String.class,
+                AcceleratedProxy.createInterface(String.class,
                         (obj, method, args) -> null));
     }
 
     @Test
     void shouldThrowForNullInterfaceClass() {
         assertThrows(IllegalArgumentException.class, () ->
-                APS.createInterface(null, (obj, method, args) -> null));
+                AcceleratedProxy.createInterface(null, (obj, method, args) -> null));
     }
 
     @Test
     void shouldThrowForNullCallback() {
         assertThrows(IllegalArgumentException.class, () ->
-                APS.createInterface(Runnable.class, null));
+                AcceleratedProxy.createInterface(Runnable.class, null));
     }
 
     @Test
     void shouldPropagateRuntimeExceptionFromCallback() {
-        Greeter proxy = APS.createInterface(Greeter.class,
+        Greeter proxy = AcceleratedProxy.createInterface(Greeter.class,
                 (obj, method, args) -> {
                     throw new RuntimeException("test exception");
                 });
@@ -989,7 +989,7 @@ class APSInterfaceFunctionalTest {
 
     @Test
     void shouldWrapCheckedExceptionInUndeclaredThrowable() {
-        Greeter proxy = APS.createInterface(Greeter.class,
+        Greeter proxy = AcceleratedProxy.createInterface(Greeter.class,
                 (obj, method, args) -> {
                     throw new Exception("checked from interceptor");
                 });
@@ -1001,7 +1001,7 @@ class APSInterfaceFunctionalTest {
 
     @Test
     void shouldHandleNoArgMethod() {
-        Runnable proxy = APS.createInterface(Runnable.class,
+        Runnable proxy = AcceleratedProxy.createInterface(Runnable.class,
                 (obj, method, args) -> {
                     assertNotNull(method);
                     assertEquals("run", method.getName());
@@ -1023,7 +1023,7 @@ Expected: All 29 tests pass (16 existing + 13 new), BUILD SUCCESS
 
 ```bash
 git add src/test/java/io/github/lamspace/APSInterfaceFunctionalTest.java
-git commit -m "test: add integration tests for APS.createInterface()"
+git commit -m "test: add integration tests for AcceleratedProxy.createInterface()"
 ```
 
 ---

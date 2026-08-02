@@ -46,7 +46,7 @@
 
 - [x] 7.1 Write `APSFunctionalTest`
   RuntimeException, checked exception wrapping
-- [x] 7.2 Implement `APS.create()` methods
+- [x] 7.2 Implement `AcceleratedProxy.create()` methods
 - [x] 7.3 Run tests: `mvn test -Dtest=APSFunctionalTest`
 - [x] 7.4 Run full test suite: `mvn test`
 
@@ -54,7 +54,7 @@
 
 - [x] 8.1 Add test for proxying class without default constructor
 - [x] 8.2 Extend `ClassGenerator` for constructor arguments
-- [x] 8.3 Add `APS.create()` constructor args overload
+- [x] 8.3 Add `AcceleratedProxy.create()` constructor args overload
 - [x] 8.4 Run full test suite: `mvn test`
 
 ## 9. Performance Benchmarks

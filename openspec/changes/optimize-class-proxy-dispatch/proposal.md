@@ -25,6 +25,6 @@ APS class proxy is 3-30× slower than CGLib. The root cause is `bindTo(this)` on
 - `MethodDispatcher.java` — override bytecode generation: pass index instead of bound handle
 - `ClassGenerator.java` — add `invokeSuper()` method generation and `MethodHandle[]` static field
 - `ClinitRegistry.java` — update to track index assignments
-- `APS.java` — API surface unchanged (`APS.create()` signature stays the same)
+- `APS.java` — API surface unchanged (`AcceleratedProxy.create()` signature stays the same)
 - `APSFunctionalTest.java`, `ProxyBenchmark.java` — update to new Callback API
 - `docs/benchmark-results.md` — re-run and update benchmarks

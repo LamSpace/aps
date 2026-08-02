@@ -71,7 +71,7 @@ public class InterfaceGenerator {
         // Place generated class in the APS package. The interface may be in a
         // restricted module (e.g., java.lang) where we cannot define classes.
         String generatedInternal = "io/github/lamspace/"
-                + simpleName + "$$APS$$" + COUNTER.getAndIncrement();
+                + simpleName + "$$AcceleratedProxy$$" + COUNTER.getAndIncrement();
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 

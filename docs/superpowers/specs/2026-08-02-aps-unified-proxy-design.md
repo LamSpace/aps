@@ -8,9 +8,9 @@ APS currently has two parallel APIs for class and interface proxies:
 
 |                  | Class Proxy                             | Interface Proxy                                 |
 |------------------|-----------------------------------------|-------------------------------------------------|
-| Entry            | `APS.create(Class, Callback)`           | `APS.createInterface(Class, InterfaceCallback)` |
+| Entry            | `AcceleratedProxy.create(Class, Callback)`           | `AcceleratedProxy.createInterface(Class, InterfaceCallback)` |
 | Callback         | `intercept(proxy, method, index, args)` | `intercept(proxy, method, args)`                |
-| Super invocation | `APS.invokeSuper(proxy, index, args)`   | N/A                                             |
+| Super invocation | `AcceleratedProxy.invokeSuper(proxy, index, args)`   | N/A                                             |
 | Structure        | `extends TargetClass + SuperDispatcher` | `extends Object + Interface`                    |
 
 The `invokeSuper` path for class proxies goes through a type-erased `MethodHandle.invoke()` (via `_handles[index].invoke(this, args)`), which adds ~10ns of overhead compared to a direct `super.method(args)` call. The design unifies the two APIs and replaces the MethodHandle dispatch with direct `INVOKESPECIAL` super calls routed through a hashCode-based switch.
@@ -138,7 +138,7 @@ Cache key: `{targetClass, filter}` where `null` filter means "intercept all".
 - `SuperDispatcher` interface → replaced by `DispatchTarget`
 - `MethodHandle[] _handles` static array → replaced by per-method hash constants + `dispatch()` switch
 - `MethodHandle` asSpreader/asType type-erasure logic → no longer needed
-- `APS.create()` / `APS.createInterface()` methods → merged into `APS.proxy()`
+- `AcceleratedProxy.create()` / `AcceleratedProxy.createInterface()` methods → merged into `AcceleratedProxy.proxy()`
 - `HiddenClassLoader` (if no longer needed after unification)
 
 ## Expected Performance Impact
@@ -166,13 +166,13 @@ Users migrate from:
 
 ```java
 // Old class proxy
-MyClass proxy = APS.create(MyClass.class,
+MyClass proxy = AcceleratedProxy.create(MyClass.class,
                 (obj, method, index, args) -> {
-                    return APS.invokeSuper(obj, index, args);
+                    return AcceleratedProxy.invokeSuper(obj, index, args);
                 });
 
 // Old interface proxy
-MyInterface proxy = APS.createInterface(MyInterface.class,
+MyInterface proxy = AcceleratedProxy.createInterface(MyInterface.class,
         (obj, method, args) -> { ...});
 ```
 
@@ -180,11 +180,11 @@ To:
 
 ```java
 // Unified — same API for both
-MyClass proxy = APS.proxy(MyClass.class,
+MyClass proxy = AcceleratedProxy.proxy(MyClass.class,
                 (obj, method, args) -> {
-                    return APS.invokeSuper(obj, method, args);
+                    return AcceleratedProxy.invokeSuper(obj, method, args);
                 });
 
-MyInterface proxy = APS.proxy(MyInterface.class,
+MyInterface proxy = AcceleratedProxy.proxy(MyInterface.class,
         (obj, method, args) -> { ...});
 ```

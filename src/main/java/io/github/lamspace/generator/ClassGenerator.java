@@ -105,7 +105,7 @@ public class ClassGenerator {
                 ? targetInternal.substring(0, targetInternal.lastIndexOf('/') + 1)
                 : "";
         String simpleName = targetInternal.substring(targetInternal.lastIndexOf('/') + 1);
-        String generatedInternal = packagePrefix + simpleName + "$$APS$$" + COUNTER.getAndIncrement();
+        String generatedInternal = packagePrefix + simpleName + "$$AcceleratedProxy$$" + COUNTER.getAndIncrement();
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 

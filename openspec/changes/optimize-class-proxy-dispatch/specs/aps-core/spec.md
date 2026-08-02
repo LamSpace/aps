@@ -6,7 +6,7 @@ The system SHALL generate a runtime subclass of any non-final concrete class and
 
 #### Scenario: Basic proxy creation and interception
 
-- **WHEN** user calls `APS.create(TargetClass.class, callback)`
+- **WHEN** user calls `AcceleratedProxy.create(TargetClass.class, callback)`
 - **THEN** system returns a proxy instance of type `TargetClass`
 - **AND** any method call on the proxy invokes `callback.intercept(proxy, method, index, args)`
 

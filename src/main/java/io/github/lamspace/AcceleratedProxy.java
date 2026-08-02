@@ -32,18 +32,18 @@ import java.lang.reflect.Method;
  * and route method calls through the provided {@link Interceptor}.
  *
  * <pre>{@code
- *   Greeter proxy = APS.proxy(Greeter.class, (obj, method, args) -> {
+ *   Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
  *       System.out.println("before " + method.getName());
- *       return APS.invokeSuper(obj, method, args);
+ *       return AcceleratedProxy.invokeSuper(obj, method, args);
  *   });
  * }</pre>
  *
  * @see Interceptor
  * @see ClassFilter
  */
-public final class APS {
+public final class AcceleratedProxy {
 
-    private APS() {
+    private AcceleratedProxy() {
     }
 
     /**

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Unify class and interface proxy APIs under `APS.proxy()` with a single `Interceptor` callback, replace type-erased `MethodHandle` dispatch with direct `INVOKESPECIAL` super calls via hashCode switch, add class caching, and remove the old `Callback`/`InterfaceCallback`/`SuperDispatcher` types.
+**Goal:** Unify class and interface proxy APIs under `AcceleratedProxy.proxy()` with a single `Interceptor` callback, replace type-erased `MethodHandle` dispatch with direct `INVOKESPECIAL` super calls via hashCode switch, add class caching, and remove the old `Callback`/`InterfaceCallback`/`SuperDispatcher` types.
 
 **Architecture:** The generated proxy class implements a new internal interface `DispatchTarget` whose `dispatch(Method, Object[])` method contains a hashCode-driven if-else chain. Each class-method branch calls `super.method(args)` directly (INVOKESPECIAL, JIT-inlinable). Interface-method branches throw `AbstractMethodError`. The hash values use `Method.hashCode()` (deterministic, pre-computable at bytecode generation time) allowing them to be embedded as `ldc` constants. A `WeakCache` stores
 generated proxy classes keyed by `{targetClass, filter}`.
@@ -91,9 +91,9 @@ import java.lang.reflect.Method;
  * {@link APS#invokeSuper(Object, Method, Object[])}.
  *
  * <pre>{@code
- *   Greeter proxy = APS.proxy(Greeter.class, (obj, method, args) -> {
+ *   Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
  *       System.out.println("before " + method.getName());
- *       return APS.invokeSuper(obj, method, args);
+ *       return AcceleratedProxy.invokeSuper(obj, method, args);
  *   });
  * }</pre>
  */
@@ -780,7 +780,7 @@ Copy the WeakCache implementation from newproxy (`/home/lam/workspace/newproxy/s
 
 Key adaptation: the `CacheKey.valueOf()` method needs to create keys from `{targetClass, filter}` tuples. Define the key factory to produce an appropriate weak-referenced key object.
 
-- [ ] **Step 2: Wire cache into `APS.proxy()`**
+- [ ] **Step 2: Wire cache into `AcceleratedProxy.proxy()`**
 
 Add cache field to `APS.java`:
 
@@ -849,7 +849,7 @@ git commit -m "refactor: remove old Callback, InterfaceCallback, SuperDispatcher
 
 **Interfaces:**
 
-- Consumes: new `APS.proxy()` API (Task 9)
+- Consumes: new `AcceleratedProxy.proxy()` API (Task 9)
 - Produces: passing tests for unified API
 
 - [ ] **Step 1: Read existing test files**
@@ -858,18 +858,18 @@ Read both test files to understand the current test structure and adapt accordin
 
 - [ ] **Step 2: Update `APSFunctionalTest.java` (class proxy tests)**
 
-Replace all `APS.create()` calls with `APS.proxy()`. Replace `Callback` lambdas with `Interceptor` lambdas (remove the `index` parameter). Replace `APS.invokeSuper(obj, index, args)` with `APS.invokeSuper(obj, method, args)`.
+Replace all `AcceleratedProxy.create()` calls with `AcceleratedProxy.proxy()`. Replace `Callback` lambdas with `Interceptor` lambdas (remove the `index` parameter). Replace `AcceleratedProxy.invokeSuper(obj, index, args)` with `AcceleratedProxy.invokeSuper(obj, method, args)`.
 
 - [ ] **Step 3: Update `APSInterfaceFunctionalTest.java` (interface proxy tests)**
 
-Replace `APS.createInterface()` with `APS.proxy()`. Replace `InterfaceCallback` with `Interceptor`.
+Replace `AcceleratedProxy.createInterface()` with `AcceleratedProxy.proxy()`. Replace `InterfaceCallback` with `Interceptor`.
 
 - [ ] **Step 4: Write `APSUnifiedTest.java`**
 
 New test covering the unified behavior:
 
-- `APS.proxy(SomeClass.class, interceptor)` works as class proxy
-- `APS.proxy(SomeInterface.class, interceptor)` works as interface proxy
+- `AcceleratedProxy.proxy(SomeClass.class, interceptor)` works as class proxy
+- `AcceleratedProxy.proxy(SomeInterface.class, interceptor)` works as interface proxy
 - `invokeSuper` dispatches correctly for class methods
 - `invokeSuper` throws AbstractMethodError for interface methods
 - `ClassFilter` skips non-accepted methods
@@ -899,12 +899,12 @@ git commit -m "test: update tests for unified proxy API"
 
 **Interfaces:**
 
-- Consumes: new `APS.proxy()` API (Task 9)
+- Consumes: new `AcceleratedProxy.proxy()` API (Task 9)
 - Produces: updated benchmarks with new API, comparable results
 
 - [ ] **Step 1: Update benchmark code**
 
-Replace all `APS.create()` → `APS.proxy()`, `APS.createInterface()` → `APS.proxy()`. Replace `Callback` → `Interceptor`, `InterfaceCallback` → `Interceptor`. Replace `APS.invokeSuper(obj, index, args)` → `APS.invokeSuper(obj, method, args)`.
+Replace all `AcceleratedProxy.create()` → `AcceleratedProxy.proxy()`, `AcceleratedProxy.createInterface()` → `AcceleratedProxy.proxy()`. Replace `Callback` → `Interceptor`, `InterfaceCallback` → `Interceptor`. Replace `AcceleratedProxy.invokeSuper(obj, index, args)` → `AcceleratedProxy.invokeSuper(obj, method, args)`.
 
 The `int index` parameter is gone — benchmarks that used it for `invokeSuper` now pass the `method` parameter directly. This means the passthrough/arg-modify/primitive/void/multi-param class proxy scenarios need to capture the `method` from the callback lambda:
 
@@ -948,7 +948,7 @@ git commit -m "bench: update ProxyBenchmark for unified API"
 
 - [ ] **Step 1: Update README.md**
 
-- Update API examples from `APS.create/createInterface` to `APS.proxy`
+- Update API examples from `AcceleratedProxy.create/createInterface` to `AcceleratedProxy.proxy`
 - Update callback examples from `Callback/InterfaceCallback` to `Interceptor`
 - Update `invokeSuper` examples
 - Update the APS vs JavaProxy comparison table (simpler API column)
@@ -995,5 +995,5 @@ No TBD, TODO, or vague steps. Each step has concrete code or commands.
 - DispatchGenerator: defined Task 3, used Tasks 7-8
 - MethodInfo: defined Task 3, used Tasks 7-8
 - ClinitRegistry: unchanged (Task 4 verifies), used in Tasks 5-8 for Method object registration
-- APS.proxy (): defined Task 9, consumed Tasks 12-13
+- AcceleratedProxy.proxy (): defined Task 9, consumed Tasks 12-13
 - WeakCache: defined Task 10, wired in Task 9 step 2

@@ -38,7 +38,7 @@ Phase 1 的目标是让 APS 项目 **可信**：一个新项目要说服框架�
 | 实现       | 说明                                                                             |
 |------------|----------------------------------------------------------------------------------|
 | Direct     | 直接 new 对象调用，性能基线                                                      |
-| APS        | `APS.create()` + `superHandle.invoke(args)`                                      |
+| APS        | `AcceleratedProxy.create()` + `superHandle.invoke(args)`                                      |
 | CGLib      | `Enhancer.create()` + `MethodInterceptor` + `methodProxy.invokeSuper()`          |
 | Java Proxy | `Proxy.newProxyInstance()` + `InvocationHandler` + `method.invoke(target, args)` |
 
@@ -84,7 +84,7 @@ Phase 1 的目标是让 APS 项目 **可信**：一个新项目要说服框架�
 
 文件：`docs/migration-guide.md`
 
-- **CGLib → APS**：Enhancer → APS.create，MethodProxy.invokeSuper → superHandle.invoke
+- **CGLib → APS**：Enhancer → AcceleratedProxy.create，MethodProxy.invokeSuper → superHandle.invoke
 - **Java Proxy → APS**：接口代理 → 具体类代理
 - **功能对照表**：final 方法、static 方法、构造器、基本类型、异常处理等逐项对比
 

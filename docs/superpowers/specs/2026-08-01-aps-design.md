@@ -28,8 +28,8 @@ APS 是一个高性能 Java 运行时动态代理库，面向框架作者，目�
 ```
 ┌─────────────────────────────────┐
 │          Public API             │
-│  APS.create(Class, Callback)    │
-│  APS.create(Class, Callback[],  │
+│  AcceleratedProxy.create(Class, Callback)    │
+│  AcceleratedProxy.create(Class, Callback[],  │
 │             ClassFilter)        │
 └──────────────┬──────────────────┘
                │
@@ -85,7 +85,7 @@ public interface Callback {
 
 ```java
 // 最简形式：代理一个类，所有方法经 handler
-T proxy = APS.create(TargetClass.class, (Callback)
+T proxy = AcceleratedProxy.create(TargetClass.class, (Callback)
                 (obj, method, superHandle, args) -> {
                     System.out.println("before " + method.getName());
                     Object result = superHandle.invoke(args);
@@ -94,12 +94,12 @@ T proxy = APS.create(TargetClass.class, (Callback)
                 });
 
 // 带过滤器：只拦截匹配的方法
-T proxy = APS.create(TargetClass.class, callbacks, method ->
+T proxy = AcceleratedProxy.create(TargetClass.class, callbacks, method ->
         method.getName().startsWith("get"));
 ```
 
 - `superHandle` 是 MethodHandle，不是 Method。用户调 `superHandle.invoke(args)` 走 MethodHandle，非 `Method.invoke`。
-- 泛型推断，`APS.create(MyClass.class, handler)` 返回 `MyClass` 类型，无需强转。
+- 泛型推断，`AcceleratedProxy.create(MyClass.class, handler)` 返回 `MyClass` 类型，无需强转。
 - 过滤器可选。不传 filter → 全量拦截；传了 → 只拦截匹配方法，其余走超类直达（零拦截开销）。
 
 ```java

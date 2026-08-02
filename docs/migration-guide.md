@@ -35,7 +35,7 @@ MyService proxy = (MyService) enhancer.create();
 ```java
 import io.github.lamspace.APS;
 
-MyService proxy = APS.create(MyService.class, (obj, method, superHandle, args) -> {
+MyService proxy = AcceleratedProxy.create(MyService.class, (obj, method, superHandle, args) -> {
     System.out.println("before " + method.getName());
     Object result = superHandle.invoke(args);
     System.out.println("after " + method.getName());
@@ -48,7 +48,7 @@ MyService proxy = APS.create(MyService.class, (obj, method, superHandle, args) -
 
 | CGLib                          | APS                                 |
 |--------------------------------|-------------------------------------|
-| `Enhancer` builder             | `APS.create()` static factory       |
+| `Enhancer` builder             | `AcceleratedProxy.create()` static factory       |
 | `MethodInterceptor` (3 args)   | `Callback` (4 args, includes proxy) |
 | `proxy.invokeSuper(obj, args)` | `superHandle.invoke(args)`          |
 | Requires explicit cast         | Generic inference, no cast          |
@@ -75,7 +75,7 @@ startsWith("get") ?0:1);
 **APS (`ClassFilter`):**
 
 ```java
-MyService proxy = APS.create(MyService.class, interceptor,
+MyService proxy = AcceleratedProxy.create(MyService.class, interceptor,
         method -> method.getName().startsWith("get"));
 // Methods not matching the filter skip interception entirely — zero overhead
 ```
@@ -93,7 +93,7 @@ enhancer.create(new Class[] {
 **APS:**
 
 ```java
-APS.create(MyService .class, callback, null,"arg");
+AcceleratedProxy.create(MyService .class, callback, null,"arg");
 ```
 
 ---
@@ -121,7 +121,7 @@ Service proxy = (Service) Proxy.newProxyInstance(
 ```java
 import io.github.lamspace.APS;
 
-ServiceImpl proxy = APS.create(ServiceImpl.class,
+ServiceImpl proxy = AcceleratedProxy.create(ServiceImpl.class,
         (obj, method, superHandle, args) -> {
             System.out.println("before " + method.getName());
             return superHandle.invoke(args);
@@ -137,7 +137,7 @@ ServiceImpl proxy = APS.create(ServiceImpl.class,
 | `InvocationHandler` (3 args)  | `Callback` (4 args, includes MethodHandle) |
 | `method.invoke(target, args)` | `superHandle.invoke(args)`                 |
 | Requires target instance      | Built-in super-call binding                |
-| `Proxy.newProxyInstance(...)` | `APS.create(Class, Callback)`              |
+| `Proxy.newProxyInstance(...)` | `AcceleratedProxy.create(Class, Callback)`              |
 
 ---
 

@@ -25,17 +25,17 @@
 - [x] 4.2 Run `mvn -s /home/lam/repo/settings.xml compile` to verify compilation
 - [x] 4.3 Commit: `git commit -m "feat: add InterfaceGenerator for interface proxy bytecode"`
 
-## 5. APS.createInterface () Public API
+## 5. AcceleratedProxy.createInterface () Public API
 
 - [x] 5.1 Add `createInterface(Class<T>, InterfaceCallback)` and `createInterface(Class<T>, InterfaceCallback, ClassFilter)` methods to `APS.java` with `isInterface()` validation and `InterfaceGenerator` wiring
 - [x] 5.2 Run `mvn -s /home/lam/repo/settings.xml test` — existing tests must still pass
-- [x] 5.3 Commit: `git commit -m "feat: add APS.createInterface() for interface proxies"`
+- [x] 5.3 Commit: `git commit -m "feat: add AcceleratedProxy.createInterface() for interface proxies"`
 
 ## 6. Integration Tests
 
 - [x] 6.1 Create `APSInterfaceFunctionalTest.java` covering: noop callback, arg modification, primitive return, void methods, ClassFilter routing, default methods, non-interface rejection, null arg rejection, RuntimeException propagation, checked Exception wrapping, no-arg methods
 - [x] 6.2 Run `mvn -s /home/lam/repo/settings.xml test` — all tests pass (16 existing + new interface tests)
-- [x] 6.3 Commit: `git commit -m "test: add integration tests for APS.createInterface()"`
+- [x] 6.3 Commit: `git commit -m "test: add integration tests for AcceleratedProxy.createInterface()"`
 
 ## 7. Final Verification
 

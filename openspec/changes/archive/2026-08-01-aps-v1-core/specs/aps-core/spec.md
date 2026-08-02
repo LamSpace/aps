@@ -10,7 +10,7 @@ The system SHALL generate a runtime subclass of any non-final concrete class and
 
 #### Scenario: Basic proxy creation and interception
 
-- **WHEN** user calls `APS.create(TargetClass.class, callback)`
+- **WHEN** user calls `AcceleratedProxy.create(TargetClass.class, callback)`
 - **THEN** system returns a proxy instance of type `TargetClass`
 - **AND** any method call on the proxy invokes `callback.intercept(proxy, method, superHandle, args)`
 
@@ -47,13 +47,13 @@ The system SHALL support an optional ClassFilter that determines which methods p
 #### Scenario: Filtered method skips interception
 
 - **WHEN** user creates a proxy with
-  `APS.create(TargetClass.class, callback, method -> method.getName().startsWith("get"))`
+  `AcceleratedProxy.create(TargetClass.class, callback, method -> method.getName().startsWith("get"))`
 - **AND** a method not matching the filter is called (e.g., `setValue`)
 - **THEN** the method executes the superclass implementation directly without invoking the callback
 
 #### Scenario: Unfiltered proxy intercepts all methods
 
-- **WHEN** user creates a proxy with `APS.create(TargetClass.class, callback)` (no filter)
+- **WHEN** user creates a proxy with `AcceleratedProxy.create(TargetClass.class, callback)` (no filter)
 - **THEN** all non-final instance method calls are routed through the callback
 
 ### Requirement: Primitive type handling
@@ -114,7 +114,7 @@ The system SHALL support proxying classes that lack a no-argument constructor by
 
 #### Scenario: Proxy class with constructor arguments
 
-- **WHEN** user calls `APS.create(BeanWithArgs.class, callback, null, "arg1", 42)`
+- **WHEN** user calls `AcceleratedProxy.create(BeanWithArgs.class, callback, null, "arg1", 42)`
 - **THEN** the system finds a matching constructor on the target class
 - **AND** generates a proxy constructor that delegates the arguments to super ()
 - **AND** returns a properly initialized proxy instance

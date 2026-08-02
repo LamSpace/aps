@@ -25,12 +25,12 @@ import java.lang.reflect.Method;
  * {@code InterfaceCallback}.
  *
  * <p>To invoke the original superclass method, use
- * {@link APS#invokeSuper(Object, Method, Object[])}.
+ * {@link AcceleratedProxy#invokeSuper(Object, Method, Object[])}.
  *
  * <pre>{@code
- *   Greeter proxy = APS.proxy(Greeter.class, (obj, method, args) -> {
+ *   Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
  *       System.out.println("before " + method.getName());
- *       return APS.invokeSuper(obj, method, args);
+ *       return AcceleratedProxy.invokeSuper(obj, method, args);
  *   });
  * }</pre>
  */
