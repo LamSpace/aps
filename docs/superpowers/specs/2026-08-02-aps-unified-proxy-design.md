@@ -6,12 +6,12 @@
 
 APS currently has two parallel APIs for class and interface proxies:
 
-|                  | Class Proxy                             | Interface Proxy                                 |
-|------------------|-----------------------------------------|-------------------------------------------------|
-| Entry            | `AcceleratedProxy.create(Class, Callback)`           | `AcceleratedProxy.createInterface(Class, InterfaceCallback)` |
-| Callback         | `intercept(proxy, method, index, args)` | `intercept(proxy, method, args)`                |
-| Super invocation | `AcceleratedProxy.invokeSuper(proxy, index, args)`   | N/A                                             |
-| Structure        | `extends TargetClass + SuperDispatcher` | `extends Object + Interface`                    |
+|                  | Class Proxy                                        | Interface Proxy                                              |
+|------------------|----------------------------------------------------|--------------------------------------------------------------|
+| Entry            | `AcceleratedProxy.create(Class, Callback)`         | `AcceleratedProxy.createInterface(Class, InterfaceCallback)` |
+| Callback         | `intercept(proxy, method, index, args)`            | `intercept(proxy, method, args)`                             |
+| Super invocation | `AcceleratedProxy.invokeSuper(proxy, index, args)` | N/A                                                          |
+| Structure        | `extends TargetClass + SuperDispatcher`            | `extends Object + Interface`                                 |
 
 The `invokeSuper` path for class proxies goes through a type-erased `MethodHandle.invoke()` (via `_handles[index].invoke(this, args)`), which adds ~10ns of overhead compared to a direct `super.method(args)` call. The design unifies the two APIs and replaces the MethodHandle dispatch with direct `INVOKESPECIAL` super calls routed through a hashCode-based switch.
 

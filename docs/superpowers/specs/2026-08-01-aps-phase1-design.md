@@ -38,7 +38,7 @@ Phase 1 的目标是让 APS 项目 **可信**：一个新项目要说服框架�
 | 实现       | 说明                                                                             |
 |------------|----------------------------------------------------------------------------------|
 | Direct     | 直接 new 对象调用，性能基线                                                      |
-| APS        | `AcceleratedProxy.create()` + `superHandle.invoke(args)`                                      |
+| APS        | `AcceleratedProxy.create()` + `superHandle.invoke(args)`                         |
 | CGLib      | `Enhancer.create()` + `MethodInterceptor` + `methodProxy.invokeSuper()`          |
 | Java Proxy | `Proxy.newProxyInstance()` + `InvocationHandler` + `method.invoke(target, args)` |
 

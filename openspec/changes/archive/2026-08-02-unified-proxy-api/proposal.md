@@ -1,6 +1,7 @@
 ## Why
 
-APS currently has two separate APIs (`AcceleratedProxy.create` for class proxies, `AcceleratedProxy.createInterface` for interface proxies) with different callback interfaces (`Callback` with an index parameter vs `InterfaceCallback` without). The class proxy `invokeSuper` path goes through a type-erased `MethodHandle.invoke()` which adds ~10ns overhead per call compared to a direct `super.method(args)` call. This proposal unifies the API into a single entry point and replaces the MethodHandle dispatch with direct
+APS currently has two separate APIs (`AcceleratedProxy.create` for class proxies, `AcceleratedProxy.createInterface` for interface proxies) with different callback interfaces (`Callback` with an index parameter vs `InterfaceCallback` without). The class proxy `invokeSuper` path goes through a type-erased `MethodHandle.invoke()` which adds ~10ns overhead per call compared to a direct `super.method(args)` call. This proposal unifies the API into a single entry point and replaces the MethodHandle
+dispatch with direct
 `INVOKESPECIAL` super calls.
 
 ## What Changes

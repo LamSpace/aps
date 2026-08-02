@@ -70,14 +70,14 @@ JMH benchmarks on Java 25. Best result per row **bolded**.
 
 ### Interface Proxy Highlights
 
-| Scenario      | APS       | Java Proxy |
-|---------------|-----------|------------|
-| int return    | 1.30      | **1.05**   |
-| String return | **5.69**  | 5.77       |
-| void return   | 1.30      | **1.05**   |
-| No-op         | 1.31      | **1.05**   |
-| Passthrough   | **5.69**  | 5.77       |
-| Arg modify    | 5.30      | **5.29**   |
+| Scenario      | APS      | Java Proxy |
+|---------------|----------|------------|
+| int return    | 1.30     | **1.05**   |
+| String return | **5.69** | 5.77       |
+| void return   | 1.30     | **1.05**   |
+| No-op         | 1.31     | **1.05**   |
+| Passthrough   | **5.69** | 5.77       |
+| Arg modify    | 5.30     | **5.29**   |
 
 *ns/op, lower is better. Full results: [docs/benchmark-results.md](docs/benchmark-results.md)*
 
@@ -117,7 +117,7 @@ Maven Central publishing is on the [roadmap](docs/aps-future-roadmap.md).
 | Super call overhead            | Zero (direct `super.method()`)    | MethodProxy + FastClass    |
 | Class loading                  | `defineHiddenClass()` (GC-safe)   | Custom ClassLoader         |
 | API style                      | Functional (`Interceptor` lambda) | Callback + MethodProxy     |
-| Interface proxy                | Yes (`AcceleratedProxy.proxy()`)               | No (requires Objenesis)    |
+| Interface proxy                | Yes (`AcceleratedProxy.proxy()`)  | No (requires Objenesis)    |
 | Primitive boxing               | Automatic                         | Automatic                  |
 | Exception propagation          | Checked → `UndeclaredThrowable`   | Checked → InvocationTarget |
 | No-default-constructor support | Yes                               | Yes                        |

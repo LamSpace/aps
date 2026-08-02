@@ -41,7 +41,7 @@ Greeter proxy = APS.intercept(Greeter.class, new MyInterceptor());
 ```java
 // 设想：不同方法组绑定不同 Callback
 AcceleratedProxy.create(Greeter .class,
-           Group.of(m ->m.
+                        Group.of(m ->m.
 
 getName().
 

@@ -46,13 +46,13 @@ MyService proxy = AcceleratedProxy.create(MyService.class, (obj, method, superHa
 
 ### Key differences
 
-| CGLib                          | APS                                 |
-|--------------------------------|-------------------------------------|
-| `Enhancer` builder             | `AcceleratedProxy.create()` static factory       |
-| `MethodInterceptor` (3 args)   | `Callback` (4 args, includes proxy) |
-| `proxy.invokeSuper(obj, args)` | `superHandle.invoke(args)`          |
-| Requires explicit cast         | Generic inference, no cast          |
-| Custom ClassLoader             | Hidden class, GC-safe               |
+| CGLib                          | APS                                        |
+|--------------------------------|--------------------------------------------|
+| `Enhancer` builder             | `AcceleratedProxy.create()` static factory |
+| `MethodInterceptor` (3 args)   | `Callback` (4 args, includes proxy)        |
+| `proxy.invokeSuper(obj, args)` | `superHandle.invoke(args)`                 |
+| Requires explicit cast         | Generic inference, no cast                 |
+| Custom ClassLoader             | Hidden class, GC-safe                      |
 
 ### Method filtering
 
@@ -137,7 +137,7 @@ ServiceImpl proxy = AcceleratedProxy.create(ServiceImpl.class,
 | `InvocationHandler` (3 args)  | `Callback` (4 args, includes MethodHandle) |
 | `method.invoke(target, args)` | `superHandle.invoke(args)`                 |
 | Requires target instance      | Built-in super-call binding                |
-| `Proxy.newProxyInstance(...)` | `AcceleratedProxy.create(Class, Callback)`              |
+| `Proxy.newProxyInstance(...)` | `AcceleratedProxy.create(Class, Callback)` |
 
 ---
 
