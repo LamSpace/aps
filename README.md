@@ -1,14 +1,14 @@
 # 🚀 APS — Accelerated Proxy Solution
 
-A high-performance, MethodHandle-powered dynamic proxy library for Java, designed as a drop-in replacement for CGLib.
+A high-performance dynamic proxy library for Java, designed as a drop-in replacement for CGLib, using hashCode-based dispatch with direct `INVOKESPECIAL` super calls for near-zero interception overhead.
 
 ## ✨ Features
 
-- **MethodHandle dispatch** — pre-computed index-based dispatch tables replace
-  `Method.invoke()` reflection, delivering near-direct-call performance
-- **Interface proxy support** — `APS.createInterface()` generates runtime implementations for any interface, backed by the same MethodHandle dispatch
+- **Zero-overhead super dispatch** — hashCode-driven `dispatch()` switch calls `super.method(args)` directly; no MethodHandle, no reflection, JIT-inlinable
+- **Unified API** — single `APS.proxy(target, interceptor)` entry point for both classes and interfaces
+- **Interface proxy support** — generates runtime interface implementations at near-parity with `java.lang.reflect.Proxy`
 - **No ClassLoader leaks** — uses `Lookup.defineHiddenClass()` so proxy classes are GC-eligible when no longer referenced
-- **One-line API** — `APS.create(MyClass.class, callback)` with generic type inference, no casts needed
+- **One-line API** — `APS.proxy(MyClass.class, interceptor)` with generic type inference, no casts needed
 - **Zero-overhead filtering** — methods excluded by `ClassFilter` call the superclass directly with no interception cost
 - **Constructor arguments** — supports proxying classes without a no-arg constructor
 
@@ -17,9 +17,9 @@ A high-performance, MethodHandle-powered dynamic proxy library for Java, designe
 ### Class Proxy
 
 ```java
-Greeter proxy = APS.create(Greeter.class, (obj, method, index, args) -> {
+Greeter proxy = APS.proxy(Greeter.class, (obj, method, args) -> {
     System.out.println("before " + method.getName());
-    Object result = APS.invokeSuper(obj, index, args);
+    Object result = APS.invokeSuper(obj, method, args);
     System.out.println("after " + method.getName());
     return result;
 });
@@ -33,7 +33,7 @@ String greeting = proxy.hello("World");
 ### Interface Proxy
 
 ```java
-Calculator calc = APS.createInterface(Calculator.class, (obj, method, args) -> {
+Calculator calc = APS.proxy(Calculator.class, (obj, method, args) -> {
     System.out.println("calling " + method.getName());
     // implement custom logic, or return a canned response
     return 42;
@@ -46,34 +46,33 @@ int result = calc.add(10, 20);
 
 ## 📊 Performance
 
-JMH benchmarks on Java 25, 4 implementations × 6 scenarios:
+JMH benchmarks on Java 25, 4 implementations × 6 scenarios. Best result per row **bolded**.
 
 ### Class Proxy
 
-| Scenario         | Direct | APS   | CGLib | JavaProxy |
-|------------------|--------|-------|-------|-----------|
-| No-op            | 5.65   | 1.35  | 1.08  | 1.35      |
-| Passthrough      | 5.88   | 17.15 | 15.40 | 5.86      |
-| Arg modify       | 5.57   | 22.85 | 20.22 | 37.96     |
-| Primitive return | 0.68   | 9.46  | 12.96 | 1.92      |
-| Void method      | 0.68   | 8.02  | 3.96  | 1.70      |
-| Multi-param      | 60.01  | 72.47 | 75.26 | 62.54     |
+| Scenario         | Direct | APS   | CGLib  | JavaProxy |
+|------------------|--------|-------|--------|-----------|
+| No-op            | 5.72   | 1.32  | 1.06   | **1.05**  |
+| Passthrough      | 5.66   | **5.69**  | 13.87  | 5.79      |
+| Arg modify       | 5.69   | **6.11**  | 19.11  | 33.73     |
+| Primitive return | 0.67   | 2.08  | 12.58  | **1.83**  |
+| Void method      | 0.66   | 2.34  | 3.68   | **1.64**  |
+| Multi-param      | 58.40  | **58.76** | 71.32  | 59.30     |
 
 ### Interface Proxy
 
 | Scenario         | APS   | JavaProxy |
 |------------------|-------|-----------|
-| No-op            | 1.34  | 1.09      |
-| Passthrough      | 5.72  | 5.70      |
-| Arg modify       | 5.51  | 5.35      |
-| Primitive return | 1.38  | 1.28      |
-| Void method      | 1.37  | 1.07      |
-| Multi-param      | 88.47 | 84.56     |
+| No-op            | 1.33  | **1.05**  |
+| Passthrough      | **5.69**  | 5.77      |
+| Arg modify       | 5.30  | **5.29**  |
+| Primitive return | 1.32  | **1.05**  |
+| Void method      | 1.30  | **1.05**  |
+| Multi-param      | 80.50 | **80.09** |
 
 *ns/op, lower is better. Full results: [docs/benchmark-results.md](docs/benchmark-results.md)*
 
-APS is competitive with CGLib across all class-proxy scenarios and on par with
-`java.lang.reflect.Proxy` for interface proxies — all without reflection overhead or ClassLoader leaks.
+APS leads class proxy performance in the most realistic scenarios (passthrough, arg modify, multi-param) where actual work happens inside the interceptor, and runs at near-parity with `java.lang.reflect.Proxy` for interface proxies.
 
 ## 📋 Requirements
 
@@ -105,33 +104,34 @@ Maven Central publishing is on the [roadmap](docs/aps-future-roadmap.md).
 
 ## 🆚 APS vs CGLib
 
-| Feature                        | APS                             | CGLib                      |
-|--------------------------------|---------------------------------|----------------------------|
-| Dispatch mechanism             | MethodHandle (JVM-native)       | Generated bytecode         |
-| Class loading                  | `defineHiddenClass()` (GC-safe) | Custom ClassLoader         |
-| API style                      | Functional (lambda-friendly)    | Callback + MethodProxy     |
-| Interface proxy                | Yes (`createInterface`)         | No (requires Objenesis)    |
-| Primitive boxing               | Automatic                       | Automatic                  |
-| Exception propagation          | Checked → UndeclaredThrowable   | Checked → InvocationTarget |
-| No-default-constructor support | Yes                             | Yes                        |
-| Final class/method proxy       | No (JVM limit)                  | No (JVM limit)             |
-| Static method proxy            | Roadmap                         | No                         |
-| Constructor interception       | Roadmap                         | Yes                        |
-| Maven Central                  | Roadmap                         | Yes                        |
+| Feature                        | APS                                  | CGLib                      |
+|--------------------------------|--------------------------------------|----------------------------|
+| Dispatch mechanism             | hashCode switch + `INVOKESPECIAL`    | Generated bytecode         |
+| Super call overhead            | Zero (direct `super.method()`)       | MethodProxy + FastClass    |
+| Class loading                  | `defineHiddenClass()` (GC-safe)      | Custom ClassLoader         |
+| API style                      | Functional (`Interceptor` lambda)    | Callback + MethodProxy     |
+| Interface proxy                | Yes (`APS.proxy()`)                  | No (requires Objenesis)    |
+| Primitive boxing               | Automatic                            | Automatic                  |
+| Exception propagation          | Checked → `UndeclaredThrowable`      | Checked → InvocationTarget |
+| No-default-constructor support | Yes                                  | Yes                        |
+| Final class/method proxy       | No (JVM limit)                       | No (JVM limit)             |
+| Maven Central                  | Roadmap                              | Yes                        |
 
 ## 🆚 APS vs JavaProxy
 
-| Feature                    | APS                             | `java.lang.reflect.Proxy`           |
-|----------------------------|---------------------------------|-------------------------------------|
-| Proxy target               | Classes **and** interfaces      | Interfaces only                     |
-| Dispatch mechanism         | MethodHandle (JVM-native)       | Reflection (`Method.invoke`)        |
-| Class loading              | `defineHiddenClass()` (GC-safe) | `defineClass` + proxy cache         |
-| API style                  | Functional (lambda-friendly)    | `InvocationHandler` (single-method) |
-| Selective interception     | `ClassFilter` per method        | All-or-nothing                      |
-| Exception propagation      | Checked → `UndeclaredThrowable` | Checked → `InvocationTarget`        |
-| Constructor args (classes) | Yes                             | N/A (interfaces only)               |
-| Performance overhead       | Minimal (pre-computed handles)  | Reflection call per invocation      |
-| Dependencies               | Third-party (APS + ASM)         | Built into JDK                      |
+| Feature                    | APS                                  | `java.lang.reflect.Proxy`        |
+|----------------------------|--------------------------------------|----------------------------------|
+| Proxy target               | Classes **and** interfaces           | Interfaces only                  |
+| Dispatch mechanism         | hashCode switch + `INVOKESPECIAL`    | Generated bytecode + `InvocationHandler` |
+| Super call overhead        | Zero (direct `super.method()`)       | N/A (interfaces only)            |
+| Class loading              | `defineHiddenClass()` (GC-safe)      | `defineClass` + proxy cache      |
+| API style                  | Functional (`Interceptor` lambda)    | `InvocationHandler` (single-method) |
+| Selective interception     | `ClassFilter` per method             | All-or-nothing                   |
+| Exception propagation      | Checked → `UndeclaredThrowable`      | Checked → `InvocationTarget`     |
+| Constructor args (classes) | Yes                                  | N/A (interfaces only)            |
+| Class proxy performance    | ~5.69 ns passthrough (direct speed)  | N/A (cannot proxy classes)       |
+| Interface proxy performance | Near-parity (~0.25ns gap)           | Slight edge (JIT intrinsics)     |
+| Dependencies               | Third-party (APS + ASM)              | Built into JDK                   |
 
 ## 🔄 Migration from CGLib
 
