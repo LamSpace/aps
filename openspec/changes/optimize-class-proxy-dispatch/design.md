@@ -9,6 +9,7 @@ See proposal.md for the performance motivation.
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Eliminate `bindTo(this)` allocation from the class proxy hot path
 - Replace bound MethodHandle in `Callback.intercept` with a stable integer index
 - Provide `invokeSuper(int, Object[])` on generated proxies for callback-driven super dispatch
@@ -16,6 +17,7 @@ See proposal.md for the performance motivation.
 - Maintain interface proxy behavior unchanged
 
 **Non-Goals:**
+
 - Match CGLib's raw speed (the remaining ~20ns gap from MethodHandle.invoke vs invokespecial is architectural)
 - Change interface proxy dispatch (already at parity with JDK Proxy)
 - Support dynamic method addition/removal at runtime
@@ -34,6 +36,7 @@ Lookup.findSpecial(...)                // (Receiver, P1, P2)Ret
 ```
 
 **Alternatives considered:**
+
 - **Keep per-method fields but bind `this` lazily:** Still allocates on first call per instance, and the callback still holds a handle reference. No allocation savings on the hot path.
 - **Use `invokeExact` with exact types:** Would require per-method dispatch methods in `invokeSuper`, blowing up code size. The `asType` adaptation cost is paid once at `<clinit>`; `invoke` on the adapted handle adds negligible overhead vs `invokeExact`.
 - **Use `LambdaMetafactory` to generate functional interface instances:** Adds complexity and indirection without clear benefit over array indexing.
@@ -55,6 +58,7 @@ Object intercept(Object proxy, Method method, int index, Object[] args)
 The index is the zero-based position in `_handles[]`. The proxy instance itself provides `invokeSuper(int, Object[])`. Since the generated class is a hidden class, callers access `invokeSuper` through the proxy reference (which is an instance of the hidden class).
 
 **Alternatives considered:**
+
 - **Keep MethodHandle but pre-bind `this` at proxy construction:** Would eliminate `bindTo` but requires N handles per instance (memory bloat) and the bound handle's `this` reference prevents GC of the proxy.
 - **Pass a lightweight "SuperCall" wrapper object:** An extra object per call — defeats the purpose.
 
@@ -69,6 +73,7 @@ public Object invokeSuper(int index, Object[] args) {
 Since the hidden class is nestmate of the target class, it has access to `invokespecial` semantics through `findSpecial`. The `MethodHandle` itself carries the access check (resolved at `<clinit>`), so the invocation doesn't re-check.
 
 **Alternatives considered:**
+
 - **Interface-based dispatch (e.g., `SuperCallable` interface):** Cleaner API but the generated class doesn't implement this interface currently. Adding it brings method table pollution and doesn't change the runtime cost.
 
 ## Risks / Trade-offs

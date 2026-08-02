@@ -1,8 +1,6 @@
 ## Context
 
-This is a greenfield project — no existing code to integrate with. The project is a Maven-based Java 25 library
-(groupId: `io.github.lamspace`, artifactId: `aps`). The only constraint is the Java 25 runtime and the Maven build
-toolchain.
+This is a greenfield project — no existing code to integrate with. The project is a Maven-based Java 25 library (groupId: `io.github.lamspace`, artifactId: `aps`). The only constraint is the Java 25 runtime and the Maven build toolchain.
 
 See proposal.md for motivation.
 
@@ -31,14 +29,11 @@ See proposal.md for motivation.
 
 **Alternatives considered:**
 
-- **ByteBuddy:** Higher-level API but adds a heavy dependency. ASM is lighter and CGLib already depends on it, making
-  migration easier for existing CGLib consumers.
+- **ByteBuddy:** Higher-level API but adds a heavy dependency. ASM is lighter and CGLib already depends on it, making migration easier for existing CGLib consumers.
 - **Javassist:** Similar to ASM but slower bytecode generation.
-- **JDK ClassFile API (Java 22+):** Standard library, zero dependency. But the API is still evolving (preview in 22,
-  final in 24). ASM is battle-tested and well-understood.
+- **JDK ClassFile API (Java 22+):** Standard library, zero dependency. But the API is still evolving (preview in 22, final in 24). ASM is battle-tested and well-understood.
 
-**Rationale:** ASM is the proven choice. We can migrate to the JDK ClassFile API in a future version once it stabilizes
-and has broader adoption.
+**Rationale:** ASM is the proven choice. We can migrate to the JDK ClassFile API in a future version once it stabilizes and has broader adoption.
 
 ### `Lookup.defineHiddenClass()` over custom ClassLoader
 
@@ -46,13 +41,10 @@ and has broader adoption.
 
 **Alternatives considered:**
 
-- **Custom ClassLoader + `defineClass`:** The CGLib approach. Classes are permanently tied to the ClassLoader, causing
-  metaspace leaks when proxies are created/discarded frequently.
+- **Custom ClassLoader + `defineClass`:** The CGLib approach. Classes are permanently tied to the ClassLoader, causing metaspace leaks when proxies are created/discarded frequently.
 - **`Unsafe.defineAnonymousClass`:** Deprecated since Java 15, removed in newer JDKs.
 
-**Rationale:** Hidden classes are the modern, supported API. They are not discoverable by name, not tied to a
-ClassLoader for GC purposes, and the `true` flag for `NESTMATE` access gives the proxy access to the target class's
-private nest.
+**Rationale:** Hidden classes are the modern, supported API. They are not discoverable by name, not tied to a ClassLoader for GC purposes, and the `true` flag for `NESTMATE` access gives the proxy access to the target class's private nest.
 
 ### Single Callback model (matching Proxy/CGLib)
 
@@ -63,8 +55,7 @@ private nest.
 - **Per-method callbacks:** More flexibility but more complexity. Not what Proxy/CGLib users expect.
 - **Callback array + index dispatch:** The full CGLib model. Adds complexity without clear benefit for v1.
 
-**Rationale:** Most framework use cases (Spring AOP, Hibernate lazy loading) use a single interceptor per proxy.
-Per-method callbacks can be simulated inside the single Callback if needed.
+**Rationale:** Most framework use cases (Spring AOP, Hibernate lazy loading) use a single interceptor per proxy. Per-method callbacks can be simulated inside the single Callback if needed.
 
 ### `MethodHandles.Lookup.findSpecial` for super-call binding
 
@@ -82,36 +73,22 @@ Per-method callbacks can be simulated inside the single Callback if needed.
 
 ### Auto privilege escalation with graceful fallback
 
-**Choice:** Try `MethodHandles.privateLookupIn(targetClass, MethodHandles.lookup())` first; on `IllegalAccessException`,
-fall back to `MethodHandles.lookup()`.
+**Choice:** Try `MethodHandles.privateLookupIn(targetClass, MethodHandles.lookup())` first; on `IllegalAccessException`, fall back to `MethodHandles.lookup()`.
 
-**Rationale:** Framework authors often have control over JVM flags and module configuration. For those who do, they get
-full private access automatically. For those who don't (strict module environments), the library still works with
-reduced access — it just won't be able to proxy private methods. This matches the "auto提升 + 优雅降级" design decision
-from the spec.
+**Rationale:** Framework authors often have control over JVM flags and module configuration. For those who do, they get full private access automatically. For those who don't (strict module environments), the library still works with reduced access — it just won't be able to proxy private methods. This matches the "auto提升 + 优雅降级" design decision from the spec.
 
 ## Risks / Trade-offs
 
-- **[Risk]** ASM may not yet support Java 25 class file format (version 69). **Mitigation:** ASM updates lag JDK
-  releases by a few months. If ASM 9.7.1 doesn't support JDK 25 class files, we target the highest supported version and
-  note the limitation. Generated proxy classes reference JDK 15+ APIs only, so the JDK 25 source/target is for the
-  library itself, not the generated bytecode version.
+- **[Risk]** ASM may not yet support Java 25 class file format (version 69). **Mitigation:** ASM updates lag JDK releases by a few months. If ASM 9.7.1 doesn't support JDK 25 class files, we target the highest supported version and note the limitation. Generated proxy classes reference JDK 15+ APIs only, so the JDK 25 source/target is for the library itself, not the generated bytecode version.
 
-- **[Risk]** `Lookup.findSpecial` on a hidden class for a method in a different package may fail under strict module
-  boundaries. **Mitigation:** The `NESTMATE` option (`true` parameter in `defineHiddenClass`) grants the hidden class
-  access to the lookup class's nest — but for cross-package targets, `privateLookupIn` is needed. The graceful fallback
-  covers this case.
+- **[Risk]** `Lookup.findSpecial` on a hidden class for a method in a different package may fail under strict module boundaries. **Mitigation:** The `NESTMATE` option (`true` parameter in `defineHiddenClass`) grants the hidden class access to the lookup class's nest — but for cross-package targets, `privateLookupIn` is needed. The graceful fallback covers this case.
 
-- **[Trade-off]** Single Callback model means no built-in support for per-method interceptors. Framework authors who
-  need this must implement routing logic in their Callback. This is by design — it keeps APS simple and matches the
-  existing mental model.
+- **[Trade-off]** Single Callback model means no built-in support for per-method interceptors. Framework authors who need this must implement routing logic in their Callback. This is by design — it keeps APS simple and matches the existing mental model.
 
 ## Migration Plan
 
-N/A — greenfield project. Migration guides from CGLib/Proxy to APS are a nice-to-have for v1 (documented in the design
-spec but not blocking).
+N/A — greenfield project. Migration guides from CGLib/Proxy to APS are a nice-to-have for v1 (documented in the design spec but not blocking).
 
 ## Open Questions
 
-- Whether ASM 9.7.1 supports Java 25 class file generation — test during Task 1 implementation and adjust version if
-  needed.
+- Whether ASM 9.7.1 supports Java 25 class file generation — test during Task 1 implementation and adjust version if needed.

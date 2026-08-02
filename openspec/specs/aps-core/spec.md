@@ -6,8 +6,7 @@ A high-performance dynamic proxy engine for Java that proxies concrete classes a
 
 ### Requirement: Proxy class creation
 
-The system SHALL generate a runtime subclass of any non-final concrete class and route all non-final instance method
-calls through a user-provided single `Interceptor` handler.
+The system SHALL generate a runtime subclass of any non-final concrete class and route all non-final instance method calls through a user-provided single `Interceptor` handler.
 
 #### Scenario: Basic proxy creation and interception
 
@@ -58,8 +57,7 @@ The system SHALL support an optional `ClassFilter` that determines which methods
 
 ### Requirement: Primitive type handling
 
-The system SHALL correctly box primitive arguments into Object[] for callback delivery and unbox the Object return value
-back to the expected primitive type.
+The system SHALL correctly box primitive arguments into Object[] for callback delivery and unbox the Object return value back to the expected primitive type.
 
 #### Scenario: Primitive argument boxing
 
@@ -83,8 +81,7 @@ The system SHALL handle methods with void return type by discarding the callback
 
 ### Requirement: Exception propagation
 
-The system SHALL propagate unchecked exceptions thrown by the callback directly to the caller. Checked exceptions SHALL
-be wrapped in `java.lang.reflect.UndeclaredThrowableException`.
+The system SHALL propagate unchecked exceptions thrown by the callback directly to the caller. Checked exceptions SHALL be wrapped in `java.lang.reflect.UndeclaredThrowableException`.
 
 #### Scenario: RuntimeException from callback
 
@@ -98,8 +95,7 @@ be wrapped in `java.lang.reflect.UndeclaredThrowableException`.
 
 ### Requirement: Access control with graceful degradation
 
-The system SHALL attempt to obtain full private access to the target class via `MethodHandles.privateLookupIn`. If the
-target module is not open, the system SHALL fall back to a regular public Lookup without failing.
+The system SHALL attempt to obtain full private access to the target class via `MethodHandles.privateLookupIn`. If the target module is not open, the system SHALL fall back to a regular public Lookup without failing.
 
 #### Scenario: Private access succeeds
 
@@ -122,8 +118,7 @@ The system SHALL cache generated proxy classes keyed by `{targetClass, filter}` 
 
 ### Requirement: No-default-constructor support
 
-The system SHALL support proxying classes that lack a no-argument constructor by accepting constructor arguments at
-proxy creation time.
+The system SHALL support proxying classes that lack a no-argument constructor by accepting constructor arguments at proxy creation time.
 
 #### Scenario: Proxy class with constructor arguments
 

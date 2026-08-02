@@ -1,10 +1,7 @@
 ## Why
 
-CGLib is the de-facto standard for class-based dynamic proxies in the Java ecosystem, relied upon by Spring, Hibernate,
-MyBatis, and countless other frameworks. However, it uses ASM + `Method.invoke` reflection for method dispatching, which
-incurs measurable overhead on every proxy call. Java 15+ introduced `MethodHandles.Lookup.defineHiddenClass()` (no
-ClassLoader leaks, GC-eligible) and MethodHandle offers invocation performance approaching direct calls. The time is
-right for a modern alternative that matches CGLib's capability set while delivering significantly better performance.
+CGLib is the de-facto standard for class-based dynamic proxies in the Java ecosystem, relied upon by Spring, Hibernate, MyBatis, and countless other frameworks. However, it uses ASM + `Method.invoke` reflection for method dispatching, which incurs measurable overhead on every proxy call. Java 15+ introduced `MethodHandles.Lookup.defineHiddenClass()` (no ClassLoader leaks, GC-eligible) and MethodHandle offers invocation performance approaching direct calls. The time is right for a modern
+alternative that matches CGLib's capability set while delivering significantly better performance.
 
 ## What Changes
 
@@ -20,8 +17,7 @@ right for a modern alternative that matches CGLib's capability set while deliver
 
 ### New Capabilities
 
-- `aps-core`: MethodHandle-powered class-based dynamic proxy engine — subclass generation via ASM, hidden-class loading
-  via `Lookup.defineHiddenClass()`, single-Callback interception model with MethodHandle super-call binding
+- `aps-core`: MethodHandle-powered class-based dynamic proxy engine — subclass generation via ASM, hidden-class loading via `Lookup.defineHiddenClass()`, single-Callback interception model with MethodHandle super-call binding
 
 ### Modified Capabilities
 

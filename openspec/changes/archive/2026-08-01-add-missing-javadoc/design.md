@@ -7,12 +7,14 @@ No existing tooling enforces Javadoc presence (no Checkstyle or similar lint rul
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Ensure every public and protected method, constructor, and field across all 13 main source files has a Javadoc comment
 - Ensure every class has a class-level Javadoc
 - Match the style and conventions of existing Javadoc in the codebase
 - Cover package-private methods where their purpose is non-obvious from context
 
 **Non-Goals:**
+
 - Test files (`src/test/java/`) — test methods are self-documenting by name and assertion
 - `package-info.java` files — these already have package-level documentation
 - Adding Javadoc linting/Checkstyle rules

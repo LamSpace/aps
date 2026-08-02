@@ -1,6 +1,7 @@
 ## Why
 
-APS currently has two separate APIs (`APS.create` for class proxies, `APS.createInterface` for interface proxies) with different callback interfaces (`Callback` with an index parameter vs `InterfaceCallback` without). The class proxy `invokeSuper` path goes through a type-erased `MethodHandle.invoke()` which adds ~10ns overhead per call compared to a direct `super.method(args)` call. This proposal unifies the API into a single entry point and replaces the MethodHandle dispatch with direct `INVOKESPECIAL` super calls.
+APS currently has two separate APIs (`APS.create` for class proxies, `APS.createInterface` for interface proxies) with different callback interfaces (`Callback` with an index parameter vs `InterfaceCallback` without). The class proxy `invokeSuper` path goes through a type-erased `MethodHandle.invoke()` which adds ~10ns overhead per call compared to a direct `super.method(args)` call. This proposal unifies the API into a single entry point and replaces the MethodHandle dispatch with direct
+`INVOKESPECIAL` super calls.
 
 ## What Changes
 
@@ -16,9 +17,11 @@ APS currently has two separate APIs (`APS.create` for class proxies, `APS.create
 ## Capabilities
 
 ### New Capabilities
+
 - `aps-unified-proxy`: Unified proxy creation API (`APS.proxy()`) supporting both class and interface targets through a single entry point with a single `Interceptor` callback interface
 
 ### Modified Capabilities
+
 - `aps-core`: Callback signature changes from `Callback(proxy, method, index, args)` to `Interceptor(proxy, method, args)`; `invokeSuper` signature changes from index-based to Method-based; internal dispatch mechanism changes from MethodHandle array to hashCode switch
 - `aps-interface-proxy`: Entry point changes from `createInterface` to `proxy`; callback changes from `InterfaceCallback` to `Interceptor`
 

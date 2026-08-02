@@ -6,7 +6,7 @@
 ## 2. Dispatch Mechanism
 
 - [x] 2.1 Create `DispatchGenerator.java` — generates `dispatch()` method bytecode with hashCode-driven if-else chain using `Method.hashCode()` embedded as `ldc` constants
-- [x] 2.2 Verify Method.hashCode() collisions are detected at generation time with secondary discriminator fallback
+- [x] 2.2 Verify Method.hashCode () collisions are detected at generation time with secondary discriminator fallback
 
 ## 3. Generator Updates
 

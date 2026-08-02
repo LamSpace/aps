@@ -7,8 +7,7 @@
 
 ## 2. Core API Interfaces
 
-- [x] 2.1 Implement `Callback` functional interface
-  (`intercept(Object proxy, Method method, MethodHandle superHandle, Object[] args)`)
+- [x] 2.1 Implement `Callback` functional interface (`intercept(Object proxy, Method method, MethodHandle superHandle, Object[] args)`)
 - [x] 2.2 Implement `ClassFilter` functional interface (`accept(Method method)`)
 - [x] 2.3 Verify `mvn compile` succeeds
 

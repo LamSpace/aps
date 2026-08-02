@@ -29,7 +29,7 @@
 ## 5. Complete Javadoc
 
 - [x] 5.1 Create package-info.java for all 4 packages (root, generator, loader, internal)
-- [x] 5.2 Enhance APS.java class-level and create() method Javadoc with @throws details
+- [x] 5.2 Enhance APS.java class-level and create () method Javadoc with @throws details
 - [x] 5.3 Run `mvn javadoc:javadoc` and verify zero warnings
 - [x] 5.4 Run `mvn test` to confirm no regressions
 
