@@ -4,35 +4,43 @@ Enable runtime proxy implementations of Java interfaces using MethodHandle-based
 
 ### Requirement: Interface proxy creation
 
-The system SHALL generate a runtime class that `extends Object` and `implements` the target interface, routing all non-static, non-final method calls through a user-provided `InterfaceCallback` handler.
+The system SHALL generate a runtime class that `extends Object` and `implements` the target interface and `DispatchTarget`, routing all non-static, non-final method calls through a user-provided `Interceptor` handler.
 
 #### Scenario: Basic interface proxy creation
 
-- **WHEN** user calls `APS.createInterface(TargetInterface.class, callback)`
+- **WHEN** user calls `APS.proxy(TargetInterface.class, interceptor)`
 - **THEN** system returns a proxy instance implementing `TargetInterface`
-- **AND** any method call on the proxy invokes `callback.intercept(proxy, method, args)`
+- **AND** any method call on the proxy invokes `interceptor.intercept(proxy, method, args)`
 - **AND** the callback receives three arguments: the proxy instance, the `java.lang.reflect.Method`, and the boxed argument array
-- **AND** no `superHandle` MethodHandle is provided (interface methods have no super implementation)
-
-#### Scenario: Non-interface class rejected
-
-- **WHEN** user calls `APS.createInterface(SomeClass.class, callback)` where `SomeClass` is a concrete class
-- **THEN** system throws `IllegalArgumentException` with a message indicating the class is not an interface
 
 #### Scenario: Null arguments rejected
 
-- **WHEN** user calls `APS.createInterface(null, callback)` or `APS.createInterface(TargetInterface.class, null)`
+- **WHEN** user calls `APS.proxy(null, interceptor)` or `APS.proxy(TargetInterface.class, null)`
 - **THEN** system throws `IllegalArgumentException`
 
-### Requirement: Interface callback contract
+### Requirement: Unified Interceptor callback
 
-The system SHALL use a dedicated `InterfaceCallback` functional interface distinct from the class-proxy `Callback`, reflecting the absence of a super-call MethodHandle parameter.
+The system SHALL use the unified `Interceptor` functional interface (shared with class proxies) with signature `Object intercept(Object proxy, Method method, Object[] args) throws Throwable`.
 
-#### Scenario: InterfaceCallback signature
+#### Scenario: Interceptor signature for interfaces
 
-- **WHEN** user implements `InterfaceCallback.intercept(Object proxy, Method method, Object[] args)`
+- **WHEN** user implements `Interceptor.intercept(Object proxy, Method method, Object[] args)`
 - **THEN** the proxy receives arguments in the `args` array with primitives boxed to their wrapper types
 - **AND** the callback returns `Object` — boxed wrapper for primitives, `null` for void methods
+
+### Requirement: Super invocation on interface proxy
+
+The system SHALL implement `DispatchTarget.dispatch(Method, Object[])` on interface proxy classes. Non-Object interface methods SHALL throw `AbstractMethodError`. Object methods (`equals`, `hashCode`, `toString`) SHALL call `super` directly via `INVOKESPECIAL`.
+
+#### Scenario: invokeSuper on interface method throws
+
+- **WHEN** user calls `APS.invokeSuper(interfaceProxy, method, args)` where `method` is an interface method
+- **THEN** system throws `AbstractMethodError`
+
+#### Scenario: invokeSuper on Object method succeeds
+
+- **WHEN** user calls `APS.invokeSuper(interfaceProxy, method, args)` where `method` is `toString`, `hashCode`, or `equals`
+- **THEN** the corresponding `Object` method executes and returns the result
 
 ### Requirement: All interface methods intercepted
 
@@ -61,13 +69,13 @@ The system SHALL support an optional `ClassFilter` that determines which methods
 
 #### Scenario: Filtered method throws AbstractMethodError
 
-- **WHEN** user creates a proxy with `APS.createInterface(MultiMethod.class, callback, m -> m.getName().startsWith("get"))`
+- **WHEN** user creates a proxy with `APS.proxy(MultiMethod.class, callback, m -> m.getName().startsWith("get"))`
 - **AND** a method not matching the filter is called
 - **THEN** the method throws `AbstractMethodError`
 
 #### Scenario: Unfiltered proxy intercepts all methods
 
-- **WHEN** user creates a proxy with `APS.createInterface(TargetInterface.class, callback)` (no filter)
+- **WHEN** user creates a proxy with `APS.proxy(TargetInterface.class, callback)` (no filter)
 - **THEN** all eligible interface methods are routed through the callback
 
 ### Requirement: Primitive type handling (interface)
@@ -90,12 +98,12 @@ The system SHALL propagate unchecked exceptions thrown by the callback directly 
 
 #### Scenario: RuntimeException from interface callback
 
-- **WHEN** `InterfaceCallback.intercept` throws a `RuntimeException`
+- **WHEN** `Interceptor.intercept` throws a `RuntimeException`
 - **THEN** the caller receives that exact `RuntimeException`
 
 #### Scenario: Checked exception from interface callback
 
-- **WHEN** `InterfaceCallback.intercept` throws a checked `Exception` not declared by the interface method
+- **WHEN** `Interceptor.intercept` throws a checked `Exception` not declared by the interface method
 - **THEN** the caller receives an `UndeclaredThrowableException` wrapping the original exception
 
 ### Requirement: Hidden class loading (interface)

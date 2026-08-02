@@ -1,43 +1,39 @@
 ## Purpose
 
-A high-performance, MethodHandle-based dynamic proxy engine for Java that proxies concrete classes at runtime, offering
-a drop-in replacement for CGLib with better call-site performance.
+A high-performance dynamic proxy engine for Java that proxies concrete classes at runtime using hashCode-based dispatch with direct INVOKESPECIAL super calls, offering a drop-in replacement for CGLib with near-zero interception overhead.
 
 ## Requirements
 
 ### Requirement: Proxy class creation
 
 The system SHALL generate a runtime subclass of any non-final concrete class and route all non-final instance method
-calls through a user-provided single Callback handler.
+calls through a user-provided single `Interceptor` handler.
 
 #### Scenario: Basic proxy creation and interception
 
-- **WHEN** user calls `APS.create(TargetClass.class, callback)`
+- **WHEN** user calls `APS.proxy(TargetClass.class, interceptor)`
 - **THEN** system returns a proxy instance of type `TargetClass`
-- **AND** any method call on the proxy invokes `callback.intercept(proxy, method, superHandle, args)`
+- **AND** any method call on the proxy invokes `interceptor.intercept(proxy, method, args)`
 
-#### Scenario: Super method invocation via MethodHandle
+#### Scenario: Super method invocation via invokeSuper
 
-- **WHEN** callback calls `superHandle.invoke(args)`
-- **THEN** the original superclass method executes with the provided arguments
+- **WHEN** callback calls `APS.invokeSuper(proxy, method, args)`
+- **THEN** the original superclass method executes via direct `INVOKESPECIAL` (no reflection, no MethodHandle)
 - **AND** the return value is returned to the callback
-- **AND** no `java.lang.reflect.Method.invoke` is used in the dispatch path
 
-### Requirement: MethodHandle super-call binding
+### Requirement: HashCode-based super-call dispatch
 
-The system SHALL pre-compute and cache a `java.lang.invoke.MethodHandle` for each proxyable method, bound to the
-superclass implementation using `MethodHandles.Lookup.findSpecial`.
+The system SHALL generate a `dispatch(Method, Object[])` method with a hashCode-driven if-else chain that routes each method to its corresponding `super.method(args)` call. No `MethodHandle[]` array or `MethodHandle.invoke()` SHALL be used.
 
-#### Scenario: MethodHandle is available in callback
+#### Scenario: Super call is direct INVOKESPECIAL
 
-- **WHEN** a proxy method is invoked
-- **THEN** the callback receives a non-null MethodHandle that can invoke the superclass method
-- **AND** repeated calls to the same method on the same proxy instance reuse the same MethodHandle
+- **WHEN** `dispatch(method, args)` is invoked
+- **THEN** the system computes `method.hashCode()` and matches the pre-computed hash constant
+- **AND** the matched branch calls `super.method(args)` directly with type-specific parameter unboxing
 
 ### Requirement: Hidden class loading
 
-The system SHALL use `MethodHandles.Lookup.defineHiddenClass(byte[], true)` to load generated proxy classes, avoiding
-custom ClassLoader usage and ensuring proxy classes are eligible for garbage collection.
+The system SHALL use a single code path based on `Lookup.defineHiddenClass(byte[], true)` for loading both class and interface proxy bytecode, avoiding custom ClassLoader usage and ensuring proxy classes are eligible for garbage collection.
 
 #### Scenario: Proxy class is garbage collectable
 
@@ -46,20 +42,19 @@ custom ClassLoader usage and ensuring proxy classes are eligible for garbage col
 
 ### Requirement: Method filtering
 
-The system SHALL support an optional ClassFilter that determines which methods pass through the Callback. Methods not
-accepted by the filter SHALL call the superclass implementation directly with zero interception overhead.
+The system SHALL support an optional `ClassFilter` that determines which methods pass through the `Interceptor`. Methods not accepted by the filter SHALL call the superclass implementation directly with zero interception overhead.
 
 #### Scenario: Filtered method skips interception
 
 - **WHEN** user creates a proxy with
-  `APS.create(TargetClass.class, callback, method -> method.getName().startsWith("get"))`
+  `APS.proxy(TargetClass.class, interceptor, method -> method.getName().startsWith("get"))`
 - **AND** a method not matching the filter is called (e.g., `setValue`)
-- **THEN** the method executes the superclass implementation directly without invoking the callback
+- **THEN** the method executes the superclass implementation directly without invoking the interceptor
 
 #### Scenario: Unfiltered proxy intercepts all methods
 
-- **WHEN** user creates a proxy with `APS.create(TargetClass.class, callback)` (no filter)
-- **THEN** all non-final instance method calls are routed through the callback
+- **WHEN** user creates a proxy with `APS.proxy(TargetClass.class, interceptor)` (no filter)
+- **THEN** all non-final instance method calls are routed through the interceptor
 
 ### Requirement: Primitive type handling
 
@@ -115,6 +110,15 @@ target module is not open, the system SHALL fall back to a regular public Lookup
 
 - **WHEN** the target class's module does not open its package
 - **THEN** the system falls back to `MethodHandles.lookup()` and continues operation with the available access level
+
+### Requirement: Proxy class caching
+
+The system SHALL cache generated proxy classes keyed by `{targetClass, filter}` to avoid re-generating bytecode for the same proxy configuration.
+
+#### Scenario: Repeated proxy creation reuses class
+
+- **WHEN** user calls `APS.proxy(SomeClass.class, interceptor)` twice
+- **THEN** the system reuses the previously generated proxy class
 
 ### Requirement: No-default-constructor support
 
