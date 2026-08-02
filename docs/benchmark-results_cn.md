@@ -9,6 +9,10 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 
 ## 类代理（extends TargetClass）
 
+> **Java Proxy 无法代理类。** 在这些基准测试中，目标类实现了接口，所以 Java Proxy
+> 代理的是那个接口，通过 `Method.invoke()` 反射调用类实例。保留此列仅作参考，
+> 但 Java Proxy 不是类代理方案。
+
 | 场景      | 说明                           | 直接调用 | APS       | CGLib | Java Proxy | 最优                      |
 |-----------|--------------------------------|----------|-----------|-------|-----------|---------------------------|
 | 空操作    | 返回固定值，不调父类           | 5.72     | 1.32      | 1.06  | **1.05**  | Java Proxy ≈ CGLib         |

@@ -9,6 +9,11 @@ All scores in ns/op (lower is better). Each row's fastest result is **bolded**.
 
 ## Class Proxy (extends TargetClass)
 
+> **Java Proxy cannot proxy classes.** In these benchmarks, the target class
+> implements an interface, so Java Proxy proxies that interface and delegates
+> to the class via `Method.invoke()`. It is included for reference, but is not
+> a class-proxy mechanism.
+
 | Scenario         | Description                       | Direct | APS       | CGLib | Java Proxy | Best                         |
 |------------------|-----------------------------------|--------|-----------|-------|-----------|------------------------------|
 | No-op            | Return fixed value, no super call | 5.72   | 1.32      | 1.06  | **1.05**  | Java Proxy ≈ CGLib            |

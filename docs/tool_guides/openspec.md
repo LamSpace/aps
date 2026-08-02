@@ -58,7 +58,7 @@ openspec update    # 刷新每个项目中的 agent 指令
 openspec init
 ```
 
-这将在项目根创建 `openspec/` 目录，包含：
+这将在项目根创建 `../../openspec` 目录，包含：
 
 ```
 openspec/
@@ -251,7 +251,7 @@ openspec archive "add-user-auth"
 
 ## 配置文件
 
-### 项目级配置：`openspec/config.yaml`
+### 项目级配置：`../../openspec/config.yaml`
 
 ```yaml
 schema: spec-driven          # 工作流模式
@@ -367,7 +367,7 @@ APS 项目有 13 个主源文件，部分 package-private 方法缺少 Javadoc�
 openspec archive "add-missing-javadoc"
 ```
 
-变更目录移动到 `openspec/changes/archive/2026-08-01-add-missing-javadoc/`。
+变更目录移动到 `../../openspec/changes/archive/2026-08-01-add-missing-javadoc`。
 
 ---
 

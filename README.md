@@ -59,6 +59,8 @@ JMH benchmarks on Java 25, 4 implementations × 6 scenarios. Best result per row
 | Void method      | 0.66   | 2.34      | 3.68  | **1.64**   |
 | Multi-param      | 58.40  | **58.76** | 71.32 | 59.30      |
 
+*Java Proxy cannot proxy classes — it proxies the interface and delegates via `Method.invoke()`; included for reference only.*
+
 ### Interface Proxy
 
 | Scenario         | APS      | Java Proxy |
