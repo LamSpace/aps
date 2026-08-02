@@ -16,23 +16,25 @@
 
 package io.github.lamspace;
 
+import java.lang.reflect.Method;
+
 /**
- * Internal interface implemented by all generated class proxy subclasses.
- * Provides index-based super-method dispatch.
+ * Internal interface implemented by all generated proxy classes.
+ * Provides hashCode-based method dispatch for super-method invocation.
  *
- * <p>Users should prefer the static helper
- * {@link APS#invokeSuper(Object, int, Object[])} over casting to this
- * interface directly.
+ * <p>Not part of the public API — users call
+ * {@link APS#invokeSuper(Object, Method, Object[])} instead.
  */
-public interface SuperDispatcher {
+public interface DispatchTarget {
 
     /**
-     * Invokes the superclass method at the given index in the dispatch table.
+     * Dispatches a super-method call to the correct branch via
+     * a hashCode-driven switch on the given method.
      *
-     * @param index zero-based index of the method in the proxy's dispatch table
-     * @param args  boxed arguments
+     * @param method the method to dispatch (used for hashCode lookup)
+     * @param args   boxed arguments
      * @return the method's return value (null for void, boxed for primitives)
-     * @throws Throwable any throwable from the superclass method
+     * @throws Throwable any throwable from the dispatched method
      */
-    Object invokeSuper(int index, Object[] args) throws Throwable;
+    Object dispatch(Method method, Object[] args) throws Throwable;
 }

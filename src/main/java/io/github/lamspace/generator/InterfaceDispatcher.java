@@ -17,6 +17,7 @@
 package io.github.lamspace.generator;
 
 import io.github.lamspace.ClassFilter;
+import io.github.lamspace.Interceptor;
 import org.objectweb.asm.*;
 
 import java.lang.reflect.Method;
@@ -141,10 +142,10 @@ final class InterfaceDispatcher {
 
         mv.visitLabel(tryStart);
 
-        // 1. Load callback: this._callback
+        // 1. Load interceptor: this._callback
         mv.visitVarInsn(Opcodes.ALOAD, 0);
         mv.visitFieldInsn(Opcodes.GETFIELD, generatedInternal,
-                CALLBACK_FIELD, "Lio/github/lamspace/InterfaceCallback;");
+                CALLBACK_FIELD, Type.getDescriptor(Interceptor.class));
 
         // 2. Arg 1: proxy = this
         mv.visitVarInsn(Opcodes.ALOAD, 0);
@@ -172,9 +173,9 @@ final class InterfaceDispatcher {
             slot += (type == double.class || type == long.class) ? 2 : 1;
         }
 
-        // 5. Call InterfaceCallback.intercept(proxy, method, args)
+        // 5. Call Interceptor.intercept(proxy, method, args)
         mv.visitMethodInsn(Opcodes.INVOKEINTERFACE,
-                "io/github/lamspace/InterfaceCallback",
+                "io/github/lamspace/Interceptor",
                 "intercept",
                 "(Ljava/lang/Object;Ljava/lang/reflect/Method;"
                         + "[Ljava/lang/Object;)Ljava/lang/Object;",

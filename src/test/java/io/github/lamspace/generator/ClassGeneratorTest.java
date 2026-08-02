@@ -18,7 +18,7 @@ package io.github.lamspace.generator;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.github.lamspace.Callback;
+import io.github.lamspace.Interceptor;
 import io.github.lamspace.ClassFilter;
 import org.junit.jupiter.api.Test;
 
@@ -60,7 +60,7 @@ class ClassGeneratorTest {
         Class<?>[] args = gen.constructorArgs();
 
         assertEquals(1, args.length);
-        assertEquals(Callback.class, args[0]);
+        assertEquals(Interceptor.class, args[0]);
     }
 
     @Test

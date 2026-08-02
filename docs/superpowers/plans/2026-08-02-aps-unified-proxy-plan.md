@@ -4,7 +4,8 @@
 
 **Goal:** Unify class and interface proxy APIs under `APS.proxy()` with a single `Interceptor` callback, replace type-erased `MethodHandle` dispatch with direct `INVOKESPECIAL` super calls via hashCode switch, add class caching, and remove the old `Callback`/`InterfaceCallback`/`SuperDispatcher` types.
 
-**Architecture:** The generated proxy class implements a new internal interface `DispatchTarget` whose `dispatch(Method, Object[])` method contains a hashCode-driven if-else chain. Each class-method branch calls `super.method(args)` directly (INVOKESPECIAL, JIT-inlinable). Interface-method branches throw `AbstractMethodError`. The hash values use `Method.hashCode()` (deterministic, pre-computable at bytecode generation time) allowing them to be embedded as `ldc` constants. A `WeakCache` stores generated proxy classes keyed by `{targetClass, filter}`.
+**Architecture:** The generated proxy class implements a new internal interface `DispatchTarget` whose `dispatch(Method, Object[])` method contains a hashCode-driven if-else chain. Each class-method branch calls `super.method(args)` directly (INVOKESPECIAL, JIT-inlinable). Interface-method branches throw `AbstractMethodError`. The hash values use `Method.hashCode()` (deterministic, pre-computable at bytecode generation time) allowing them to be embedded as `ldc` constants. A `WeakCache` stores
+generated proxy classes keyed by `{targetClass, filter}`.
 
 **Tech Stack:** Java 25, ASM 9.7.1, JMH 1.37 (benchmarks), JUnit 5 (tests)
 
@@ -50,9 +51,11 @@ Delete (4 files):
 ### Task 1: Create `Interceptor` interface
 
 **Files:**
+
 - Create: `src/main/java/io/github/lamspace/Interceptor.java`
 
 **Interfaces:**
+
 - Produces: `Interceptor` — `@FunctionalInterface` with `Object intercept(Object proxy, Method method, Object[] args) throws Throwable`
 
 - [ ] **Step 1: Write `Interceptor.java`**
@@ -127,9 +130,11 @@ git commit -m "feat: add unified Interceptor interface"
 ### Task 2: Create `DispatchTarget` internal interface
 
 **Files:**
+
 - Create: `src/main/java/io/github/lamspace/DispatchTarget.java`
 
 **Interfaces:**
+
 - Produces: `DispatchTarget` — package-private interface with `Object dispatch(Method method, Object[] args) throws Throwable`
 
 - [ ] **Step 1: Write `DispatchTarget.java`**
@@ -194,10 +199,12 @@ git commit -m "feat: add DispatchTarget internal interface"
 ### Task 3: Create `DispatchGenerator`
 
 **Files:**
+
 - Create: `src/main/java/io/github/lamspace/generator/DispatchGenerator.java`
 - Modify: `src/main/java/io/github/lamspace/generator/BytecodeUtils.java` (add helpers if needed)
 
 **Interfaces:**
+
 - Consumes: `DispatchTarget` (Task 2), `BytecodeUtils`, `ClinitRegistry`
 - Produces: `DispatchGenerator.generateDispatch(ClassWriter, Class<?>, String, List<MethodInfo>, boolean isClassProxy)` — generates the `dispatch()` method. `MethodInfo` is a record/class holding `{Method method, String fieldName, int hash}`.
 
@@ -243,7 +250,8 @@ import java.util.*;
  */
 final class DispatchGenerator {
 
-    private DispatchGenerator() {}
+    private DispatchGenerator() {
+    }
 
     /**
      * Pre-computes the Method.hashCode() for each method. This value is
@@ -272,7 +280,7 @@ final class DispatchGenerator {
                 hash = hash * 31 + m.getName().hashCode();
                 if (!seen.add(hash)) {
                     throw new IllegalStateException(
-                        "Unresolvable hash collision for " + m);
+                            "Unresolvable hash collision for " + m);
                 }
             }
             result.put(m, hash);
@@ -432,15 +440,18 @@ Expected: BUILD SUCCESS (this is a no-op verification step)
 ### Task 5: Update `MethodDispatcher` — Callback → Interceptor, drop index
 
 **Files:**
+
 - Modify: `src/main/java/io/github/lamspace/generator/MethodDispatcher.java`
 
 **Interfaces:**
+
 - Consumes: `Interceptor` (Task 1)
 - Produces: Updated `dispatchMethods()` that generates Interceptor-based callbacks without index
 
 - [ ] **Step 1: Change callback type and descriptor**
 
 Replace all references:
+
 - `io/github/lamspace/Callback` → `io/github/lamspace/Interceptor`
 - Callback descriptor `(Ljava/lang/Object;Ljava/lang/reflect/Method;I[Ljava/lang/Object;)Ljava/lang/Object;` → `(Ljava/lang/Object;Ljava/lang/reflect/Method;[Ljava/lang/Object;)Ljava/lang/Object;`
 - Remove the `BytecodeUtils.pushInt(mv, methodIndex)` instruction (lines 157)
@@ -448,6 +459,7 @@ Replace all references:
 - [ ] **Step 2: Remove index from callback call**
 
 In `generateOverride()` (currently lines 128-225):
+
 - Remove line ~157: `BytecodeUtils.pushInt(mv, methodIndex)`
 - Update invokeinterface descriptor at line ~179-185 to the new 3-arg signature
 
@@ -468,15 +480,18 @@ git commit -m "refactor: change MethodDispatcher to Interceptor, drop index"
 ### Task 6: Update `InterfaceDispatcher` — InterfaceCallback → Interceptor
 
 **Files:**
+
 - Modify: `src/main/java/io/github/lamspace/generator/InterfaceDispatcher.java`
 
 **Interfaces:**
+
 - Consumes: `Interceptor` (Task 1)
 - Produces: Updated `dispatchMethods()` that generates Interceptor-based callbacks
 
 - [ ] **Step 1: Change callback type and descriptor**
 
 Replace all references:
+
 - `io/github/lamspace/InterfaceCallback` → `io/github/lamspace/Interceptor`
 - The `intercept` method descriptor already matches (3 args: Object, Method, Object[]) — same as `InterfaceCallback` — so the invokeinterface call at line ~176 needs only the class name changed
 
@@ -494,12 +509,14 @@ git commit -m "refactor: change InterfaceDispatcher to Interceptor"
 
 ---
 
-### Task 7: Update `ClassGenerator` — remove MethodHandle[], add dispatch()
+### Task 7: Update `ClassGenerator` — remove MethodHandle[], add dispatch ()
 
 **Files:**
+
 - Modify: `src/main/java/io/github/lamspace/generator/ClassGenerator.java`
 
 **Interfaces:**
+
 - Consumes: `Interceptor` (Task 1), `DispatchTarget` (Task 2), `DispatchGenerator` (Task 3), updated `MethodDispatcher` (Task 5)
 - Produces: Generates class proxy bytecode with `dispatch()` method and no `MethodHandle[]`
 
@@ -525,19 +542,29 @@ String callbackDesc = Type.getDescriptor(Callback.class);
 String callbackDesc = Type.getDescriptor(Interceptor.class);
 ```
 
-- [ ] **Step 3: Add dispatch() generation call**
+- [ ] **Step 3: Add dispatch () generation call**
 
 In `generate()`, after `MethodDispatcher.dispatchMethods()` returns, drain ClinitRegistry entries BEFORE calling `generateClinit()` (since both dispatch and clinit need them):
 
 ```java
 List<ClinitRegistry.Entry> entries = ClinitRegistry.drain();
 List<MethodInfo> infos = new ArrayList<>();
-for (ClinitRegistry.Entry entry : entries) {
-    infos.add(new MethodInfo(entry.method(), entry.methodFieldName(),
-            DispatchGenerator.computeHash(entry.method())));
-}
-DispatchGenerator.generateDispatch(cw, generatedInternal, targetInternal, infos, true);
-generateClinit(cw, generatedInternal, dispatched.size(), entries);
+for(
+ClinitRegistry.Entry entry :entries){
+        infos.
+
+add(new MethodInfo(entry.method(),entry.
+
+methodFieldName(),
+            DispatchGenerator.
+
+computeHash(entry.method())));
+        }
+        DispatchGenerator.
+
+generateDispatch(cw, generatedInternal, targetInternal, infos, true);
+
+generateClinit(cw, generatedInternal, dispatched.size(),entries);
 ```
 
 Note: `generateClinit()` signature changes to accept entries as a parameter instead of calling `ClinitRegistry.drain()` internally.
@@ -545,6 +572,7 @@ Note: `generateClinit()` signature changes to accept entries as a parameter inst
 - [ ] **Step 4: Update `<clinit>` generation**
 
 In `generateClinit()`:
+
 - Change signature to `generateClinit(ClassWriter cw, String generatedInternal, int methodCount, List<ClinitRegistry.Entry> entries)`
 - Remove MethodHandle array allocation (lines 195-198)
 - Remove `Lookup.findSpecial()` + `asSpreader()` + `asType()` logic (lines 226-296)
@@ -565,28 +593,34 @@ git commit -m "refactor: replace MethodHandle dispatch with hashCode switch in C
 
 ---
 
-### Task 8: Update `InterfaceGenerator` — add DispatchTarget, dispatch()
+### Task 8: Update `InterfaceGenerator` — add DispatchTarget, dispatch ()
 
 **Files:**
+
 - Modify: `src/main/java/io/github/lamspace/generator/InterfaceGenerator.java`
 
 **Interfaces:**
+
 - Consumes: `Interceptor` (Task 1), `DispatchTarget` (Task 2), `DispatchGenerator` (Task 3), updated `InterfaceDispatcher` (Task 6)
 - Produces: Generates interface proxy bytecode with `dispatch()` method
 
 - [ ] **Step 1: Add DispatchTarget to implemented interfaces**
 
 In `generate()` (line 76):
+
 ```java
 // Before:
 new String[]{targetInternal}
 // After:
-new String[]{targetInternal, Type.getInternalName(DispatchTarget.class)}
+        new String[]{targetInternal,Type.
+
+getInternalName(DispatchTarget .class)}
 ```
 
 - [ ] **Step 2: Change callback field type**
 
 Change `InterfaceCallback` → `Interceptor` in field descriptor and constructor:
+
 ```java
 // Before:
 String callbackDesc = Type.getDescriptor(InterfaceCallback.class);
@@ -594,13 +628,15 @@ String callbackDesc = Type.getDescriptor(InterfaceCallback.class);
 String callbackDesc = Type.getDescriptor(Interceptor.class);
 ```
 
-- [ ] **Step 3: Add dispatch() generation**
+- [ ] **Step 3: Add dispatch () generation**
 
 After `InterfaceDispatcher.dispatchMethods()`, call:
+
 ```java
 DispatchGenerator.generateDispatch(cw, generatedInternal,
-        "java/lang/Object", infos, false);
+        "java/lang/Object",infos, false);
 ```
+
 This generates a dispatch method where class-type methods (Object.equals/hashCode/toString) call super directly, and interface methods throw AbstractMethodError.
 
 - [ ] **Step 4: Update constructor to accept Interceptor**
@@ -624,9 +660,11 @@ git commit -m "refactor: add DispatchTarget and hashCode dispatch to InterfaceGe
 ### Task 9: Update `APS.java` — unified `proxy()` entry point
 
 **Files:**
+
 - Modify: `src/main/java/io/github/lamspace/APS.java`
 
 **Interfaces:**
+
 - Consumes: `Interceptor` (Task 1), `DispatchTarget` (Task 2), updated generators (Tasks 7-8)
 - Produces: `proxy()` methods, updated `invokeSuper()`, unified class loading
 
@@ -695,7 +733,7 @@ public static <T> T proxy(Class<T> target, Interceptor interceptor,
 
 ```java
 public static Object invokeSuper(Object proxy, Method method,
-                                  Object[] args) throws Throwable {
+                                 Object[] args) throws Throwable {
     return ((DispatchTarget) proxy).dispatch(method, args);
 }
 ```
@@ -727,9 +765,11 @@ git commit -m "feat: add unified proxy() entry point and invokeSuper"
 ### Task 10: Add `WeakCache`
 
 **Files:**
+
 - Create: `src/main/java/io/github/lamspace/WeakCache.java`
 
 **Interfaces:**
+
 - Consumes: nothing
 - Produces: `WeakCache<K, P, V>` with `get(K key, P parameter)`, `containsValue(V value)`
 
@@ -768,6 +808,7 @@ git commit -m "feat: add WeakCache for proxy class caching"
 ### Task 11: Remove old types
 
 **Files:**
+
 - Delete: `src/main/java/io/github/lamspace/Callback.java`
 - Delete: `src/main/java/io/github/lamspace/InterfaceCallback.java`
 - Delete: `src/main/java/io/github/lamspace/SuperDispatcher.java`
@@ -800,11 +841,13 @@ git commit -m "refactor: remove old Callback, InterfaceCallback, SuperDispatcher
 ### Task 12: Update functional tests
 
 **Files:**
+
 - Modify: `src/test/java/io/github/lamspace/APSFunctionalTest.java`
 - Modify: `src/test/java/io/github/lamspace/APSInterfaceFunctionalTest.java`
 - Create: `src/test/java/io/github/lamspace/APSUnifiedTest.java`
 
 **Interfaces:**
+
 - Consumes: new `APS.proxy()` API (Task 9)
 - Produces: passing tests for unified API
 
@@ -823,12 +866,13 @@ Replace `APS.createInterface()` with `APS.proxy()`. Replace `InterfaceCallback` 
 - [ ] **Step 4: Write `APSUnifiedTest.java`**
 
 New test covering the unified behavior:
+
 - `APS.proxy(SomeClass.class, interceptor)` works as class proxy
 - `APS.proxy(SomeInterface.class, interceptor)` works as interface proxy
 - `invokeSuper` dispatches correctly for class methods
 - `invokeSuper` throws AbstractMethodError for interface methods
 - `ClassFilter` skips non-accepted methods
-- Cache returns same class for duplicate proxy() calls
+- Cache returns same class for duplicate proxy () calls
 
 - [ ] **Step 5: Run tests**
 
@@ -849,9 +893,11 @@ git commit -m "test: update tests for unified proxy API"
 ### Task 13: Update benchmark
 
 **Files:**
+
 - Modify: `src/test/java/io/github/lamspace/benchmark/ProxyBenchmark.java`
 
 **Interfaces:**
+
 - Consumes: new `APS.proxy()` API (Task 9)
 - Produces: updated benchmarks with new API, comparable results
 
@@ -863,11 +909,19 @@ The `int index` parameter is gone — benchmarks that used it for `invokeSuper` 
 
 ```java
 // Before:
-apsProxy = APS.create(StringOpImpl.class,
-    (obj, method, index, args) -> APS.invokeSuper(obj, index, args));
+apsProxy =APS.
+
+create(StringOpImpl .class,
+    (obj, method, index, args) ->APS.
+
+invokeSuper(obj, index, args));
 // After:
-apsProxy = APS.proxy(StringOpImpl.class,
-    (obj, method, args) -> APS.invokeSuper(obj, method, args));
+apsProxy =APS.
+
+proxy(StringOpImpl .class,
+    (obj, method, args) ->APS.
+
+invokeSuper(obj, method, args));
 ```
 
 - [ ] **Step 2: Run benchmark to verify**
@@ -887,6 +941,7 @@ git commit -m "bench: update ProxyBenchmark for unified API"
 ### Task 14: Update documentation
 
 **Files:**
+
 - Modify: `README.md`
 - Modify: `docs/benchmark-results.md`
 
@@ -914,6 +969,7 @@ git commit -m "docs: update for unified proxy API and new benchmarks"
 ## Self-Review
 
 **1. Spec coverage:**
+
 - ✅ Unified entry `proxy()` → Task 9
 - ✅ `Interceptor` callback → Task 1
 - ✅ `invokeSuper(proxy, method, args)` → Task 9
@@ -932,10 +988,11 @@ git commit -m "docs: update for unified proxy API and new benchmarks"
 No TBD, TODO, or vague steps. Each step has concrete code or commands.
 
 **3. Type consistency:**
+
 - Interceptor: defined Task 1 (object, method, args → Object), used Tasks 5-9
 - DispatchTarget: defined Task 2 (Method, Object[] → Object), used Tasks 7-9
 - DispatchGenerator: defined Task 3, used Tasks 7-8
 - MethodInfo: defined Task 3, used Tasks 7-8
 - ClinitRegistry: unchanged (Task 4 verifies), used in Tasks 5-8 for Method object registration
-- APS.proxy(): defined Task 9, consumed Tasks 12-13
+- APS.proxy (): defined Task 9, consumed Tasks 12-13
 - WeakCache: defined Task 10, wired in Task 9 step 2

@@ -16,8 +16,6 @@
 
 package io.github.lamspace;
 
-import io.github.lamspace.APS;
-import io.github.lamspace.Callback;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,8 +39,8 @@ class APSFunctionalTest {
 
     @Test
     void shouldInterceptAndReturnModifiedValue() {
-        Greeter proxy = APS.create(Greeter.class, (obj, method, index, args) -> {
-            String original = (String) APS.invokeSuper(obj, index, args);
+        Greeter proxy = APS.proxy(Greeter.class, (obj, method, args) -> {
+            String original = (String) APS.invokeSuper(obj, method, args);
             return "[intercepted] " + original;
         });
 
@@ -53,16 +51,16 @@ class APSFunctionalTest {
 
     @Test
     void shouldPassThroughToSuperWhenNotModified() {
-        Greeter proxy = APS.create(Greeter.class, (obj, method, index, args) ->
-                APS.invokeSuper(obj, index, args));
+        Greeter proxy = APS.proxy(Greeter.class, (obj, method, args) ->
+                APS.invokeSuper(obj, method, args));
 
         assertEquals("Hello, APS", proxy.hello("APS"));
     }
 
     @Test
     void shouldHandlePrimitiveReturnType() {
-        Greeter proxy = APS.create(Greeter.class, (obj, method, index, args) ->
-                APS.invokeSuper(obj, index, args));
+        Greeter proxy = APS.proxy(Greeter.class, (obj, method, args) ->
+                APS.invokeSuper(obj, method, args));
 
         assertEquals(7, proxy.add(3, 4));
     }
@@ -70,9 +68,9 @@ class APSFunctionalTest {
     @Test
     void shouldHandleVoidReturnType() {
         AtomicBoolean called = new AtomicBoolean(false);
-        Greeter proxy = APS.create(Greeter.class, (obj, method, index, args) -> {
+        Greeter proxy = APS.proxy(Greeter.class, (obj, method, args) -> {
             called.set(true);
-            return APS.invokeSuper(obj, index, args);
+            return APS.invokeSuper(obj, method, args);
         });
 
         proxy.sideEffect();
@@ -81,8 +79,8 @@ class APSFunctionalTest {
 
     @Test
     void shouldWorkWithClassFilter() {
-        Greeter proxy = APS.create(Greeter.class, (obj, method, index, args) ->
-                        "[filtered] " + APS.invokeSuper(obj, index, args),
+        Greeter proxy = APS.proxy(Greeter.class, (obj, method, args) ->
+                        "[filtered] " + APS.invokeSuper(obj, method, args),
                 method -> method.getName().startsWith("hello"));
 
         assertEquals("[filtered] Hello, Alice", proxy.hello("Alice"));
@@ -103,9 +101,9 @@ class APSFunctionalTest {
 
     @Test
     void shouldProxyClassWithoutDefaultConstructor() {
-        BeanWithNoDefaultConstructor proxy = APS.create(
+        BeanWithNoDefaultConstructor proxy = APS.proxy(
                 BeanWithNoDefaultConstructor.class,
-                (obj, method, index, args) -> APS.invokeSuper(obj, index, args),
+                (obj, method, args) -> APS.invokeSuper(obj, method, args),
                 null,
                 "Bob"
         );
@@ -115,7 +113,7 @@ class APSFunctionalTest {
 
     @Test
     void shouldHandleMethodThatThrows() {
-        Greeter proxy = APS.create(Greeter.class, (obj, method, index, args) -> {
+        Greeter proxy = APS.proxy(Greeter.class, (obj, method, args) -> {
             throw new RuntimeException("test exception");
         });
 
@@ -124,7 +122,7 @@ class APSFunctionalTest {
 
     @Test
     void shouldPropagateCheckedExceptionViaUndeclaredThrowable() {
-        Greeter proxy = APS.create(Greeter.class, (obj, method, index, args) -> {
+        Greeter proxy = APS.proxy(Greeter.class, (obj, method, args) -> {
             throw new Exception("checked exception from interceptor");
         });
 

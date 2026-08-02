@@ -19,26 +19,31 @@ package io.github.lamspace;
 import java.lang.reflect.Method;
 
 /**
- * Intercepts method calls on an interface proxy instance.
- * A single InterfaceCallback receives all method invocations for
- * interface proxies — mirroring the model of
- * {@link java.lang.reflect.InvocationHandler} but backed by
- * MethodHandle-based dispatch instead of reflection.
+ * Intercepts method calls on a proxy instance.
+ * A single Interceptor receives all method invocations for both class
+ * and interface proxies — replacing the former {@code Callback} and
+ * {@code InterfaceCallback}.
  *
- * <p>Unlike {@link Callback} (used for class proxies), there is no
- * {@code superHandle} parameter — interface methods have no super
- * implementation to delegate to.
+ * <p>To invoke the original superclass method, use
+ * {@link APS#invokeSuper(Object, Method, Object[])}.
+ *
+ * <pre>{@code
+ *   Greeter proxy = APS.proxy(Greeter.class, (obj, method, args) -> {
+ *       System.out.println("before " + method.getName());
+ *       return APS.invokeSuper(obj, method, args);
+ *   });
+ * }</pre>
  */
 @FunctionalInterface
-public interface InterfaceCallback {
+public interface Interceptor {
 
     /**
-     * Called for every method invocation on the interface proxy.
+     * Called for every method invocation on the proxy.
      *
      * @param proxy  the proxy instance
-     * @param method the intercepted method (for metadata: name, annotations, etc.)
+     * @param method the intercepted method (for metadata and dispatch)
      * @param args   the method arguments, boxed; empty array for no-arg methods
-     * @return the method's return value (null for void methods, boxed for primitives)
+     * @return the method's return value (null for void, boxed for primitives)
      * @throws Throwable any throwable the interceptor wishes to propagate
      */
     Object intercept(Object proxy, Method method, Object[] args) throws Throwable;

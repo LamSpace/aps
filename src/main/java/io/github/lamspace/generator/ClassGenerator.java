@@ -16,9 +16,8 @@
 
 package io.github.lamspace.generator;
 
-import io.github.lamspace.Callback;
 import io.github.lamspace.ClassFilter;
-import io.github.lamspace.SuperDispatcher;
+import io.github.lamspace.Interceptor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -26,6 +25,7 @@ import org.objectweb.asm.Type;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -86,7 +86,7 @@ public class ClassGenerator {
      */
     public Class<?>[] constructorArgs() {
         Class<?>[] all = new Class<?>[1 + constructorArgs.length];
-        all[0] = Callback.class;
+        all[0] = Interceptor.class;
         for (int i = 0; i < constructorArgs.length; i++) {
             Object arg = constructorArgs[i];
             all[i + 1] = (arg != null) ? arg.getClass() : Object.class;
@@ -110,70 +110,45 @@ public class ClassGenerator {
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 
-        // Extends targetClass, implements SuperDispatcher
-        String[] interfaces = {Type.getInternalName(SuperDispatcher.class)};
+        // Extends targetClass, implements DispatchTarget
+        String[] interfaces = {"io/github/lamspace/DispatchTarget"};
         cw.visit(Opcodes.V24, Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER,
                 generatedInternal, null, targetInternal, interfaces);
 
-        // -- Callback field --
-        String callbackDesc = Type.getDescriptor(Callback.class);
+        // -- Interceptor field --
+        String callbackDesc = Type.getDescriptor(Interceptor.class);
         cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL,
                 "_callback", callbackDesc, null, null);
 
-        // -- Static dispatch table: MethodHandle[] _handles --
-        cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL,
-                "_handles", "[Ljava/lang/invoke/MethodHandle;", null, null);
-
-        // -- Constructor: stores callback, delegates to super() --
+        // -- Constructor: stores interceptor, delegates to super() --
         generateConstructor(cw, generatedInternal, targetInternal, callbackDesc);
 
         // -- Method overrides (populates ClinitRegistry + static fields) --
         List<String> dispatched = MethodDispatcher.dispatchMethods(
                 cw, targetClass, generatedInternal, filter);
 
-        // -- invokeSuper(int, Object[]) —
-        generateInvokeSuper(cw, generatedInternal);
+        // -- Drain ClinitRegistry entries before dispatch and clinit generation --
+        List<ClinitRegistry.Entry> entries = ClinitRegistry.drain();
+
+        // -- dispatch(Method, Object[]) —
+        List<MethodInfo> infos = new ArrayList<>();
+        for (ClinitRegistry.Entry entry : entries) {
+            infos.add(new MethodInfo(entry.method(), entry.methodFieldName(),
+                    DispatchGenerator.computeHash(entry.method())));
+        }
+        DispatchGenerator.generateDispatch(cw, generatedInternal, targetInternal,
+                infos, true);
 
         // -- <clinit> initializer —
-        generateClinit(cw, generatedInternal, dispatched.size());
+        generateClinit(cw, generatedInternal, dispatched.size(), entries);
 
         cw.visitEnd();
         return cw.toByteArray();
     }
 
-    /**
-     * Generates {@code invokeSuper(int, Object[])} that indexes into the
-     * static {@code _handles} array and calls {@code invokeExact} on the
-     * type-erased handle.
-     */
-    private void generateInvokeSuper(ClassWriter cw, String generatedInternal) {
-        String desc = "(I[Ljava/lang/Object;)Ljava/lang/Object;";
-        String[] exceptions = {"java/lang/Throwable"};
-        MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "invokeSuper",
-                desc, null, exceptions);
-        mv.visitCode();
-
-        // return _handles[index].invoke(this, args);
-        // Handle type is (Object, Object[])Object after asType erasure.
-        mv.visitFieldInsn(Opcodes.GETSTATIC, generatedInternal,
-                "_handles", "[Ljava/lang/invoke/MethodHandle;");
-        mv.visitVarInsn(Opcodes.ILOAD, 1);             // index
-        mv.visitInsn(Opcodes.AALOAD);                   // _handles[index]
-        mv.visitVarInsn(Opcodes.ALOAD, 0);             // this (Object)
-        mv.visitVarInsn(Opcodes.ALOAD, 2);             // args (Object[])
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
-                "java/lang/invoke/MethodHandle",
-                "invoke",
-                "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;",
-                false);
-        mv.visitInsn(Opcodes.ARETURN);
-        mv.visitMaxs(0, 0);
-        mv.visitEnd();
-    }
-
     private void generateClinit(ClassWriter cw, String generatedInternal,
-                                int methodCount) {
-        List<ClinitRegistry.Entry> entries = ClinitRegistry.drain();
+                                int methodCount,
+                                List<ClinitRegistry.Entry> entries) {
         if (entries.isEmpty()) {
             return;
         }
@@ -181,29 +156,12 @@ public class ClassGenerator {
         MethodVisitor mv = cw.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null);
         mv.visitCode();
 
-        // Get a Lookup for the generated class itself
-        //   Lookup lookup = MethodHandles.lookup();
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC,
-                "java/lang/invoke/MethodHandles",
-                "lookup",
-                "()Ljava/lang/invoke/MethodHandles$Lookup;",
-                false);
-        int lookupSlot = 0;
-        mv.visitVarInsn(Opcodes.ASTORE, lookupSlot);
-
-        // Allocate the _handles array
-        BytecodeUtils.pushInt(mv, methodCount);
-        mv.visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/invoke/MethodHandle");
-        mv.visitFieldInsn(Opcodes.PUTSTATIC, generatedInternal,
-                "_handles", "[Ljava/lang/invoke/MethodHandle;");
-
         for (ClinitRegistry.Entry entry : entries) {
             Method method = entry.method();
-            int index = entry.index();
             String methodField = entry.methodFieldName();
             String targetInternal = Type.getInternalName(entry.targetClass());
 
-            // 1. Store the Method object in _method$N
+            // Store the Method object via reflection
             mv.visitLdcInsn(Type.getType("L" + targetInternal + ";"));
             mv.visitLdcInsn(method.getName());
 
@@ -222,89 +180,6 @@ public class ClassGenerator {
                     false);
             mv.visitFieldInsn(Opcodes.PUTSTATIC, generatedInternal,
                     methodField, "Ljava/lang/reflect/Method;");
-
-            // 2. Build the MethodHandle via Lookup.findSpecial
-            //   lookup.findSpecial(TargetClass.class, "name", methodType, GeneratedClass.class)
-            mv.visitVarInsn(Opcodes.ALOAD, lookupSlot);
-            mv.visitLdcInsn(Type.getType("L" + targetInternal + ";"));
-            mv.visitLdcInsn(method.getName());
-
-            // Build MethodType: MethodType.methodType(returnType, paramTypes...)
-            Class<?> returnType = method.getReturnType();
-            BytecodeUtils.pushClassConstant(mv, returnType);
-            if (paramTypes.length == 0) {
-                mv.visitMethodInsn(Opcodes.INVOKESTATIC,
-                        "java/lang/invoke/MethodType",
-                        "methodType",
-                        "(Ljava/lang/Class;)Ljava/lang/invoke/MethodType;",
-                        false);
-            } else {
-                BytecodeUtils.pushInt(mv, paramTypes.length);
-                mv.visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/Class");
-                for (int i = 0; i < paramTypes.length; i++) {
-                    mv.visitInsn(Opcodes.DUP);
-                    BytecodeUtils.pushInt(mv, i);
-                    BytecodeUtils.pushClassConstant(mv, paramTypes[i]);
-                    mv.visitInsn(Opcodes.AASTORE);
-                }
-                mv.visitMethodInsn(Opcodes.INVOKESTATIC,
-                        "java/lang/invoke/MethodType",
-                        "methodType",
-                        "(Ljava/lang/Class;[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;",
-                        false);
-            }
-            mv.visitLdcInsn(Type.getType("L" + generatedInternal + ";"));
-            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
-                    "java/lang/invoke/MethodHandles$Lookup",
-                    "findSpecial",
-                    "(Ljava/lang/Class;Ljava/lang/String;"
-                            + "Ljava/lang/invoke/MethodType;"
-                            + "Ljava/lang/Class;)Ljava/lang/invoke/MethodHandle;",
-                    false);
-
-            // 3. Pre-compute asSpreader → asType to (Object, Object[])Object
-            //    This is done once in <clinit> — zero allocation on the hot path.
-            mv.visitLdcInsn(Type.getType("[Ljava/lang/Object;"));
-            BytecodeUtils.pushInt(mv, paramTypes.length);
-            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
-                    "java/lang/invoke/MethodHandle",
-                    "asSpreader",
-                    "(Ljava/lang/Class;I)Ljava/lang/invoke/MethodHandle;",
-                    false);
-
-            // asType to uniform (Object, Object[])Object signature
-            // Build MethodType: MethodType.methodType(Object.class, Object.class, Object[].class)
-            // In bytecode, the trailing varargs Class... is a Class[].
-            mv.visitLdcInsn(Type.getType("Ljava/lang/Object;"));
-            mv.visitLdcInsn(Type.getType("Ljava/lang/Object;"));
-            mv.visitInsn(Opcodes.ICONST_1);
-            mv.visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/Class");
-            mv.visitInsn(Opcodes.DUP);
-            mv.visitInsn(Opcodes.ICONST_0);
-            mv.visitLdcInsn(Type.getType("[Ljava/lang/Object;"));
-            mv.visitInsn(Opcodes.AASTORE);
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC,
-                    "java/lang/invoke/MethodType",
-                    "methodType",
-                    "(Ljava/lang/Class;Ljava/lang/Class;"
-                            + "[Ljava/lang/Class;)Ljava/lang/invoke/MethodType;",
-                    false);
-            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
-                    "java/lang/invoke/MethodHandle",
-                    "asType",
-                    "(Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/MethodHandle;",
-                    false);
-
-            // 4. Store in _handles[index]
-            //    Stack: [MethodHandle]. Store to temp slot, then load
-            //    array + index + handle for AASTORE.
-            int handleTempSlot = 1; // reuse slot 1 (lookup is at 0)
-            mv.visitVarInsn(Opcodes.ASTORE, handleTempSlot);
-            mv.visitFieldInsn(Opcodes.GETSTATIC, generatedInternal,
-                    "_handles", "[Ljava/lang/invoke/MethodHandle;");
-            BytecodeUtils.pushInt(mv, index);
-            mv.visitVarInsn(Opcodes.ALOAD, handleTempSlot);
-            mv.visitInsn(Opcodes.AASTORE);
         }
 
         mv.visitInsn(Opcodes.RETURN);

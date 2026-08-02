@@ -17,6 +17,7 @@
 package io.github.lamspace.generator;
 
 import io.github.lamspace.ClassFilter;
+import io.github.lamspace.Interceptor;
 import org.objectweb.asm.*;
 
 import java.lang.reflect.Method;
@@ -140,10 +141,10 @@ public class MethodDispatcher {
 
         Class<?>[] paramTypes = method.getParameterTypes();
 
-        // 1. Load callback field
+        // 1. Load interceptor field
         mv.visitVarInsn(Opcodes.ALOAD, 0);
         mv.visitFieldInsn(Opcodes.GETFIELD, generatedInternal,
-                CALLBACK_FIELD, "Lio/github/lamspace/Callback;");
+                CALLBACK_FIELD, Type.getDescriptor(Interceptor.class));
 
         // 2. Arg 1: proxy = this
         mv.visitVarInsn(Opcodes.ALOAD, 0);
@@ -152,11 +153,7 @@ public class MethodDispatcher {
         mv.visitFieldInsn(Opcodes.GETSTATIC, generatedInternal,
                 methodFieldName, "Ljava/lang/reflect/Method;");
 
-        // 4. Arg 3: method index (int constant) — replaces the old
-        //    bound MethodHandle. No bindTo allocation on this path.
-        BytecodeUtils.pushInt(mv, methodIndex);
-
-        // 5. Arg 4: new Object[] { arg0, arg1, ... }
+        // 4. Arg 3: new Object[] { arg0, arg1, ... }
         BytecodeUtils.pushInt(mv, paramTypes.length);
         mv.visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/Object");
 
@@ -175,12 +172,11 @@ public class MethodDispatcher {
             slot += (type == double.class || type == long.class) ? 2 : 1;
         }
 
-        // 6. Call callback.intercept(proxy, method, index, args)
+        // 5. Call interceptor.intercept(proxy, method, args)
         mv.visitMethodInsn(Opcodes.INVOKEINTERFACE,
-                "io/github/lamspace/Callback",
+                "io/github/lamspace/Interceptor",
                 "intercept",
                 "(Ljava/lang/Object;Ljava/lang/reflect/Method;"
-                        + "I"
                         + "[Ljava/lang/Object;)Ljava/lang/Object;",
                 true);
 

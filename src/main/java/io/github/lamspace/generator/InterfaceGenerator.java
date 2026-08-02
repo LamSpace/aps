@@ -17,13 +17,14 @@
 package io.github.lamspace.generator;
 
 import io.github.lamspace.ClassFilter;
-import io.github.lamspace.InterfaceCallback;
+import io.github.lamspace.Interceptor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -71,24 +72,37 @@ public class InterfaceGenerator {
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 
+        // Implements target interface + DispatchTarget
         cw.visit(Opcodes.V24, Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER,
                 generatedInternal, null, "java/lang/Object",
-                new String[]{targetInternal});
+                new String[]{targetInternal, "io/github/lamspace/DispatchTarget"});
 
-        // -- InterfaceCallback field --
-        String callbackDesc = Type.getDescriptor(InterfaceCallback.class);
+        // -- Interceptor field --
+        String callbackDesc = Type.getDescriptor(Interceptor.class);
         cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL,
                 "_callback", callbackDesc, null, null);
 
-        // -- Constructor: stores callback, calls super() --
+        // -- Constructor: stores interceptor, calls super() --
         generateConstructor(cw, generatedInternal, callbackDesc);
 
         // -- Method implementations + static Method fields --
         InterfaceDispatcher.dispatchMethods(cw, interfaceClass,
                 generatedInternal, filter);
 
+        // -- Drain ClinitRegistry entries for dispatch generation --
+        List<ClinitRegistry.Entry> entries = ClinitRegistry.drain();
+
+        // -- dispatch(Method, Object[]) for Object methods --
+        List<MethodInfo> infos = new ArrayList<>();
+        for (ClinitRegistry.Entry entry : entries) {
+            infos.add(new MethodInfo(entry.method(), entry.methodFieldName(),
+                    DispatchGenerator.computeHash(entry.method())));
+        }
+        DispatchGenerator.generateDispatch(cw, generatedInternal,
+                "java/lang/Object", infos, false);
+
         // -- <clinit> for Method objects only --
-        generateClinit(cw, generatedInternal);
+        generateClinit(cw, generatedInternal, entries);
 
         cw.visitEnd();
         return cw.toByteArray();
@@ -113,8 +127,8 @@ public class InterfaceGenerator {
         mv.visitEnd();
     }
 
-    private void generateClinit(ClassWriter cw, String generatedInternal) {
-        List<ClinitRegistry.Entry> entries = ClinitRegistry.drain();
+    private void generateClinit(ClassWriter cw, String generatedInternal,
+                               List<ClinitRegistry.Entry> entries) {
         if (entries.isEmpty()) {
             return;
         }

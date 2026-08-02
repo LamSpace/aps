@@ -102,8 +102,8 @@ public class ProxyBenchmark {
             );
 
             // APS — no super call
-            apsProxy = APS.create(StringOpImpl.class,
-                    (obj, method, index, args) -> "fixed");
+            apsProxy = APS.proxy(StringOpImpl.class,
+                    (obj, method, args) -> "fixed");
 
             // CGLib — no invokeSuper call
             Enhancer enhancer = new Enhancer();
@@ -157,8 +157,8 @@ public class ProxyBenchmark {
             );
 
             // APS — APS.invokeSuper to call original method
-            apsProxy = APS.create(StringOpImpl.class,
-                    (obj, method, index, args) -> APS.invokeSuper(obj, index, args));
+            apsProxy = APS.proxy(StringOpImpl.class,
+                    (obj, method, args) -> APS.invokeSuper(obj, method, args));
 
             // CGLib — proxy.invokeSuper(obj, args) to call original method
             Enhancer enhancer = new Enhancer();
@@ -213,10 +213,10 @@ public class ProxyBenchmark {
                     }
             );
 
-            apsProxy = APS.create(StringOpImpl.class,
-                    (obj, method, index, args) -> {
+            apsProxy = APS.proxy(StringOpImpl.class,
+                    (obj, method, args) -> {
                         args[0] = "[" + args[0] + "]";
-                        return APS.invokeSuper(obj, index, args);
+                        return APS.invokeSuper(obj, method, args);
                     });
 
             Enhancer enhancer = new Enhancer();
@@ -271,8 +271,8 @@ public class ProxyBenchmark {
                             method.invoke(new IntOpImpl(), args1)
             );
 
-            apsProxy = APS.create(IntOpImpl.class,
-                    (obj, method, index, args) -> APS.invokeSuper(obj, index, args));
+            apsProxy = APS.proxy(IntOpImpl.class,
+                    (obj, method, args) -> APS.invokeSuper(obj, method, args));
 
             Enhancer enhancer = new Enhancer();
             enhancer.setSuperclass(IntOpImpl.class);
@@ -326,8 +326,8 @@ public class ProxyBenchmark {
                     }
             );
 
-            apsProxy = APS.create(VoidOpImpl.class,
-                    (obj, method, index, args) -> APS.invokeSuper(obj, index, args));
+            apsProxy = APS.proxy(VoidOpImpl.class,
+                    (obj, method, args) -> APS.invokeSuper(obj, method, args));
 
             Enhancer enhancer = new Enhancer();
             enhancer.setSuperclass(VoidOpImpl.class);
@@ -379,8 +379,8 @@ public class ProxyBenchmark {
                             method.invoke(new MultiOpImpl(), args1)
             );
 
-            apsProxy = APS.create(MultiOpImpl.class,
-                    (obj, method, index, args) -> APS.invokeSuper(obj, index, args));
+            apsProxy = APS.proxy(MultiOpImpl.class,
+                    (obj, method, args) -> APS.invokeSuper(obj, method, args));
 
             Enhancer enhancer = new Enhancer();
             enhancer.setSuperclass(MultiOpImpl.class);
@@ -430,7 +430,7 @@ public class ProxyBenchmark {
                     (proxy, method, args1) -> "fixed"
             );
 
-            apsIface = APS.createInterface(StringOp.class,
+            apsIface = APS.proxy(StringOp.class,
                     (obj, method, args) -> "fixed");
         }
     }
@@ -468,7 +468,7 @@ public class ProxyBenchmark {
                             "Hello, " + args1[0]
             );
 
-            apsIface = APS.createInterface(StringOp.class,
+            apsIface = APS.proxy(StringOp.class,
                     (obj, method, args) -> "Hello, " + args[0]);
         }
     }
@@ -503,7 +503,7 @@ public class ProxyBenchmark {
                     }
             );
 
-            apsIface = APS.createInterface(StringOp.class,
+            apsIface = APS.proxy(StringOp.class,
                     (obj, method, args) -> {
                         args[0] = "[" + args[0] + "]";
                         return args[0];
@@ -539,7 +539,7 @@ public class ProxyBenchmark {
                             (int) args1[0] + (int) args1[1]
             );
 
-            apsIface = APS.createInterface(IntOp.class,
+            apsIface = APS.proxy(IntOp.class,
                     (obj, method, args) ->
                             (int) args[0] + (int) args[1]);
         }
@@ -572,7 +572,7 @@ public class ProxyBenchmark {
                     (proxy, method, args1) -> null
             );
 
-            apsIface = APS.createInterface(VoidOp.class,
+            apsIface = APS.proxy(VoidOp.class,
                     (obj, method, args) -> null);
         }
     }
@@ -606,7 +606,7 @@ public class ProxyBenchmark {
                                     + "-" + args1[3]
             );
 
-            apsIface = APS.createInterface(MultiOp.class,
+            apsIface = APS.proxy(MultiOp.class,
                     (obj, method, args) ->
                             args[0] + "-" + args[1] + "-" + args[2]
                                     + "-" + args[3]);

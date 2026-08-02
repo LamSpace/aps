@@ -18,7 +18,7 @@ package io.github.lamspace.generator;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.github.lamspace.Callback;
+import io.github.lamspace.Interceptor;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -48,7 +48,7 @@ class MethodDispatcherTest {
 
         // Add Callback field (required by dispatcher)
         cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL, "_callback",
-                Type.getDescriptor(Callback.class), null, null);
+                Type.getDescriptor(Interceptor.class), null, null);
 
         var methods = MethodDispatcher.dispatchMethods(cw, Bean.class,
                 generatedInternal, null);

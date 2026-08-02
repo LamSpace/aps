@@ -59,7 +59,7 @@ class APSInterfaceFunctionalTest {
 
     @Test
     void shouldInterceptAndReturnModifiedValue() {
-        Greeter proxy = APS.createInterface(Greeter.class,
+        Greeter proxy = APS.proxy(Greeter.class,
                 (obj, method, args) -> {
                     String original = (String) args[0];
                     return "[intercepted] " + original;
@@ -71,7 +71,7 @@ class APSInterfaceFunctionalTest {
 
     @Test
     void shouldReturnFixedValueFromCallback() {
-        Greeter proxy = APS.createInterface(Greeter.class,
+        Greeter proxy = APS.proxy(Greeter.class,
                 (obj, method, args) -> "fixed");
 
         assertEquals("fixed", proxy.hello("anything"));
@@ -79,7 +79,7 @@ class APSInterfaceFunctionalTest {
 
     @Test
     void shouldHandlePrimitiveReturnType() {
-        Calculator proxy = APS.createInterface(Calculator.class,
+        Calculator proxy = APS.proxy(Calculator.class,
                 (obj, method, args) -> {
                     int a = (int) args[0];
                     int b = (int) args[1];
@@ -92,7 +92,7 @@ class APSInterfaceFunctionalTest {
     @Test
     void shouldHandleVoidReturnType() {
         AtomicBoolean called = new AtomicBoolean(false);
-        SideEffectRunner proxy = APS.createInterface(
+        SideEffectRunner proxy = APS.proxy(
                 SideEffectRunner.class, (obj, method, args) -> {
                     called.set(true);
                     return null;
@@ -104,7 +104,7 @@ class APSInterfaceFunctionalTest {
 
     @Test
     void shouldModifyArgumentsInCallback() {
-        Greeter proxy = APS.createInterface(Greeter.class,
+        Greeter proxy = APS.proxy(Greeter.class,
                 (obj, method, args) -> {
                     args[0] = "[" + args[0] + "]";
                     return args[0];
@@ -115,7 +115,7 @@ class APSInterfaceFunctionalTest {
 
     @Test
     void shouldWorkWithClassFilter() {
-        MultiMethod proxy = APS.createInterface(MultiMethod.class,
+        MultiMethod proxy = APS.proxy(MultiMethod.class,
                 (obj, method, args) -> "[filtered] " + args[0],
                 method -> method.getName().startsWith("greet"));
 
@@ -127,7 +127,7 @@ class APSInterfaceFunctionalTest {
 
     @Test
     void shouldHandleDefaultMethodAsRegularCallbackInvocation() {
-        GreeterWithDefault proxy = APS.createInterface(
+        GreeterWithDefault proxy = APS.proxy(
                 GreeterWithDefault.class,
                 (obj, method, args) -> {
                     if (method.getName().equals("greet")) {
@@ -142,27 +142,20 @@ class APSInterfaceFunctionalTest {
     }
 
     @Test
-    void shouldThrowForNonInterfaceClass() {
+    void shouldThrowForNullTarget() {
         assertThrows(IllegalArgumentException.class, () ->
-                APS.createInterface(String.class,
-                        (obj, method, args) -> null));
+                APS.proxy(null, (obj, method, args) -> null));
     }
 
     @Test
-    void shouldThrowForNullInterfaceClass() {
+    void shouldThrowForNullInterceptor() {
         assertThrows(IllegalArgumentException.class, () ->
-                APS.createInterface(null, (obj, method, args) -> null));
-    }
-
-    @Test
-    void shouldThrowForNullCallback() {
-        assertThrows(IllegalArgumentException.class, () ->
-                APS.createInterface(Runnable.class, null));
+                APS.proxy(Runnable.class, null));
     }
 
     @Test
     void shouldPropagateRuntimeExceptionFromCallback() {
-        Greeter proxy = APS.createInterface(Greeter.class,
+        Greeter proxy = APS.proxy(Greeter.class,
                 (obj, method, args) -> {
                     throw new RuntimeException("test exception");
                 });
@@ -173,7 +166,7 @@ class APSInterfaceFunctionalTest {
 
     @Test
     void shouldWrapCheckedExceptionInUndeclaredThrowable() {
-        Greeter proxy = APS.createInterface(Greeter.class,
+        Greeter proxy = APS.proxy(Greeter.class,
                 (obj, method, args) -> {
                     throw new Exception("checked from interceptor");
                 });
@@ -185,7 +178,7 @@ class APSInterfaceFunctionalTest {
 
     @Test
     void shouldHandleNoArgMethod() {
-        Runnable proxy = APS.createInterface(Runnable.class,
+        Runnable proxy = APS.proxy(Runnable.class,
                 (obj, method, args) -> {
                     assertNotNull(method);
                     assertEquals("run", method.getName());

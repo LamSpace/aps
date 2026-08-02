@@ -6,12 +6,12 @@
 
 APS currently has two parallel APIs for class and interface proxies:
 
-| | Class Proxy | Interface Proxy |
-|---|---|---|
-| Entry | `APS.create(Class, Callback)` | `APS.createInterface(Class, InterfaceCallback)` |
-| Callback | `intercept(proxy, method, index, args)` | `intercept(proxy, method, args)` |
-| Super invocation | `APS.invokeSuper(proxy, index, args)` | N/A |
-| Structure | `extends TargetClass + SuperDispatcher` | `extends Object + Interface` |
+|                  | Class Proxy                             | Interface Proxy                                 |
+|------------------|-----------------------------------------|-------------------------------------------------|
+| Entry            | `APS.create(Class, Callback)`           | `APS.createInterface(Class, InterfaceCallback)` |
+| Callback         | `intercept(proxy, method, index, args)` | `intercept(proxy, method, args)`                |
+| Super invocation | `APS.invokeSuper(proxy, index, args)`   | N/A                                             |
+| Structure        | `extends TargetClass + SuperDispatcher` | `extends Object + Interface`                    |
 
 The `invokeSuper` path for class proxies goes through a type-erased `MethodHandle.invoke()` (via `_handles[index].invoke(this, args)`), which adds ~10ns of overhead compared to a direct `super.method(args)` call. The design unifies the two APIs and replaces the MethodHandle dispatch with direct `INVOKESPECIAL` super calls routed through a hashCode-based switch.
 
@@ -20,7 +20,9 @@ The `invokeSuper` path for class proxies goes through a type-erased `MethodHandl
 ```java
 // Unified entry point — auto-detects class vs interface
 <T> T proxy(Class<T> target, Interceptor interceptor);
+
 <T> T proxy(Class<T> target, Interceptor interceptor, ClassFilter filter);
+
 <T> T proxy(Class<T> target, Interceptor interceptor, ClassFilter filter,
             Object... constructorArgs);
 
@@ -40,6 +42,7 @@ interface ClassFilter {
 ```
 
 **Changes from current API**:
+
 - `create` + `createInterface` → `proxy` (single method for both classes and interfaces)
 - `Callback` + `InterfaceCallback` → `Interceptor` (unified signature, `index` removed)
 - `invokeSuper(proxy, index, args)` → `invokeSuper(proxy, method, args)` (Method-based dispatch)
@@ -70,11 +73,13 @@ interface DispatchTarget {
 ### Per-method generation
 
 **Intercepted methods** (all methods by default, or filter-accepted):
+
 - Delegate to `interceptor.intercept(proxy, method, boxedArgs)`
 - Box primitives before call, unbox return value after
 - Exception handling: `RuntimeException`/`Error` rethrown directly, checked `Exception` wrapped in `UndeclaredThrowableException`
 
 **Non-intercepted methods** (filter-rejected):
+
 - Class proxy: direct `super.method(args)` — zero interception overhead
 - Interface proxy: throw `AbstractMethodError`
 
@@ -102,6 +107,7 @@ public final Object dispatch(Method method, Object[] args) throws Throwable {
 ```
 
 Key properties:
+
 - Hash values are pre-computed in `<clinit>` as `private static final int H_xxx` constants (bytecode uses `ldc` to load them)
 - Class methods use direct `super.method(args)` — `INVOKESPECIAL` with specific types, inlinable by JIT
 - Parameter unboxing is hardcoded per branch (`(String) args[0]`, `(int) args[0]`, etc.)
@@ -137,15 +143,15 @@ Cache key: `{targetClass, filter}` where `null` filter means "intercept all".
 
 ## Expected Performance Impact
 
-| Scenario | Before (APS) | After (expected) | Improvement |
-|---|---|---|---|
-| Class proxy passthrough | 17.15 ns | ~6 ns | ~3x |
-| Class proxy arg modify | 22.85 ns | ~12 ns | ~2x |
-| Class proxy primitive return | 9.46 ns | ~2 ns | ~5x |
-| Class proxy void method | 8.02 ns | ~2 ns | ~4x |
-| Class proxy multi-param | 72.47 ns | ~65 ns | ~10% |
-| Class proxy no-op | 1.35 ns | ~1.0 ns | ~25% |
-| Interface proxy (all) | ~parity | ~parity | — |
+| Scenario                     | Before (APS) | After (expected) | Improvement |
+|------------------------------|--------------|------------------|-------------|
+| Class proxy passthrough      | 17.15 ns     | ~6 ns            | ~3x         |
+| Class proxy arg modify       | 22.85 ns     | ~12 ns           | ~2x         |
+| Class proxy primitive return | 9.46 ns      | ~2 ns            | ~5x         |
+| Class proxy void method      | 8.02 ns      | ~2 ns            | ~4x         |
+| Class proxy multi-param      | 72.47 ns     | ~65 ns           | ~10%        |
+| Class proxy no-op            | 1.35 ns      | ~1.0 ns          | ~25%        |
+| Interface proxy (all)        | ~parity      | ~parity          | —           |
 
 The interface proxy path is already at parity with `java.lang.reflect.Proxy` and requires no structural change beyond API unification.
 
@@ -161,13 +167,13 @@ Users migrate from:
 ```java
 // Old class proxy
 MyClass proxy = APS.create(MyClass.class,
-    (obj, method, index, args) -> {
-        return APS.invokeSuper(obj, index, args);
-    });
+                (obj, method, index, args) -> {
+                    return APS.invokeSuper(obj, index, args);
+                });
 
 // Old interface proxy
 MyInterface proxy = APS.createInterface(MyInterface.class,
-    (obj, method, args) -> { ... });
+        (obj, method, args) -> { ...});
 ```
 
 To:
@@ -175,10 +181,10 @@ To:
 ```java
 // Unified — same API for both
 MyClass proxy = APS.proxy(MyClass.class,
-    (obj, method, args) -> {
-        return APS.invokeSuper(obj, method, args);
-    });
+                (obj, method, args) -> {
+                    return APS.invokeSuper(obj, method, args);
+                });
 
 MyInterface proxy = APS.proxy(MyInterface.class,
-    (obj, method, args) -> { ... });
+        (obj, method, args) -> { ...});
 ```
