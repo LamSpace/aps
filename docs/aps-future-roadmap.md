@@ -2,22 +2,22 @@
 
 ## 第一阶段：核心统一（已完成）
 
-| 优先级 | 事项                     | 说明                                                              |
-|--------|--------------------------|-------------------------------------------------------------------|
-| P0     | **统一 API**             | `AcceleratedProxy.proxy()` 单一入口，同时支持类和接口             |
-| P0     | **统一回调**             | `Interceptor` 接口替代 `Callback` + `InterfaceCallback`           |
-| P0     | **hashCode 调度**        | `dispatch()` 哈希开关 + 直接 `INVOKESPECIAL` 父类调用，消除 MethodHandle 开销 |
-| P0     | **类缓存**              | `WeakCache` 按 `{targetClass, filter}` 缓存已生成的代理类         |
-| P0     | **接口代理**            | 与 `java.lang.reflect.Proxy` 性能接近持平                          |
+| 优先级 | 事项              | 说明                                                                          |
+|--------|-------------------|-------------------------------------------------------------------------------|
+| P0     | **统一 API**      | `AcceleratedProxy.proxy()` 单一入口，同时支持类和接口                         |
+| P0     | **统一回调**      | `Interceptor` 接口替代 `Callback` + `InterfaceCallback`                       |
+| P0     | **hashCode 调度** | `dispatch()` 哈希开关 + 直接 `INVOKESPECIAL` 父类调用，消除 MethodHandle 开销 |
+| P0     | **类缓存**        | `WeakCache` 按 `{targetClass, filter}` 缓存已生成的代理类                     |
+| P0     | **接口代理**      | 与 `java.lang.reflect.Proxy` 性能接近持平                                     |
 
 ---
 
 ## 第二阶段：功能扩展
 
-| 优先级 | 事项                       | 说明                                             |
-|--------|----------------------------|--------------------------------------------------|
-| P2     | **注解驱动 API**           | 如 `@Intercept` 标注方法，减少样板代码           |
-| P2     | **Maven Central 发布**     | 让其他项目能通过 Maven/Gradle 依赖引入           |
+| 优先级 | 事项                          | 说明                                                |
+|--------|-------------------------------|-----------------------------------------------------|
+| P2     | **注解驱动 API**              | 如 `@Intercept` 标注方法，减少样板代码              |
+| P2     | **Maven Central 发布**        | 让其他项目能通过 Maven/Gradle 依赖引入              |
 | P2     | **多 Interceptor / 方法分组** | 当前只有单 Interceptor + filter，更细粒度的拦截控制 |
 
 ### 注解驱动 API 草图
@@ -25,9 +25,9 @@
 ```java
 // 当前 API
 Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
-    System.out.println("before " + method.getName());
-    return AcceleratedProxy.invokeSuper(obj, method, args);
-});
+            System.out.println("before " + method.getName());
+            return AcceleratedProxy.invokeSuper(obj, method, args);
+        });
 
 // 注解驱动 API（v2 设想）
 @Intercept
@@ -54,23 +54,23 @@ Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MyInterceptor());
 ```java
 // 设想：不同方法组绑定不同 Interceptor
 Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
-    Group.of(m -> m.getName().startsWith("get"), getterInterceptor),
-    Group.of(m -> m.getName().startsWith("set"), setterInterceptor),
-    Group.otherwise(defaultInterceptor)
-);
+                Group.of(m -> m.getName().startsWith("get"), getterInterceptor),
+                Group.of(m -> m.getName().startsWith("set"), setterInterceptor),
+                Group.otherwise(defaultInterceptor)
+        );
 ```
 
 ---
 
 ## 第三阶段：高级特性
 
-| 优先级 | 事项                  | 说明                                                            |
-|--------|-----------------------|-----------------------------------------------------------------|
-| P3     | **接口默认方法调用**  | 在拦截器中调用接口 `default` 方法，需 `findSpecial`             |
-| P3     | **多接口代理**        | 一个代理类实现多个接口                                          |
-| P3     | **静态方法代理**      | 需生成委托代码 — 静态方法不参与虚方法分派                       |
-| P3     | **构造器拦截**        | 对象创建时的 hook，类似 CGLib 的 `Enhancer` 构造器回调          |
-| P3     | **热加载/热替换**     | 运行时重新生成代理类，适合长期运行的框架场景                    |
+| 优先级 | 事项                 | 说明                                                   |
+|--------|----------------------|--------------------------------------------------------|
+| P3     | **接口默认方法调用** | 在拦截器中调用接口 `default` 方法，需 `findSpecial`    |
+| P3     | **多接口代理**       | 一个代理类实现多个接口                                 |
+| P3     | **静态方法代理**     | 需生成委托代码 — 静态方法不参与虚方法分派              |
+| P3     | **构造器拦截**       | 对象创建时的 hook，类似 CGLib 的 `Enhancer` 构造器回调 |
+| P3     | **热加载/热替换**    | 运行时重新生成代理类，适合长期运行的框架场景           |
 
 ### 接口默认方法调用
 
