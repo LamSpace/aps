@@ -46,36 +46,34 @@ int result = calc.add(10, 20);
 
 ## 📊 Performance
 
-JMH benchmarks on Java 25, 4 implementations × 6 scenarios. Best result per row **bolded**.
+JMH benchmarks on Java 25. Best result per row **bolded**.  
+*Java Proxy cannot proxy classes; included for reference only (proxies the interface, delegates via reflection).*
 
-### Class Proxy
+### Class Proxy Highlights
 
-| Scenario         | Direct | APS       | CGLib | Java Proxy |
-|------------------|--------|-----------|-------|------------|
-| No-op            | 5.72   | 1.32      | 1.06  | **1.05**   |
-| Passthrough      | 5.66   | **5.69**  | 13.87 | 5.79       |
-| Arg modify       | 5.69   | **6.11**  | 19.11 | 33.73      |
-| Primitive return | 0.67   | 2.08      | 12.58 | **1.83**   |
-| Void method      | 0.66   | 2.34      | 3.68  | **1.64**   |
-| Multi-param      | 58.40  | **58.76** | 71.32 | 59.30      |
+| Scenario        | Direct | APS      | CGLib  |
+|-----------------|--------|----------|--------|
+| int return      | 0.66   | 1.83     | 12.36  |
+| String return   | 4.68   | **4.71** | 19.89  |
+| void return     | 0.65   | 3.94     | 3.72   |
+| 0-arg passthrough | 0.66 | 2.11     | 3.96   |
+| 4-arg passthrough | 56.34 | 61.32    | 71.38  |
+| No-op           | —      | 1.32     | 1.05   |
+| Passthrough     | —      | **4.76** | 14.01  |
+| Arg modify      | —      | **5.33** | 18.69  |
 
-*Java Proxy cannot proxy classes — it proxies the interface and delegates via `Method.invoke()`; included for reference only.*
+### Interface Proxy Highlights
 
-### Interface Proxy
+| Scenario        | APS      | Java Proxy |
+|-----------------|----------|------------|
+| int return      | 1.30     | **1.05**   |
+| String return   | **5.69** | 5.77       |
+| void return     | 1.30     | **1.05**   |
+| No-op           | 1.31     | **1.05**   |
+| Passthrough     | **5.69** | 5.77       |
+| Arg modify      | 5.30     | **5.29**   |
 
-| Scenario         | APS      | Java Proxy |
-|------------------|----------|------------|
-| No-op            | 1.33     | **1.05**   |
-| Passthrough      | **5.69** | 5.77       |
-| Arg modify       | 5.30     | **5.29**   |
-| Primitive return | 1.32     | **1.05**   |
-| Void method      | 1.30     | **1.05**   |
-| Multi-param      | 80.50    | **80.09**  |
-
-*ns/op, lower is better. Full results: [docs/benchmark-results.md](docs/benchmark-results.md)*  
-*Java Proxy = `java.lang.reflect.Proxy` (JDK built-in dynamic proxy)*
-
-APS leads class proxy performance in the most realistic scenarios (passthrough, arg modify, multi-param) where actual work happens inside the interceptor, and runs at near-parity with `java.lang.reflect.Proxy` for interface proxies.
+*ns/op, lower is better. Full results: [docs/benchmark-results.md](docs/benchmark-results.md)*
 
 ## 📋 Requirements
 

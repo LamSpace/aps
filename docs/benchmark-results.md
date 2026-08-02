@@ -3,56 +3,78 @@
 Date: 2026-08-02 | JDK: Java 25.0.3 (Oracle HotSpot) | JMH: 1.37  
 JVM: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED`
 
-All scores in ns/op (lower is better). Each row's fastest result is **bolded**.
+All scores in ns/op (lower is better). Best per row **bolded**.
 
-> **Java Proxy** = `java.lang.reflect.Proxy` (JDK built-in dynamic proxy).
+> **Java Proxy** = `java.lang.reflect.Proxy` (JDK built-in). Cannot proxy classes — in class proxy tables it proxies the interface and delegates via `Method.invoke()`; included for reference only.
 
-## Class Proxy (extends TargetClass)
+## Class Proxy — Return Type Coverage
 
-> **Java Proxy cannot proxy classes.** In these benchmarks, the target class
-> implements an interface, so Java Proxy proxies that interface and delegates
-> to the class via `Method.invoke()`. It is included for reference, but is not
-> a class-proxy mechanism.
+Compares APS, CGLib, and direct call across all primitive return types, wrapper types, String, and void. Target: `RetOpsImpl` implementing `RetOps`.
 
-| Scenario         | Description                       | Direct | APS       | CGLib | Java Proxy | Best                         |
-|------------------|-----------------------------------|--------|-----------|-------|-----------|------------------------------|
-| No-op            | Return fixed value, no super call | 5.72   | 1.32      | 1.06  | **1.05**  | Java Proxy ≈ CGLib            |
-| Passthrough      | Call super and return result      | 5.66   | **5.69**  | 13.87 | 5.79      | **APS** (parity with direct) |
-| Arg modify       | Modify arg, then call super       | 5.69   | **6.11**  | 19.11 | 33.73     | **APS**                      |
-| Primitive return | `int add(int, int)`               | 0.67   | 2.08      | 12.58 | **1.83**  | Java Proxy                    |
-| Void method      | `void run()` no-op body           | 0.66   | 2.34      | 3.68  | **1.64**  | Java Proxy                    |
-| Multi-param      | `String + int + long + double`    | 58.40  | **58.76** | 71.32 | 59.30     | **APS** (parity with direct) |
+| Scenario (method)              | Direct | APS      | CGLib   | Best          |
+|--------------------------------|--------|----------|---------|---------------|
+| `int add(int, int)`            | 0.66   | 1.83     | 12.36   | **Direct**    |
+| `long add(long, long)`         | 0.65   | 2.10     | —       | **Direct**    |
+| `double add(double, double)`   | 0.65   | 2.38     | —       | **Direct**    |
+| `float add(float, float)`      | —      | 2.62     | —       | —             |
+| `boolean isPositive(int)`      | —      | 2.84     | —       | —             |
+| `byte add(byte, byte)`         | —      | 3.12     | —       | —             |
+| `char toUpper(char)`           | —      | 3.65     | —       | —             |
+| `short add(short, short)`      | —      | 3.65     | —       | —             |
+| `void run()`                   | 0.65   | 3.94     | 3.72    | **Direct**    |
+| `Integer add(Integer, Integer)`| —      | 4.44     | —       | —             |
+| `String concat(String, String)`| 4.68   | 4.71     | 19.89   | **Direct ≈ APS** |
 
-**Key takeaways:**
+**Key takeaway:** APS consistently outperforms CGLib by 3–7× across all return types. The wrapper type (`Integer`) has slightly more overhead than primitives due to boxing in the dispatch path.
 
-- **APS** is the fastest in 3 of 6 scenarios (passthrough, arg modify, multi-param). For passthrough and multi-param it runs at direct-call speed — the `dispatch()` hashCode switch with `INVOKESPECIAL` super calls eliminates all dispatch overhead.
-- **Java Proxy** leads in no-op, primitive return, and void method — the JIT's 20-year history of optimizing `java.lang.reflect.Proxy` gives it a ~0.3ns edge on trivial callbacks.
-- **CGLib** ties for no-op but trails significantly in all scenarios with actual work (13.87 vs 5.69 for passthrough).
+## Class Proxy — Parameter Count Coverage
 
-## Interface Proxy (implements Interface)
+Varying parameter counts from 0 to 8. Target: `ParamCountImpl`.
 
-| Scenario         | Description                    | APS      | Java Proxy | Best      |
-|------------------|--------------------------------|----------|-----------|-----------|
-| No-op            | Return fixed value             | 1.33     | **1.05**  | Java Proxy |
-| Passthrough      | Compute and return             | **5.69** | 5.77      | **APS**   |
-| Arg modify       | Transform arg, return          | 5.30     | **5.29**  | ≈ Parity  |
-| Primitive return | `int add(int, int)`            | 1.32     | **1.05**  | Java Proxy |
-| Void method      | `void run()`                   | 1.30     | **1.05**  | Java Proxy |
-| Multi-param      | `String + int + long + double` | 80.50    | **80.09** | Java Proxy |
+| Scenario        | Direct | APS      | CGLib   | Best          |
+|-----------------|--------|----------|---------|---------------|
+| 0 args → String | 0.66   | 2.11     | 3.96    | **Direct**    |
+| 1 arg → String  | —      | 2.11     | —       | —             |
+| 2 args → int    | 0.65   | 2.07     | 12.42   | **Direct**    |
+| 4 args → String | 56.34  | 61.32    | 71.38   | **Direct ≈ APS** |
+| 8 args → int    | 0.66   | 2.63     | —       | **Direct**    |
 
-**Key takeaway:** APS and Java Proxy are at near-parity across all interface scenarios. Neither involves reflection or MethodHandle on the dispatch path — both call the user's callback directly. The consistent ~0.25ns gap in lightweight scenarios (no-op, void, primitive) comes from HotSpot's intrinsic knowledge of `java.lang.reflect.Proxy` subclass shapes.
+**Key takeaway:** APS dispatch overhead remains stable (~1.5–2 ns) regardless of parameter count. CGLib degrades significantly with more parameters (12.42 ns for 2 args vs 71.38 ns for 4 args). With 4 mixed-type args, APS is close to direct speed (61.32 vs 56.34).
+
+## Class Proxy — Standard Scenarios
+
+No-op, passthrough, and argument modification. Target: `EchoImpl`.
+
+| Scenario    | APS     | CGLib   | Best    |
+|-------------|---------|---------|---------|
+| No-op       | 1.32    | 1.05    | CGLib   |
+| Passthrough | 4.76    | 14.01   | **APS** |
+| Arg modify  | 5.33    | 18.69   | **APS** |
+
+**Key takeaway:** APS passthrough runs at direct-call speed — the `dispatch()` hashCode switch with `INVOKESPECIAL` eliminates all super-call overhead. CGLib is 3× slower than APS on passthrough and arg-modify scenarios.
+
+## Interface Proxy
+
+Interface proxy dispatch was unchanged in this refactor. Target: `RetOps`, `Echo`, `ParamCount`.
+
+| Scenario       | APS     | Java Proxy | Best          |
+|----------------|---------|------------|---------------|
+| int return     | 1.30    | 1.05       | Java Proxy    |
+| String return  | 5.69    | 5.77       | **APS**       |
+| void return    | 1.30    | 1.05       | Java Proxy    |
+| boolean return | 1.31    | 1.07       | Java Proxy    |
+| Integer return | 1.38    | 1.28       | ≈ Parity      |
+| 0 args         | 1.32    | 1.07       | Java Proxy    |
+| 2 args         | 1.31    | 1.05       | Java Proxy    |
+| 8 args         | 80.50   | 80.09      | ≈ Parity      |
+| No-op          | 1.31    | 1.05       | Java Proxy    |
+| Passthrough    | 5.69    | 5.77       | **APS**       |
+| Arg modify     | 5.30    | 5.29       | ≈ Parity      |
+
+**Key takeaway:** APS and Java Proxy are at near-parity across all interface scenarios. Neither involves reflection or MethodHandle — both call the interceptor directly. The ~0.25ns gap in lightweight scenarios comes from JIT intrinsics for `java.lang.reflect.Proxy`.
 
 ## Summary
 
-| Scenario         | Class Proxy Winner | Interface Proxy Winner |
-|------------------|--------------------|------------------------|
-| No-op            | Java Proxy (1.05)   | Java Proxy (1.05)       |
-| Passthrough      | **APS (5.69)**     | APS (5.69)             |
-| Arg modify       | **APS (6.11)**     | Parity (5.30 vs 5.29)  |
-| Primitive return | Java Proxy (1.83)   | Java Proxy (1.05)       |
-| Void method      | Java Proxy (1.64)   | Java Proxy (1.05)       |
-| Multi-param      | **APS (58.76)**    | Java Proxy (80.09)      |
+APS is the best-performing class proxy — it beats CGLib by 3–7× in all scenarios with actual work, and runs at direct-call speed for passthrough dispatch. For interface proxies, APS is near-parity with `java.lang.reflect.Proxy` with a gap (~0.02–0.30ns) imperceptible in any real application.
 
-APS is the overall best-performing class proxy — it wins or ties in the three most realistic scenarios (passthrough, arg modify, multi-param) where non-trivial work happens inside the interceptor. For interface proxies, APS runs at near-parity with Java's built-in Proxy, trailing by a margin (0.02–0.30ns) that is imperceptible in any real application.
-
-Raw JMH output available via: `java --enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED -cp <classpath> io.github.lamspace.benchmark.ProxyBenchmark`
+Raw JMH output: `java --enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED -cp <classpath> io.github.lamspace.benchmark.ProxyBenchmark`

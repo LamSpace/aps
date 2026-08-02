@@ -35,591 +35,320 @@ public class ProxyBenchmark {
         org.openjdk.jmh.Main.main(args);
     }
 
+    // ================================================================
+    // Target: Return-type coverage (2 params, varying return)
+    // ================================================================
+
+    interface RetOps {
+        int    intOp(int a, int b);
+        long   longOp(long a, long b);
+        double doubleOp(double a, double b);
+        float  floatOp(float a, float b);
+        boolean boolOp(int n);
+        byte   byteOp(byte a, byte b);
+        char   charOp(char c);
+        short  shortOp(short a, short b);
+        void   voidOp();
+        Integer intWrapOp(Integer a, Integer b);
+        String  strOp(String a, String b);
+    }
+
+    static class RetOpsImpl implements RetOps {
+        public int    intOp(int a, int b)          { return a + b; }
+        public long   longOp(long a, long b)       { return a + b; }
+        public double doubleOp(double a, double b) { return a + b; }
+        public float  floatOp(float a, float b)    { return a + b; }
+        public boolean boolOp(int n)               { return n > 0; }
+        public byte   byteOp(byte a, byte b)       { return (byte)(a + b); }
+        public char   charOp(char c)               { return Character.toUpperCase(c); }
+        public short  shortOp(short a, short b)    { return (short)(a + b); }
+        public void   voidOp()                     {}
+        public Integer intWrapOp(Integer a, Integer b) { return a + b; }
+        public String  strOp(String a, String b)   { return a + b; }
+    }
+
     // ---------------------------------------------------------------
-    // Shared interfaces & concrete classes
+    // Class proxy — Return types
     // ---------------------------------------------------------------
-
-    public interface StringOp {
-        String call(String input);
-    }
-
-    public interface IntOp {
-        int call(int a, int b);
-    }
-
-    public interface VoidOp {
-        void call();
-    }
-
-    public interface MultiOp {
-        String call(String a, int b, long c, double d);
-    }
-
-    static class StringOpImpl implements StringOp {
-        public String call(String input) {
-            return "Hello, " + input;
-        }
-    }
-
-    static class IntOpImpl implements IntOp {
-        public int call(int a, int b) {
-            return a + b;
-        }
-    }
-
-    static class VoidOpImpl implements VoidOp {
-        public void call() {
-            /* side effect target */
-        }
-    }
-
-    static class MultiOpImpl implements MultiOp {
-        public String call(String a, int b, long c, double d) {
-            return a + "-" + b + "-" + c + "-" + d;
-        }
-    }
-
-    // ===============================================================
-    // Scenario 1: No-op — callback returns fixed value, no super call
-    // ===============================================================
 
     @State(Scope.Thread)
-    public static class NoopState {
-        StringOp direct;
-        StringOp javaProxy;
-        StringOpImpl apsProxy;
-        StringOpImpl cglibProxy;
+    public static class RetTypeState {
+        RetOpsImpl direct;
+        RetOpsImpl aps;
+        RetOpsImpl cglib;
 
         @Setup
         public void setup() {
-            direct = new StringOpImpl();
-
-            // Java Proxy (interface-based)
-            javaProxy = (StringOp) Proxy.newProxyInstance(
-                    StringOp.class.getClassLoader(),
-                    new Class<?>[]{StringOp.class},
-                    (proxy, method, args1) -> "fixed"
-            );
-
-            // APS — no super call
-            apsProxy = APS.proxy(StringOpImpl.class,
-                    (obj, method, args) -> "fixed");
-
-            // CGLib — no invokeSuper call
-            Enhancer enhancer = new Enhancer();
-            enhancer.setSuperclass(StringOpImpl.class);
-            enhancer.setCallback((MethodInterceptor) (obj, method, args, proxy) -> "fixed");
-            cglibProxy = (StringOpImpl) enhancer.create();
-        }
-    }
-
-    @Benchmark
-    public String noop_direct(NoopState s) {
-        return s.direct.call("World");
-    }
-
-    @Benchmark
-    public String noop_javaProxy(NoopState s) {
-        return s.javaProxy.call("World");
-    }
-
-    @Benchmark
-    public String noop_aps(NoopState s) {
-        return s.apsProxy.call("World");
-    }
-
-    @Benchmark
-    public String noop_cglib(NoopState s) {
-        return s.cglibProxy.call("World");
-    }
-
-    // ===============================================================
-    // Scenario 2: Passthrough — callback calls super method
-    // ===============================================================
-
-    @State(Scope.Thread)
-    public static class PassthroughState {
-        StringOp direct;
-        StringOp javaProxy;
-        StringOpImpl apsProxy;
-        StringOpImpl cglibProxy;
-
-        @Setup
-        public void setup() {
-            direct = new StringOpImpl();
-
-            javaProxy = (StringOp) Proxy.newProxyInstance(
-                    StringOp.class.getClassLoader(),
-                    new Class<?>[]{StringOp.class},
-                    (proxy, method, args1) -> {
-                        return method.invoke(new StringOpImpl(), args1);
-                    }
-            );
-
-            // APS — APS.invokeSuper to call original method
-            apsProxy = APS.proxy(StringOpImpl.class,
+            direct = new RetOpsImpl();
+            aps = APS.proxy(RetOpsImpl.class,
                     (obj, method, args) -> APS.invokeSuper(obj, method, args));
-
-            // CGLib — proxy.invokeSuper(obj, args) to call original method
-            Enhancer enhancer = new Enhancer();
-            enhancer.setSuperclass(StringOpImpl.class);
-            enhancer.setCallback((MethodInterceptor) (obj, method, args, proxy) ->
+            Enhancer e = new Enhancer();
+            e.setSuperclass(RetOpsImpl.class);
+            e.setCallback((MethodInterceptor) (obj, method, args, proxy) ->
                     proxy.invokeSuper(obj, args));
-            cglibProxy = (StringOpImpl) enhancer.create();
+            cglib = (RetOpsImpl) e.create();
         }
     }
 
-    @Benchmark
-    public String passthrough_direct(PassthroughState s) {
-        return s.direct.call("World");
-    }
+    @Benchmark public int    c_intOp(RetTypeState s)      { return s.aps.intOp(3, 4); }
+    @Benchmark public long   c_longOp(RetTypeState s)     { return s.aps.longOp(3L, 4L); }
+    @Benchmark public double c_doubleOp(RetTypeState s)   { return s.aps.doubleOp(3.0, 4.0); }
+    @Benchmark public float  c_floatOp(RetTypeState s)    { return s.aps.floatOp(3f, 4f); }
+    @Benchmark public boolean c_boolOp(RetTypeState s)    { return s.aps.boolOp(5); }
+    @Benchmark public byte   c_byteOp(RetTypeState s)     { return s.aps.byteOp((byte)3, (byte)4); }
+    @Benchmark public char   c_charOp(RetTypeState s)     { return s.aps.charOp('a'); }
+    @Benchmark public short  c_shortOp(RetTypeState s)    { return s.aps.shortOp((short)3, (short)4); }
+    @Benchmark public void   c_voidOp(RetTypeState s)     { s.aps.voidOp(); }
+    @Benchmark public Integer c_intWrapOp(RetTypeState s) { return s.aps.intWrapOp(3, 4); }
+    @Benchmark public String c_strOp(RetTypeState s)      { return s.aps.strOp("a", "b"); }
 
-    @Benchmark
-    public String passthrough_javaProxy(PassthroughState s) {
-        return s.javaProxy.call("World");
-    }
+    @Benchmark public int    c_direct_intOp(RetTypeState s)   { return s.direct.intOp(3, 4); }
+    @Benchmark public long   c_direct_longOp(RetTypeState s)  { return s.direct.longOp(3L, 4L); }
+    @Benchmark public double c_direct_doubleOp(RetTypeState s){ return s.direct.doubleOp(3.0, 4.0); }
+    @Benchmark public void   c_direct_voidOp(RetTypeState s)  { s.direct.voidOp(); }
+    @Benchmark public String c_direct_strOp(RetTypeState s)   { return s.direct.strOp("a", "b"); }
 
-    @Benchmark
-    public String passthrough_aps(PassthroughState s) {
-        return s.apsProxy.call("World");
-    }
+    @Benchmark public int    c_cglib_intOp(RetTypeState s)   { return s.cglib.intOp(3, 4); }
+    @Benchmark public void   c_cglib_voidOp(RetTypeState s)   { s.cglib.voidOp(); }
+    @Benchmark public String c_cglib_strOp(RetTypeState s)    { return s.cglib.strOp("a", "b"); }
 
-    @Benchmark
-    public String passthrough_cglib(PassthroughState s) {
-        return s.cglibProxy.call("World");
-    }
-
-    // ===============================================================
-    // Scenario 3: Arg modify — modify argument then call super
-    // ===============================================================
+    // ---------------------------------------------------------------
+    // Interface proxy — Return types
+    // ---------------------------------------------------------------
 
     @State(Scope.Thread)
-    public static class ArgModifyState {
-        StringOp direct;
-        StringOp javaProxy;
-        StringOpImpl apsProxy;
-        StringOpImpl cglibProxy;
+    public static class IfaceRetTypeState {
+        RetOps aps;
+        RetOps javaProxy;
 
         @Setup
         public void setup() {
-            direct = new StringOpImpl();
-
-            javaProxy = (StringOp) Proxy.newProxyInstance(
-                    StringOp.class.getClassLoader(),
-                    new Class<?>[]{StringOp.class},
-                    (proxy, method, args1) -> {
-                        args1[0] = "[" + args1[0] + "]";
-                        return method.invoke(new StringOpImpl(), args1);
-                    }
-            );
-
-            apsProxy = APS.proxy(StringOpImpl.class,
+            aps = APS.proxy(RetOps.class,
                     (obj, method, args) -> {
-                        args[0] = "[" + args[0] + "]";
-                        return APS.invokeSuper(obj, method, args);
+                        if (method.getName().equals("intOp")) return (int)args[0] + (int)args[1];
+                        if (method.getName().equals("strOp")) return (String)args[0] + (String)args[1];
+                        if (method.getName().equals("voidOp")) return null;
+                        if (method.getName().equals("boolOp")) return (int)args[0] > 0;
+                        if (method.getName().equals("intWrapOp")) return (Integer)args[0] + (Integer)args[1];
+                        return null;
                     });
+            javaProxy = (RetOps) Proxy.newProxyInstance(
+                    RetOps.class.getClassLoader(), new Class<?>[]{RetOps.class},
+                    (proxy, method, args1) -> {
+                        if (method.getName().equals("intOp")) return (int)args1[0] + (int)args1[1];
+                        if (method.getName().equals("strOp")) return (String)args1[0] + (String)args1[1];
+                        if (method.getName().equals("voidOp")) return null;
+                        if (method.getName().equals("boolOp")) return (int)args1[0] > 0;
+                        if (method.getName().equals("intWrapOp")) return (Integer)args1[0] + (Integer)args1[1];
+                        return null;
+                    });
+        }
+    }
 
-            Enhancer enhancer = new Enhancer();
-            enhancer.setSuperclass(StringOpImpl.class);
-            enhancer.setCallback((MethodInterceptor) (obj, method, args, proxy) -> {
+    @Benchmark public int     i_intOp(IfaceRetTypeState s)    { return s.aps.intOp(3, 4); }
+    @Benchmark public String  i_strOp(IfaceRetTypeState s)    { return s.aps.strOp("a", "b"); }
+    @Benchmark public void    i_voidOp(IfaceRetTypeState s)   { s.aps.voidOp(); }
+    @Benchmark public boolean i_boolOp(IfaceRetTypeState s)   { return s.aps.boolOp(5); }
+    @Benchmark public Integer i_intWrapOp(IfaceRetTypeState s){ return s.aps.intWrapOp(3, 4); }
+
+    @Benchmark public int     i_jp_intOp(IfaceRetTypeState s)    { return s.javaProxy.intOp(3, 4); }
+    @Benchmark public String  i_jp_strOp(IfaceRetTypeState s)    { return s.javaProxy.strOp("a", "b"); }
+    @Benchmark public void    i_jp_voidOp(IfaceRetTypeState s)   { s.javaProxy.voidOp(); }
+    @Benchmark public boolean i_jp_boolOp(IfaceRetTypeState s)   { return s.javaProxy.boolOp(5); }
+    @Benchmark public Integer i_jp_intWrapOp(IfaceRetTypeState s){ return s.javaProxy.intWrapOp(3, 4); }
+
+    // ================================================================
+    // Target: Parameter-count coverage
+    // ================================================================
+
+    interface ParamCount {
+        String  zeroArg();
+        String  oneArg(String a);
+        int     twoArgs(int a, int b);
+        String  fourArgs(String a, int b, long c, double d);
+        int     eightArgs(int a,int b,int c,int d,int e,int f,int g,int h);
+    }
+
+    static class ParamCountImpl implements ParamCount {
+        public String zeroArg() { return "ok"; }
+        public String oneArg(String a) { return a; }
+        public int twoArgs(int a, int b) { return a + b; }
+        public String fourArgs(String a, int b, long c, double d) { return a + "-" + b + "-" + c + "-" + d; }
+        public int eightArgs(int a,int b,int c,int d,int e,int f,int g,int h) { return a+b+c+d+e+f+g+h; }
+    }
+
+    // Class proxy
+    @State(Scope.Thread)
+    public static class ParamCountState {
+        ParamCountImpl direct;
+        ParamCountImpl aps;
+        ParamCountImpl cglib;
+
+        @Setup
+        public void setup() {
+            direct = new ParamCountImpl();
+            aps = APS.proxy(ParamCountImpl.class,
+                    (obj, method, args) -> APS.invokeSuper(obj, method, args));
+            Enhancer e = new Enhancer();
+            e.setSuperclass(ParamCountImpl.class);
+            e.setCallback((MethodInterceptor) (obj, method, args, proxy) ->
+                    proxy.invokeSuper(obj, args));
+            cglib = (ParamCountImpl) e.create();
+        }
+    }
+
+    @Benchmark public String c_zeroArg(ParamCountState s)  { return s.aps.zeroArg(); }
+    @Benchmark public String c_oneArg(ParamCountState s)   { return s.aps.oneArg("x"); }
+    @Benchmark public int    c_twoArgs(ParamCountState s)  { return s.aps.twoArgs(3, 4); }
+    @Benchmark public String c_fourArgs(ParamCountState s) { return s.aps.fourArgs("a", 1, 2L, 3.0); }
+    @Benchmark public int    c_eightArgs(ParamCountState s){ return s.aps.eightArgs(1,2,3,4,5,6,7,8); }
+
+    @Benchmark public String c_direct_zeroArg(ParamCountState s) { return s.direct.zeroArg(); }
+    @Benchmark public int    c_direct_twoArgs(ParamCountState s) { return s.direct.twoArgs(3, 4); }
+    @Benchmark public String c_direct_fourArgs(ParamCountState s){ return s.direct.fourArgs("a", 1, 2L, 3.0); }
+    @Benchmark public int    c_direct_eightArgs(ParamCountState s){return s.direct.eightArgs(1,2,3,4,5,6,7,8); }
+
+    @Benchmark public String c_cglib_zeroArg(ParamCountState s)  { return s.cglib.zeroArg(); }
+    @Benchmark public int    c_cglib_twoArgs(ParamCountState s)   { return s.cglib.twoArgs(3, 4); }
+    @Benchmark public String c_cglib_fourArgs(ParamCountState s)  { return s.cglib.fourArgs("a", 1, 2L, 3.0); }
+
+    // Interface proxy
+    @State(Scope.Thread)
+    public static class IfaceParamCountState {
+        ParamCount aps;
+        ParamCount javaProxy;
+
+        @Setup
+        public void setup() {
+            aps = APS.proxy(ParamCount.class, (obj, method, args) -> {
+                if (method.getName().equals("zeroArg")) return "ok";
+                if (method.getName().equals("oneArg")) return args[0];
+                if (method.getName().equals("twoArgs")) return (int)args[0] + (int)args[1];
+                if (method.getName().equals("fourArgs")) return args[0] + "-" + args[1] + "-" + args[2] + "-" + args[3];
+                if (method.getName().equals("eightArgs")) return (int)args[0]+(int)args[1]+(int)args[2]+(int)args[3]+(int)args[4]+(int)args[5]+(int)args[6]+(int)args[7];
+                return null;
+            });
+            javaProxy = (ParamCount) Proxy.newProxyInstance(
+                    ParamCount.class.getClassLoader(), new Class<?>[]{ParamCount.class},
+                    (proxy, method, args1) -> {
+                        if (method.getName().equals("zeroArg")) return "ok";
+                        if (method.getName().equals("oneArg")) return args1[0];
+                        if (method.getName().equals("twoArgs")) return (int)args1[0] + (int)args1[1];
+                        if (method.getName().equals("fourArgs")) return args1[0] + "-" + args1[1] + "-" + args1[2] + "-" + args1[3];
+                        if (method.getName().equals("eightArgs")) return (int)args1[0]+(int)args1[1]+(int)args1[2]+(int)args1[3]+(int)args1[4]+(int)args1[5]+(int)args1[6]+(int)args1[7];
+                        return null;
+                    });
+        }
+    }
+
+    @Benchmark public String i_zeroArg(IfaceParamCountState s)  { return s.aps.zeroArg(); }
+    @Benchmark public String i_oneArg(IfaceParamCountState s)   { return s.aps.oneArg("x"); }
+    @Benchmark public int    i_twoArgs(IfaceParamCountState s)  { return s.aps.twoArgs(3, 4); }
+    @Benchmark public int    i_eightArgs(IfaceParamCountState s){ return s.aps.eightArgs(1,2,3,4,5,6,7,8); }
+
+    @Benchmark public String i_jp_zeroArg(IfaceParamCountState s)  { return s.javaProxy.zeroArg(); }
+    @Benchmark public int    i_jp_twoArgs(IfaceParamCountState s)   { return s.javaProxy.twoArgs(3, 4); }
+    @Benchmark public int    i_jp_eightArgs(IfaceParamCountState s) { return s.javaProxy.eightArgs(1,2,3,4,5,6,7,8); }
+
+    // ================================================================
+    // Target: Standard scenarios (no-op, passthrough, arg-modify)
+    // ================================================================
+
+    interface Echo {
+        String echo(String in);
+    }
+
+    static class EchoImpl implements Echo {
+        public String echo(String in) { return "Hello, " + in; }
+    }
+
+    // Class proxy
+    @State(Scope.Thread)
+    public static class StandardState {
+        EchoImpl apsNoop;
+        EchoImpl apsPassthrough;
+        EchoImpl apsArgMod;
+        EchoImpl cglibNoop;
+        EchoImpl cglibPassthrough;
+        EchoImpl cglibArgMod;
+
+        @Setup
+        public void setup() {
+            apsNoop = APS.proxy(EchoImpl.class,
+                    (obj, method, args) -> "fixed");
+            apsPassthrough = APS.proxy(EchoImpl.class,
+                    (obj, method, args) -> APS.invokeSuper(obj, method, args));
+            apsArgMod = APS.proxy(EchoImpl.class, (obj, method, args) -> {
+                args[0] = "[" + args[0] + "]";
+                return APS.invokeSuper(obj, method, args);
+            });
+
+            Enhancer e1 = new Enhancer();
+            e1.setSuperclass(EchoImpl.class);
+            e1.setCallback((MethodInterceptor) (obj, method, args, proxy) -> "fixed");
+            cglibNoop = (EchoImpl) e1.create();
+
+            Enhancer e2 = new Enhancer();
+            e2.setSuperclass(EchoImpl.class);
+            e2.setCallback((MethodInterceptor) (obj, method, args, proxy) ->
+                    proxy.invokeSuper(obj, args));
+            cglibPassthrough = (EchoImpl) e2.create();
+
+            Enhancer e3 = new Enhancer();
+            e3.setSuperclass(EchoImpl.class);
+            e3.setCallback((MethodInterceptor) (obj, method, args, proxy) -> {
                 args[0] = "[" + args[0] + "]";
                 return proxy.invokeSuper(obj, args);
             });
-            cglibProxy = (StringOpImpl) enhancer.create();
+            cglibArgMod = (EchoImpl) e3.create();
         }
     }
 
-    @Benchmark
-    public String argmod_direct(ArgModifyState s) {
-        return s.direct.call("World");
-    }
+    @Benchmark public String c_noop(StandardState s)         { return s.apsNoop.echo("W"); }
+    @Benchmark public String c_passthrough(StandardState s)  { return s.apsPassthrough.echo("W"); }
+    @Benchmark public String c_argmod(StandardState s)       { return s.apsArgMod.echo("W"); }
 
-    @Benchmark
-    public String argmod_javaProxy(ArgModifyState s) {
-        return s.javaProxy.call("World");
-    }
+    @Benchmark public String c_cglib_noop(StandardState s)        { return s.cglibNoop.echo("W"); }
+    @Benchmark public String c_cglib_passthrough(StandardState s)  { return s.cglibPassthrough.echo("W"); }
+    @Benchmark public String c_cglib_argmod(StandardState s)      { return s.cglibArgMod.echo("W"); }
 
-    @Benchmark
-    public String argmod_aps(ArgModifyState s) {
-        return s.apsProxy.call("World");
-    }
-
-    @Benchmark
-    public String argmod_cglib(ArgModifyState s) {
-        return s.cglibProxy.call("World");
-    }
-
-    // ===============================================================
-    // Scenario 4: Primitive return — int add(int, int)
-    // ===============================================================
-
+    // Interface proxy
     @State(Scope.Thread)
-    public static class PrimitiveState {
-        IntOp direct;
-        IntOp javaProxy;
-        IntOpImpl apsProxy;
-        IntOpImpl cglibProxy;
+    public static class IfaceStandardState {
+        Echo apsNoop;
+        Echo apsPassthrough;
+        Echo apsArgMod;
+        Echo jpNoop;
+        Echo jpPassthrough;
+        Echo jpArgMod;
 
         @Setup
         public void setup() {
-            direct = new IntOpImpl();
-
-            javaProxy = (IntOp) Proxy.newProxyInstance(
-                    IntOp.class.getClassLoader(),
-                    new Class<?>[]{IntOp.class},
-                    (proxy, method, args1) ->
-                            method.invoke(new IntOpImpl(), args1)
-            );
-
-            apsProxy = APS.proxy(IntOpImpl.class,
-                    (obj, method, args) -> APS.invokeSuper(obj, method, args));
-
-            Enhancer enhancer = new Enhancer();
-            enhancer.setSuperclass(IntOpImpl.class);
-            enhancer.setCallback((MethodInterceptor) (obj, method, args, proxy) ->
-                    proxy.invokeSuper(obj, args));
-            cglibProxy = (IntOpImpl) enhancer.create();
-        }
-    }
-
-    @Benchmark
-    public int primitive_direct(PrimitiveState s) {
-        return s.direct.call(3, 4);
-    }
-
-    @Benchmark
-    public int primitive_javaProxy(PrimitiveState s) {
-        return s.javaProxy.call(3, 4);
-    }
-
-    @Benchmark
-    public int primitive_aps(PrimitiveState s) {
-        return s.apsProxy.call(3, 4);
-    }
-
-    @Benchmark
-    public int primitive_cglib(PrimitiveState s) {
-        return s.cglibProxy.call(3, 4);
-    }
-
-    // ===============================================================
-    // Scenario 5: Void method — void sideEffect()
-    // ===============================================================
-
-    @State(Scope.Thread)
-    public static class VoidState {
-        VoidOp direct;
-        VoidOp javaProxy;
-        VoidOpImpl apsProxy;
-        VoidOpImpl cglibProxy;
-
-        @Setup
-        public void setup() {
-            direct = new VoidOpImpl();
-
-            javaProxy = (VoidOp) Proxy.newProxyInstance(
-                    VoidOp.class.getClassLoader(),
-                    new Class<?>[]{VoidOp.class},
-                    (proxy, method, args1) -> {
-                        method.invoke(new VoidOpImpl(), args1);
-                        return null;
-                    }
-            );
-
-            apsProxy = APS.proxy(VoidOpImpl.class,
-                    (obj, method, args) -> APS.invokeSuper(obj, method, args));
-
-            Enhancer enhancer = new Enhancer();
-            enhancer.setSuperclass(VoidOpImpl.class);
-            enhancer.setCallback((MethodInterceptor) (obj, method, args, proxy) ->
-                    proxy.invokeSuper(obj, args));
-            cglibProxy = (VoidOpImpl) enhancer.create();
-        }
-    }
-
-    @Benchmark
-    public void void_direct(VoidState s) {
-        s.direct.call();
-    }
-
-    @Benchmark
-    public void void_javaProxy(VoidState s) {
-        s.javaProxy.call();
-    }
-
-    @Benchmark
-    public void void_aps(VoidState s) {
-        s.apsProxy.call();
-    }
-
-    @Benchmark
-    public void void_cglib(VoidState s) {
-        s.cglibProxy.call();
-    }
-
-    // ===============================================================
-    // Scenario 6: Multi-param — String process(String, int, long, double)
-    // ===============================================================
-
-    @State(Scope.Thread)
-    public static class MultiParamState {
-        MultiOp direct;
-        MultiOp javaProxy;
-        MultiOpImpl apsProxy;
-        MultiOpImpl cglibProxy;
-
-        @Setup
-        public void setup() {
-            direct = new MultiOpImpl();
-
-            javaProxy = (MultiOp) Proxy.newProxyInstance(
-                    MultiOp.class.getClassLoader(),
-                    new Class<?>[]{MultiOp.class},
-                    (proxy, method, args1) ->
-                            method.invoke(new MultiOpImpl(), args1)
-            );
-
-            apsProxy = APS.proxy(MultiOpImpl.class,
-                    (obj, method, args) -> APS.invokeSuper(obj, method, args));
-
-            Enhancer enhancer = new Enhancer();
-            enhancer.setSuperclass(MultiOpImpl.class);
-            enhancer.setCallback((MethodInterceptor) (obj, method, args, proxy) ->
-                    proxy.invokeSuper(obj, args));
-            cglibProxy = (MultiOpImpl) enhancer.create();
-        }
-    }
-
-    @Benchmark
-    public String multiparam_direct(MultiParamState s) {
-        return s.direct.call("a", 1, 2L, 3.0);
-    }
-
-    @Benchmark
-    public String multiparam_javaProxy(MultiParamState s) {
-        return s.javaProxy.call("a", 1, 2L, 3.0);
-    }
-
-    @Benchmark
-    public String multiparam_aps(MultiParamState s) {
-        return s.apsProxy.call("a", 1, 2L, 3.0);
-    }
-
-    @Benchmark
-    public String multiparam_cglib(MultiParamState s) {
-        return s.cglibProxy.call("a", 1, 2L, 3.0);
-    }
-
-    // ===============================================================
-    // Scenario 7: Interface no-op — callback returns fixed value
-    // ===============================================================
-
-    @State(Scope.Thread)
-    public static class IfaceNoopState {
-        StringOp direct;
-        StringOp javaProxy;
-        StringOp apsIface;
-
-        @Setup
-        public void setup() {
-            direct = new StringOpImpl();
-
-            javaProxy = (StringOp) Proxy.newProxyInstance(
-                    StringOp.class.getClassLoader(),
-                    new Class<?>[]{StringOp.class},
-                    (proxy, method, args1) -> "fixed"
-            );
-
-            apsIface = APS.proxy(StringOp.class,
-                    (obj, method, args) -> "fixed");
-        }
-    }
-
-    @Benchmark
-    public String iface_noop_direct(IfaceNoopState s) {
-        return s.direct.call("World");
-    }
-
-    @Benchmark
-    public String iface_noop_javaProxy(IfaceNoopState s) {
-        return s.javaProxy.call("World");
-    }
-
-    @Benchmark
-    public String iface_noop_aps(IfaceNoopState s) {
-        return s.apsIface.call("World");
-    }
-
-    // ===============================================================
-    // Scenario 8: Interface passthrough — callback returns computed value
-    // ===============================================================
-
-    @State(Scope.Thread)
-    public static class IfacePassthroughState {
-        StringOp javaProxy;
-        StringOp apsIface;
-
-        @Setup
-        public void setup() {
-            javaProxy = (StringOp) Proxy.newProxyInstance(
-                    StringOp.class.getClassLoader(),
-                    new Class<?>[]{StringOp.class},
-                    (proxy, method, args1) ->
-                            "Hello, " + args1[0]
-            );
-
-            apsIface = APS.proxy(StringOp.class,
+            apsNoop = APS.proxy(Echo.class, (obj, method, args) -> "fixed");
+            apsPassthrough = APS.proxy(Echo.class,
                     (obj, method, args) -> "Hello, " + args[0]);
-        }
-    }
+            apsArgMod = APS.proxy(Echo.class, (obj, method, args) -> {
+                args[0] = "[" + args[0] + "]";
+                return "Hello, " + args[0];
+            });
 
-    @Benchmark
-    public String iface_passthrough_javaProxy(IfacePassthroughState s) {
-        return s.javaProxy.call("World");
-    }
-
-    @Benchmark
-    public String iface_passthrough_aps(IfacePassthroughState s) {
-        return s.apsIface.call("World");
-    }
-
-    // ===============================================================
-    // Scenario 9: Interface arg modify — modify argument in callback
-    // ===============================================================
-
-    @State(Scope.Thread)
-    public static class IfaceArgModifyState {
-        StringOp javaProxy;
-        StringOp apsIface;
-
-        @Setup
-        public void setup() {
-            javaProxy = (StringOp) Proxy.newProxyInstance(
-                    StringOp.class.getClassLoader(),
-                    new Class<?>[]{StringOp.class},
-                    (proxy, method, args1) -> {
-                        args1[0] = "[" + args1[0] + "]";
-                        return args1[0];
-                    }
-            );
-
-            apsIface = APS.proxy(StringOp.class,
-                    (obj, method, args) -> {
-                        args[0] = "[" + args[0] + "]";
-                        return args[0];
+            jpNoop = (Echo) Proxy.newProxyInstance(Echo.class.getClassLoader(),
+                    new Class<?>[]{Echo.class}, (p, m, a) -> "fixed");
+            jpPassthrough = (Echo) Proxy.newProxyInstance(Echo.class.getClassLoader(),
+                    new Class<?>[]{Echo.class}, (p, m, a) -> "Hello, " + a[0]);
+            jpArgMod = (Echo) Proxy.newProxyInstance(Echo.class.getClassLoader(),
+                    new Class<?>[]{Echo.class}, (p, m, a) -> {
+                        a[0] = "[" + a[0] + "]";
+                        return "Hello, " + a[0];
                     });
         }
     }
 
-    @Benchmark
-    public String iface_argmod_javaProxy(IfaceArgModifyState s) {
-        return s.javaProxy.call("World");
-    }
+    @Benchmark public String i_noop(IfaceStandardState s)         { return s.apsNoop.echo("W"); }
+    @Benchmark public String i_passthrough(IfaceStandardState s)  { return s.apsPassthrough.echo("W"); }
+    @Benchmark public String i_argmod(IfaceStandardState s)       { return s.apsArgMod.echo("W"); }
 
-    @Benchmark
-    public String iface_argmod_aps(IfaceArgModifyState s) {
-        return s.apsIface.call("World");
-    }
-
-    // ===============================================================
-    // Scenario 10: Interface primitive return
-    // ===============================================================
-
-    @State(Scope.Thread)
-    public static class IfacePrimitiveState {
-        IntOp javaProxy;
-        IntOp apsIface;
-
-        @Setup
-        public void setup() {
-            javaProxy = (IntOp) Proxy.newProxyInstance(
-                    IntOp.class.getClassLoader(),
-                    new Class<?>[]{IntOp.class},
-                    (proxy, method, args1) ->
-                            (int) args1[0] + (int) args1[1]
-            );
-
-            apsIface = APS.proxy(IntOp.class,
-                    (obj, method, args) ->
-                            (int) args[0] + (int) args[1]);
-        }
-    }
-
-    @Benchmark
-    public int iface_primitive_javaProxy(IfacePrimitiveState s) {
-        return s.javaProxy.call(3, 4);
-    }
-
-    @Benchmark
-    public int iface_primitive_aps(IfacePrimitiveState s) {
-        return s.apsIface.call(3, 4);
-    }
-
-    // ===============================================================
-    // Scenario 11: Interface void method
-    // ===============================================================
-
-    @State(Scope.Thread)
-    public static class IfaceVoidState {
-        VoidOp javaProxy;
-        VoidOp apsIface;
-
-        @Setup
-        public void setup() {
-            javaProxy = (VoidOp) Proxy.newProxyInstance(
-                    VoidOp.class.getClassLoader(),
-                    new Class<?>[]{VoidOp.class},
-                    (proxy, method, args1) -> null
-            );
-
-            apsIface = APS.proxy(VoidOp.class,
-                    (obj, method, args) -> null);
-        }
-    }
-
-    @Benchmark
-    public void iface_void_javaProxy(IfaceVoidState s) {
-        s.javaProxy.call();
-    }
-
-    @Benchmark
-    public void iface_void_aps(IfaceVoidState s) {
-        s.apsIface.call();
-    }
-
-    // ===============================================================
-    // Scenario 12: Interface multi-param
-    // ===============================================================
-
-    @State(Scope.Thread)
-    public static class IfaceMultiParamState {
-        MultiOp javaProxy;
-        MultiOp apsIface;
-
-        @Setup
-        public void setup() {
-            javaProxy = (MultiOp) Proxy.newProxyInstance(
-                    MultiOp.class.getClassLoader(),
-                    new Class<?>[]{MultiOp.class},
-                    (proxy, method, args1) ->
-                            args1[0] + "-" + args1[1] + "-" + args1[2]
-                                    + "-" + args1[3]
-            );
-
-            apsIface = APS.proxy(MultiOp.class,
-                    (obj, method, args) ->
-                            args[0] + "-" + args[1] + "-" + args[2]
-                                    + "-" + args[3]);
-        }
-    }
-
-    @Benchmark
-    public String iface_multiparam_javaProxy(IfaceMultiParamState s) {
-        return s.javaProxy.call("a", 1, 2L, 3.0);
-    }
-
-    @Benchmark
-    public String iface_multiparam_aps(IfaceMultiParamState s) {
-        return s.apsIface.call("a", 1, 2L, 3.0);
-    }
+    @Benchmark public String i_jp_noop(IfaceStandardState s)         { return s.jpNoop.echo("W"); }
+    @Benchmark public String i_jp_passthrough(IfaceStandardState s)  { return s.jpPassthrough.echo("W"); }
+    @Benchmark public String i_jp_argmod(IfaceStandardState s)       { return s.jpArgMod.echo("W"); }
 }
