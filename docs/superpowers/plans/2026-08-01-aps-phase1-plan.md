@@ -709,7 +709,7 @@ JMH benchmarks on Java 25, 4 implementations × 6 scenarios:
 <dependency>
     <groupId>io.github.lamspace</groupId>
     <artifactId>aps</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
 </dependency>
 ```
 

@@ -6,7 +6,7 @@
 
     <groupId>io.github.lamspace</groupId>
     <artifactId>aps</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
 
     <properties>
         <asm.version>9.7.1</asm.version>
