@@ -66,8 +66,7 @@ user.method()  →  [生成的子类].method()
     →  superHandle.invoke(args) // MethodHandle 绑定到超类，零反射
 ```
 
-`superHandle` 是预先绑定到父类 `method` 的 MethodHandle，handler 可以直接调用，无需 `Method.invoke`。这是 APS 相比 CGLib
-性能差异化的关键。
+`superHandle` 是预先绑定到父类 `method` 的 MethodHandle，handler 可以直接调用，无需 `Method.invoke`。这是 APS 相比 CGLib 性能差异化的关键。
 
 ## 4. API 设计
 

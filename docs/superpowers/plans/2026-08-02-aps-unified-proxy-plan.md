@@ -673,6 +673,7 @@ git commit -m "refactor: add DispatchTarget and hashCode dispatch to InterfaceGe
 Three `proxy()` overloads, auto-detecting class vs interface:
 
 ```java
+
 @SuppressWarnings("unchecked")
 public static <T> T proxy(Class<T> target, Interceptor interceptor) {
     return proxy(target, interceptor, null, new Object[0]);
@@ -680,13 +681,13 @@ public static <T> T proxy(Class<T> target, Interceptor interceptor) {
 
 @SuppressWarnings("unchecked")
 public static <T> T proxy(Class<T> target, Interceptor interceptor,
-                           ClassFilter filter) {
+                          ClassFilter filter) {
     return proxy(target, interceptor, filter, new Object[0]);
 }
 
 @SuppressWarnings("unchecked")
 public static <T> T proxy(Class<T> target, Interceptor interceptor,
-                           ClassFilter filter, Object... constructorArgs) {
+                          ClassFilter filter, Object... constructorArgs) {
     Objects.requireNonNull(target, "target must not be null");
     Objects.requireNonNull(interceptor, "interceptor must not be null");
 

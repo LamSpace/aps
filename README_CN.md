@@ -1,5 +1,11 @@
 # 🚀 APS — 加速代理解决方案
 
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Java](https://img.shields.io/badge/java-24%2B-orange)](https://jdk.java.net/)
+[![JMH](https://img.shields.io/badge/benchmark-JMH%201.37-red)](https://github.com/openjdk/jmh)
+
+[English](README.md) | [基准测试报告](docs/benchmark-results_cn.md)
+
 高性能 Java 动态代理库，基于哈希码调度 + 直接 `INVOKESPECIAL` 父类调用，实现近零拦截开销，可作为 CGLib 的替代方案。
 
 ## ✨ 特性
@@ -46,32 +52,32 @@ int result = calc.add(10, 20);
 
 ## 📊 性能
 
-JMH 基准测试 | Java 25。每行最优结果**加粗**标注。  
+JMH 基准测试 | Java 25。每行最优结果 **加粗**标注。  
 *Java Proxy 无法代理类；保留此列仅作参考（代理接口，通过反射委托）。*
 
 ### 类代理（摘要）
 
-| 场景            | 直接调用 | APS      | CGLib  |
-|----------------|---------|----------|--------|
-| int 返回值      | 0.66    | 1.83     | 12.36  |
-| String 返回值   | 4.68    | **4.71** | 19.89  |
-| void 返回值     | 0.65    | 3.94     | 3.72   |
-| 0 参数透传      | 0.66    | 2.11     | 3.96   |
-| 4 参数透传      | 56.34   | 61.32    | 71.38  |
-| 空操作          | —       | 1.32     | 1.05   |
-| 透传            | —       | **4.76** | 14.01  |
-| 参数修改        | —       | **5.33** | 18.69  |
+| 场景          | 直接调用 | APS      | CGLib |
+|---------------|----------|----------|-------|
+| int 返回值    | 0.66     | 1.83     | 12.36 |
+| String 返回值 | 4.68     | **4.71** | 19.89 |
+| void 返回值   | 0.65     | 3.94     | 3.72  |
+| 0 参数透传    | 0.66     | 2.11     | 3.96  |
+| 4 参数透传    | 56.34    | 61.32    | 71.38 |
+| 空操作        | —        | 1.32     | 1.05  |
+| 透传          | —        | **4.76** | 14.01 |
+| 参数修改      | —        | **5.33** | 18.69 |
 
 ### 接口代理（摘要）
 
-| 场景            | APS      | Java Proxy |
-|----------------|----------|------------|
-| int 返回值      | 1.30     | **1.05**   |
-| String 返回值   | **5.69** | 5.77       |
-| void 返回值     | 1.30     | **1.05**   |
-| 空操作          | 1.31     | **1.05**   |
-| 透传            | **5.69** | 5.77       |
-| 参数修改        | 5.30     | **5.29**   |
+| 场景          | APS      | Java Proxy |
+|---------------|----------|------------|
+| int 返回值    | 1.30     | **1.05**   |
+| String 返回值 | **5.69** | 5.77       |
+| void 返回值   | 1.30     | **1.05**   |
+| 空操作        | 1.31     | **1.05**   |
+| 透传          | **5.69** | 5.77       |
+| 参数修改      | 5.30     | **5.29**   |
 
 *单位: ns/op，越低越好。完整报告：[docs/benchmark-results_cn.md](docs/benchmark-results_cn.md)*
 
@@ -143,6 +149,8 @@ Maven Central 发布已列入[路线图](docs/aps-future-roadmap.md)。
 - [基准测试报告（中文）](docs/benchmark-results_cn.md)
 - [基准测试报告（英文）](docs/benchmark-results.md)
 - [迁移指南](docs/migration-guide.md)
+- [设计文档](docs/superpowers/specs/2026-08-02-aps-unified-proxy-design.md)
+- [未来路线图](docs/aps-future-roadmap.md)
 - [设计文档](docs/superpowers/specs/2026-08-02-aps-unified-proxy-design.md)
 - [未来路线图](docs/aps-future-roadmap.md)
 
