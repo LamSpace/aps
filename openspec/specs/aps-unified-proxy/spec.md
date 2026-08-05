@@ -86,6 +86,13 @@ The system SHALL generate a `dispatch(Method, Object[])` method in every proxy c
 - **THEN** the system SHALL detect the collision and append a secondary discriminator to the dispatch chain
 - **AND** the generated class compiles and dispatches correctly for both methods
 
+#### Scenario: Overloaded methods dispatch correctly
+
+- **WHEN** the target class declares overloaded methods with the same name but different parameter types (e.g., `void foo(String)` and `void foo(int)`)
+- **THEN** the secondary discriminator SHALL produce distinct dispatch hashes for each overload
+- **AND** calling `dispatch(method, args)` with the `Method` object for each overload SHALL route to the correct branch
+- **AND** each branch invokes the correct superclass method with the correct parameter types
+
 ### Requirement: Proxy class caching
 
 The system SHALL cache generated proxy classes keyed by the `{targetClass, filter}` tuple to avoid re-generating bytecode for the same proxy configuration.

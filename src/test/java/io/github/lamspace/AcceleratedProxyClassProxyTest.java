@@ -18,6 +18,8 @@ package io.github.lamspace;
 
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Method;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class APSClassProxyTest {
@@ -257,5 +259,57 @@ class APSClassProxyTest {
     void shouldRejectNullInterceptor() {
         assertThrows(IllegalArgumentException.class,
                 () -> AcceleratedProxy.proxy(Greeter.class, null));
+    }
+
+    // ---- Overloaded methods ----
+
+    static class OverloadedTarget {
+        public String greet(String name) {
+            return "Hello, " + name;
+        }
+
+        public String greet(int count) {
+            return "Count: " + count;
+        }
+
+        public String greet(double value) {
+            return "Value: " + String.format("%.1f", value);
+        }
+
+        public String greet(String name, int count) {
+            return name + " x" + count;
+        }
+    }
+
+    @Test
+    void shouldDispatchOverloadedMethodsCorrectly() throws Throwable {
+        OverloadedTarget proxy = AcceleratedProxy.proxy(OverloadedTarget.class,
+                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+
+        assertEquals("Hello, World", proxy.greet("World"));
+        assertEquals("Count: 42", proxy.greet(42));
+        assertEquals("Value: 3.1", proxy.greet(3.1));
+        assertEquals("APS x3", proxy.greet("APS", 3));
+    }
+
+    @Test
+    void shouldDispatchOverloadedMethodsViaDispatchMethod() throws Throwable {
+        OverloadedTarget proxy = AcceleratedProxy.proxy(OverloadedTarget.class,
+                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+
+        Method greetString = OverloadedTarget.class.getMethod("greet", String.class);
+        Method greetInt = OverloadedTarget.class.getMethod("greet", int.class);
+        Method greetDouble = OverloadedTarget.class.getMethod("greet", double.class);
+        Method greetStringInt = OverloadedTarget.class.getMethod("greet", String.class, int.class);
+
+        // Verify that each overloaded method dispatches to the correct branch
+        assertEquals("Hello, APS",
+                ((DispatchTarget) proxy).dispatch(greetString, new Object[]{"APS"}));
+        assertEquals("Count: 7",
+                ((DispatchTarget) proxy).dispatch(greetInt, new Object[]{7}));
+        assertEquals("Value: 2.7",
+                ((DispatchTarget) proxy).dispatch(greetDouble, new Object[]{2.7}));
+        assertEquals("Test x5",
+                ((DispatchTarget) proxy).dispatch(greetStringInt, new Object[]{"Test", 5}));
     }
 }

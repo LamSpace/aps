@@ -26,40 +26,57 @@ import java.util.*;
  * Uses a hashCode-driven if-else chain with direct {@code INVOKESPECIAL}
  * super calls — no MethodHandle involvement.
  */
-final class DispatchGenerator {
+public final class DispatchGenerator {
 
     private DispatchGenerator() {
     }
 
     /**
-     * Pre-computes the Method.hashCode() for each method. This value is
-     * deterministic (declaring class name XOR method name), so it can be
-     * embedded as an {@code ldc} constant in bytecode.
+     * Computes a deterministic, collision-resistant dispatch hash for a method.
+     * Uses {@code Method.hashCode()} (declaring class name XOR method name)
+     * combined with each parameter type's {@code Class.getName().hashCode()}
+     * so that overloaded methods with the same name but different parameter
+     * types produce distinct hashes.
+     *
+     * <p>This method is called both at generation time (to embed hash
+     * constants) and at runtime (from the generated {@code dispatch()}
+     * bytecode via {@code INVOKESTATIC}). Using {@code Class.getName()}
+     * rather than {@code Class.hashCode()} ensures the hash is deterministic
+     * across JVM instances.
      */
-    static int computeHash(Method method) {
-        return method.hashCode();
+    public static int methodDispatchHash(Method method) {
+        int hash = method.hashCode();
+        for (Class<?> pt : method.getParameterTypes()) {
+            hash = 31 * hash + pt.getName().hashCode();
+        }
+        return hash;
     }
 
     /**
-     * Detects hash collisions among the given methods. If any two methods
-     * produce the same hash, appends a secondary discriminator.
+     * Pre-computes the dispatch hash for a method. Delegates to
+     * {@link #methodDispatchHash(Method)}.
+     */
+    static int computeHash(Method method) {
+        return methodDispatchHash(method);
+    }
+
+    /**
+     * Detects hash collisions among the given methods. With
+     * {@link #methodDispatchHash(Method)} collisions are extremely unlikely,
+     * but this serves as a safety net with an incrementing counter fallback.
      *
      * @param methods the methods to check
-     * @return a map from method to its final dispatch hash
-     * @throws IllegalStateException if a collision cannot be resolved
+     * @return a map from method to its final collision-free dispatch hash
      */
     static Map<Method, Integer> resolveHashes(List<Method> methods) {
         Map<Method, Integer> result = new LinkedHashMap<>();
         Set<Integer> seen = new HashSet<>();
         for (Method m : methods) {
             int hash = computeHash(m);
-            if (!seen.add(hash)) {
-                // Collision: use a secondary hash
-                hash = hash * 31 + m.getName().hashCode();
-                if (!seen.add(hash)) {
-                    throw new IllegalStateException(
-                            "Unresolvable hash collision for " + m);
-                }
+            int salt = 1;
+            while (!seen.add(hash)) {
+                // Collision (extremely unlikely): fallback counter
+                hash = hash * 31 + salt++;
             }
             result.put(m, hash);
         }
@@ -90,11 +107,12 @@ final class DispatchGenerator {
                 new String[]{"java/lang/Throwable"});
         mv.visitCode();
 
-        // int hash = method.hashCode();
+        // int hash = DispatchGenerator.methodDispatchHash(method);
         mv.visitVarInsn(Opcodes.ALOAD, 1);
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
-                "java/lang/reflect/Method",
-                "hashCode", "()I", false);
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC,
+                "io/github/lamspace/generator/DispatchGenerator",
+                "methodDispatchHash",
+                "(Ljava/lang/reflect/Method;)I", false);
         int hashSlot = 3;
         mv.visitVarInsn(Opcodes.ISTORE, hashSlot);
 

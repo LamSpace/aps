@@ -27,6 +27,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -130,10 +131,15 @@ public class ClassGenerator {
         List<ClinitRegistry.Entry> entries = ClinitRegistry.drain();
 
         // -- dispatch(Method, Object[]) —
+        List<Method> methods = new ArrayList<>();
+        for (ClinitRegistry.Entry entry : entries) {
+            methods.add(entry.method());
+        }
+        Map<Method, Integer> hashMap = DispatchGenerator.resolveHashes(methods);
         List<MethodInfo> infos = new ArrayList<>();
         for (ClinitRegistry.Entry entry : entries) {
             infos.add(new MethodInfo(entry.method(), entry.methodFieldName(),
-                    DispatchGenerator.computeHash(entry.method())));
+                    hashMap.get(entry.method())));
         }
         DispatchGenerator.generateDispatch(cw, generatedInternal, targetInternal,
                 infos, true);

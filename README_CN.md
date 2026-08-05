@@ -1,7 +1,7 @@
 # 🚀 APS — 加速代理解决方案
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Java](https://img.shields.io/badge/java-24%2B-orange)](https://jdk.java.net/)
+[![Java](https://img.shields.io/badge/java-25%2B-orange)](https://jdk.java.net/)
 [![JMH](https://img.shields.io/badge/benchmark-JMH%201.37-red)](https://github.com/openjdk/jmh)
 
 [English](README.md) | [基准测试报告](docs/benchmark-results_cn.md)
@@ -80,6 +80,96 @@ JMH 基准测试 | Java 25。每行最优结果 **加粗**标注。
 | 参数修改      | 5.30     | **5.29**   |
 
 *单位: ns/op，越低越好。完整报告：[docs/benchmark-results_cn.md](docs/benchmark-results_cn.md)*
+
+## 🏗️ 工作原理
+
+### 1. 代理类生成流程
+
+下图展示了 APS 如何在运行时生成动态代理类 —— 从调用 `AcceleratedProxy.proxy()` 到返回就绪的代理实例。
+
+```mermaid
+flowchart TD
+    A["❶ AcceleratedProxy.proxy(target, interceptor, filter, constructorArgs)"]
+    A --> B{"target.isInterface()?"}
+    B -->|" ✅ 是接口 "| C["❷ InterfaceGenerator(target, filter)"]
+    B -->|" ❌ 是类 "| D["❷ ClassGenerator(target, filter, constructorArgs)"]
+    C --> E["❸ InterfaceGenerator.generate()"]
+    D --> F["❸ ClassGenerator.generate()"]
+    E --> G["ASM ClassWriter 初始化"]
+    G --> H["定义类: extends Object<br/>implements Target, DispatchTarget"]
+    H --> I["生成 _callback 字段 (Interceptor)"]
+    I --> J["生成构造函数 &lt;init&gt;<br/>存储 Interceptor 引用"]
+    J --> K["遍历接口方法"]
+    K --> L{"ClassFilter.accept(method)?"}
+    L -->|" ✅ 拦截 "| M["生成方法实现<br/>调用 interceptor.intercept"]
+    L -->|" ❌ 跳过 "| N["生成方法实现<br/>throw AbstractMethodError"]
+    M --> O["将 Method 信息注册到 ClinitRegistry"]
+    N --> P{"还有未处理方法?"}
+    O --> P
+    P -->|" 是 "| K
+    P -->|" 否 "| Q["❹ Drain ClinitRegistry → MethodInfo 列表"]
+    Q --> R["❺ 生成 dispatch(Method, Object[]) 方法<br/>hashCode 驱动的 if-else 分支链"]
+    R --> S["❻ 生成 &lt;clinit&gt; 静态初始化块<br/>反射加载 java.lang.reflect.Method 对象"]
+    S --> T["❼ ClassWriter.toByteArray() → byte[]"]
+    F --> G2["ASM ClassWriter 初始化"]
+    G2 --> H2["定义类: extends TargetClass<br/>implements DispatchTarget"]
+    H2 --> I2["生成 _callback 字段 (Interceptor)"]
+    I2 --> J2["查找匹配的 super 构造函数"]
+    J2 --> K2["生成构造函数 &lt;init&gt;<br/>super(constructorArgs) + 存储 Interceptor"]
+    K2 --> L2["遍历 targetClass 声明的非 final/非 static 方法"]
+    L2 --> M2{"ClassFilter.accept(method)?"}
+    M2 -->|" ✅ 拦截 "| N2["生成 override 方法体<br/>调用 interceptor.intercept"]
+    M2 -->|" ❌ 跳过 "| O2["生成 override 方法体<br/>直接 super.method() 零开销"]
+    N2 --> P2["注册到 ClinitRegistry"]
+    O2 --> Q2{"还有未处理方法?"}
+    P2 --> Q2
+    Q2 -->|" 是 "| L2
+    Q2 -->|" 否 "| R2["❹ Drain ClinitRegistry → MethodInfo 列表"]
+    R2 --> S2["❺ 生成 dispatch(Method, Object[]) 方法<br/>hashCode 驱动 if-else → INVOKESPECIAL super 调用"]
+    S2 --> T2["❻ 生成 &lt;clinit&gt; 静态初始化块"]
+    T2 --> T
+    T --> U{"target.isInterface()?"}
+    U -->|" 是接口 "| V["❽ APS 自身 Lookup<br/>defineHiddenClass(bytecode, true)"]
+    U -->|" 是类 "| W["❽ LookupManager 获取<br/>目标包访问权限 Lookup<br/>defineHiddenClass(bytecode, true)"]
+    V --> X["❾ 反射获取构造函数"]
+    W --> X
+    X --> Y["❿ Constructor.newInstance<br/>接口: (interceptor)<br/>类: (interceptor, constructorArgs...)"]
+    Y --> Z["🎯 返回代理实例"]
+```
+
+### 2. 方法调用流程
+
+对代理实例发起方法调用时，以下流程被执行 —— 从生成的字节码出发，经过用户拦截器逻辑，最终返回结果。
+
+```mermaid
+flowchart TD
+    A["❶ 调用代理方法<br/>proxy.someMethod(arg1, arg2)"]
+    A --> B["❷ 进入生成的 override 方法体"]
+    B --> C["❸ 参数装箱<br/>基本类型 → 包装类型<br/>Object[] args = new Object[]{arg1, arg2, ...}"]
+    C --> D["❹ 调用 Interceptor.intercept(proxy, method, args)<br/>this._callback.intercept(this, _method, args)"]
+    D --> E["🔵 用户自定义 Interceptor 逻辑"]
+    E --> F{"需要调用父类方法?"}
+    F -->|" 是 "| G["❺ AcceleratedProxy.invokeSuper(proxy, method, args)"]
+    F -->|" 否 "| H["返回自定义结果"]
+    G --> I["❻ ((DispatchTarget) proxy).dispatch(method, args)"]
+    I --> J["❼ 计算 method.hashCode()"]
+    J --> K["❽ hashCode 驱动的 if-else 分支链<br/>逐条比对: hash == METHOD_N_HASH ?"]
+    K --> L["❾ 命中分支 → 参数拆箱<br/>从 Object[] 取出并 unbox 为原始类型"]
+    L --> M["❿ INVOKESPECIAL super.method(args...)<br/>直接字节码级父类调用<br/>零反射、零 MethodHandle"]
+    M --> N["⓫ 返回值装箱 (如需要)<br/>基本类型 → 包装类型"]
+    N --> H
+    H --> O["⓬ 返回值拆箱 & 类型检查<br/>包装类型 → 基本类型 (if needed)<br/>CHECKCAST 引用类型"]
+    O --> P{"发生异常?"}
+    P -->|" RuntimeException "| Q["直接 rethrow"]
+    P -->|" Error "| R["直接 rethrow"]
+    P -->|" Checked Exception "| S["包装为 UndeclaredThrowableException<br/>并 throw"]
+    P -->|" 无异常 "| T["🎯 返回结果给调用方"]
+    Q --> U["调用方捕获异常"]
+    R --> U
+    S --> U
+```
+
+> **核心洞察：** `dispatch()` 方法使用编译期预计算的 `Method.hashCode()`（确定性计算：`declaringClass.hashCode() XOR methodName.hashCode()`）构建 if-else 分支链。每个分支直接生成 `INVOKESPECIAL super.method(args...)` —— 调度时 **零反射**、 **零 MethodHandle** 开销。JIT 编译器可直接内联这些父类调用，实现接近原生的调用性能。
 
 ## 📋 环境要求
 
