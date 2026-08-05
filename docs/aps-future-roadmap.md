@@ -2,13 +2,13 @@
 
 ## 第一阶段：核心统一（已完成）
 
-| 优先级 | 事项              | 说明                                                                          |
-|--------|-------------------|-------------------------------------------------------------------------------|
-| P0     | **统一 API**      | `AcceleratedProxy.proxy()` 单一入口，同时支持类和接口                         |
-| P0     | **统一回调**      | `Interceptor` 接口替代 `Callback` + `InterfaceCallback`                       |
-| P0     | **hashCode 调度** | `dispatch()` 哈希开关 + 直接 `INVOKESPECIAL` 父类调用，消除 MethodHandle 开销 |
-| P0     | **类缓存**        | `WeakCache` 按 `{targetClass, filter}` 缓存已生成的代理类                     |
-| P0     | **接口代理**      | 与 `java.lang.reflect.Proxy` 性能接近持平                                     |
+| 优先级 | 事项              | 说明                                                                                                  |
+|--------|-------------------|-------------------------------------------------------------------------------------------------------|
+| P0     | **统一 API**      | `AcceleratedProxy.proxy()` 单一入口，同时支持类和接口                                                 |
+| P0     | **统一回调**      | `Interceptor` 接口替代 `Callback` + `InterfaceCallback`                                               |
+| P0     | **hashCode 调度** | `dispatch()` 哈希开关 + 直接 `INVOKESPECIAL` 父类调用，消除 MethodHandle 开销；已修复重载方法哈希碰撞 |
+| P0     | **类缓存**        | `WeakCache` 按 `{targetClass, filter}` 缓存已生成的代理类                                             |
+| P0     | **接口代理**      | 与 `java.lang.reflect.Proxy` 性能接近持平                                                             |
 
 ---
 
@@ -42,6 +42,8 @@ class MyInterceptor {
 Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MyInterceptor());
 ```
 
+> **命名考虑：** `intercept()` vs `proxy()` — 统一使用 `proxy()` 更简洁，但 `intercept()` 明确表达"注解驱动拦截"语义，两者均合理，待实现时确定。
+
 ### Maven Central 发布
 
 - GroupId: `io.github.lamspace`
@@ -71,6 +73,8 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 | P3     | **静态方法代理**     | 需生成委托代码 — 静态方法不参与虚方法分派              |
 | P3     | **构造器拦截**       | 对象创建时的 hook，类似 CGLib 的 `Enhancer` 构造器回调 |
 | P3     | **热加载/热替换**    | 运行时重新生成代理类，适合长期运行的框架场景           |
+| P3     | **虚拟线程兼容性**   | 验证 APS 代理在虚拟线程上的行为，确认不 pin 载体线程   |
+| P3     | **JPMS 强封装模块**  | 处理 `java.base` 等强封装模块中类的代理访问            |
 
 ### 接口默认方法调用
 
@@ -102,3 +106,5 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 
 - **代理 final 类/方法** — JVM 规范禁止在运行时子类化 final 类或重写 final 方法，任何实现都会抛出 `VerifyError`
 - **代理 static final 字段** — JVM 规范限制
+- **代理 Record 类** — Record 是隐式 final 的，无法被子类化
+- **代理 sealed 类的非许可子类** — sealed 类在编译期限制了可扩展的子类集合，运行时无法绕过

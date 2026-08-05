@@ -12,20 +12,12 @@ import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
 
 Enhancer enhancer = new Enhancer();
-enhancer.
-
-setSuperclass(MyService .class);
-enhancer.
-
-setCallback((MethodInterceptor) (obj,method,args,proxy)->{
-        System.out.
-
-println("before "+method.getName());
-Object result = proxy.invokeSuper(obj, args);
-    System.out.
-
-println("after "+method.getName());
-        return result;
+enhancer.setSuperclass(MyService.class);
+enhancer.setCallback((MethodInterceptor) (obj, method, args, proxy) -> {
+    System.out.println("before " + method.getName());
+    Object result = proxy.invokeSuper(obj, args);
+    System.out.println("after " + method.getName());
+    return result;
 });
 MyService proxy = (MyService) enhancer.create();
 ```
@@ -33,11 +25,11 @@ MyService proxy = (MyService) enhancer.create();
 ### After (APS)
 
 ```java
-import io.github.lamspace.APS;
+import io.github.lamspace.AcceleratedProxy;
 
-MyService proxy = AcceleratedProxy.create(MyService.class, (obj, method, superHandle, args) -> {
+MyService proxy = AcceleratedProxy.proxy(MyService.class, (obj, method, args) -> {
     System.out.println("before " + method.getName());
-    Object result = superHandle.invoke(args);
+    Object result = AcceleratedProxy.invokeSuper(obj, method, args);
     System.out.println("after " + method.getName());
     return result;
 });
@@ -46,13 +38,13 @@ MyService proxy = AcceleratedProxy.create(MyService.class, (obj, method, superHa
 
 ### Key differences
 
-| CGLib                          | APS                                        |
-|--------------------------------|--------------------------------------------|
-| `Enhancer` builder             | `AcceleratedProxy.create()` static factory |
-| `MethodInterceptor` (3 args)   | `Callback` (4 args, includes proxy)        |
-| `proxy.invokeSuper(obj, args)` | `superHandle.invoke(args)`                 |
-| Requires explicit cast         | Generic inference, no cast                 |
-| Custom ClassLoader             | Hidden class, GC-safe                      |
+| CGLib                          | APS                                               |
+|--------------------------------|---------------------------------------------------|
+| `Enhancer` builder             | `AcceleratedProxy.proxy()` static factory         |
+| `MethodInterceptor` (4 args)   | `Interceptor` (3 args, `@FunctionalInterface`)    |
+| `proxy.invokeSuper(obj, args)` | `AcceleratedProxy.invokeSuper(obj, method, args)` |
+| Requires explicit cast         | Generic inference, no cast                        |
+| Custom ClassLoader             | Hidden class, GC-safe                             |
 
 ### Method filtering
 
@@ -62,20 +54,14 @@ MyService proxy = AcceleratedProxy.create(MyService.class, (obj, method, superHa
 enhancer.setCallbacks(new Callback[] {
     interceptor, NoOp.INSTANCE
 });
-        enhancer.
-
-setCallbackFilter(method ->
-        method.
-
-getName().
-
-startsWith("get") ?0:1);
+enhancer.setCallbackFilter(method ->
+    method.getName().startsWith("get") ? 0 : 1);
 ```
 
 **APS (`ClassFilter`):**
 
 ```java
-MyService proxy = AcceleratedProxy.create(MyService.class, interceptor,
+MyService proxy = AcceleratedProxy.proxy(MyService.class, interceptor,
         method -> method.getName().startsWith("get"));
 // Methods not matching the filter skip interception entirely — zero overhead
 ```
@@ -85,15 +71,13 @@ MyService proxy = AcceleratedProxy.create(MyService.class, interceptor,
 **CGLib:**
 
 ```java
-enhancer.create(new Class[] {
-    String.class
-},new Object[]{"arg"});
+enhancer.create(new Class[] { String.class }, new Object[] { "arg" });
 ```
 
 **APS:**
 
 ```java
-AcceleratedProxy.create(MyService .class, callback, null,"arg");
+AcceleratedProxy.proxy(MyService.class, interceptor, null, "arg");
 ```
 
 ---
@@ -119,42 +103,42 @@ Service proxy = (Service) Proxy.newProxyInstance(
 ### After (APS)
 
 ```java
-import io.github.lamspace.APS;
+import io.github.lamspace.AcceleratedProxy;
 
-ServiceImpl proxy = AcceleratedProxy.create(ServiceImpl.class,
-        (obj, method, superHandle, args) -> {
+ServiceImpl proxy = AcceleratedProxy.proxy(ServiceImpl.class,
+        (obj, method, args) -> {
             System.out.println("before " + method.getName());
-            return superHandle.invoke(args);
+            return AcceleratedProxy.invokeSuper(obj, method, args);
         }
 );
 ```
 
 ### Key differences
 
-| Java Proxy                    | APS                                        |
-|-------------------------------|--------------------------------------------|
-| Interface-based only          | Concrete class-based                       |
-| `InvocationHandler` (3 args)  | `Callback` (4 args, includes MethodHandle) |
-| `method.invoke(target, args)` | `superHandle.invoke(args)`                 |
-| Requires target instance      | Built-in super-call binding                |
-| `Proxy.newProxyInstance(...)` | `AcceleratedProxy.create(Class, Callback)` |
+| Java Proxy                    | APS                                               |
+|-------------------------------|---------------------------------------------------|
+| Interface-based only          | Concrete class-based                              |
+| `InvocationHandler` (3 args)  | `Interceptor` (3 args, `@FunctionalInterface`)    |
+| `method.invoke(target, args)` | `AcceleratedProxy.invokeSuper(obj, method, args)` |
+| Requires target instance      | Built-in super-call binding                       |
+| `Proxy.newProxyInstance(...)` | `AcceleratedProxy.proxy(Class, Interceptor)`      |
 
 ---
 
 ## Feature Comparison
 
-| Feature                        | APS                           | CGLib                      | Java Proxy                    |
-|--------------------------------|-------------------------------|----------------------------|-------------------------------|
-| Proxies concrete classes       | Yes                           | Yes                        | No (interfaces only)          |
-| Dispatch mechanism             | MethodHandle                  | Generated bytecode         | `Method.invoke`               |
-| Class loading                  | Hidden class                  | Custom ClassLoader         | Native Proxy                  |
-| GC-safe                        | Yes                           | No (ClassLoader leak risk) | Yes                           |
-| Lambda-friendly API            | Yes                           | Yes                        | Yes                           |
-| Method filtering               | Yes (ClassFilter)             | Yes (CallbackFilter)       | No                            |
-| No-default-constructor support | Yes                           | Yes                        | N/A                           |
-| Primitive boxing               | Automatic                     | Automatic                  | Automatic                     |
-| Exception propagation          | Checked → UndeclaredThrowable | Checked → InvocationTarget | Checked → UndeclaredThrowable |
-| Final class/method proxy       | No (JVM limit)                | No (JVM limit)             | N/A                           |
-| Static method proxy            | Roadmap                       | No                         | No                            |
-| Constructor interception       | Roadmap                       | Yes                        | No                            |
-| Maven Central                  | Roadmap                       | Yes                        | Built-in (JDK)                |
+| Feature                        | APS                                  | CGLib                      | Java Proxy                    |
+|--------------------------------|--------------------------------------|----------------------------|-------------------------------|
+| Proxies concrete classes       | Yes                                  | Yes                        | No (interfaces only)          |
+| Dispatch mechanism             | hashCode switch + INVOKESPECIAL      | Generated bytecode         | `Method.invoke`               |
+| Class loading                  | Hidden class                         | Custom ClassLoader         | Native Proxy                  |
+| GC-safe                        | Yes                                  | No (ClassLoader leak risk) | Yes                           |
+| Lambda-friendly API            | Yes                                  | Yes                        | Yes                           |
+| Method filtering               | Yes (ClassFilter)                    | Yes (CallbackFilter)       | No                            |
+| No-default-constructor support | Yes                                  | Yes                        | N/A                           |
+| Primitive boxing               | Automatic                            | Automatic                  | Automatic                     |
+| Exception propagation          | As-is (no wrapping)                  | Checked → InvocationTarget | Checked → UndeclaredThrowable |
+| Final class/method proxy       | No (JVM limit)                       | No (JVM limit)             | N/A                           |
+| Static method proxy            | Roadmap                              | No                         | No                            |
+| Constructor interception       | Roadmap                              | Yes                        | No                            |
+| Maven Central                  | Roadmap                              | Yes                        | Built-in (JDK)                |
