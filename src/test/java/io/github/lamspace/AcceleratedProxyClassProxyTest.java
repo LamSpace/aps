@@ -22,7 +22,7 @@ import java.lang.reflect.Method;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class APSClassProxyTest {
+class AcceleratedProxyClassProxyTest {
 
     // ---- Target classes ----
 
@@ -290,6 +290,33 @@ class APSClassProxyTest {
         assertEquals("Count: 42", proxy.greet(42));
         assertEquals("Value: 3.1", proxy.greet(3.1));
         assertEquals("APS x3", proxy.greet("APS", 3));
+    }
+
+    // ---- Cache behavior ----
+
+    @Test
+    void shouldReuseCachedProxyClass() {
+        Greeter p1 = AcceleratedProxy.proxy(Greeter.class,
+                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+        Greeter p2 = AcceleratedProxy.proxy(Greeter.class,
+                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+
+        // Same target class + same filter (null) → same proxy class reused
+        assertSame(p1.getClass(), p2.getClass(),
+                "Repeated proxy() with same params should reuse cached class");
+    }
+
+    @Test
+    void shouldUseDifferentClassesForDifferentFilters() {
+        Greeter p1 = AcceleratedProxy.proxy(Greeter.class,
+                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args),
+                m -> m.getName().startsWith("hello"));
+        Greeter p2 = AcceleratedProxy.proxy(Greeter.class,
+                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args),
+                m -> m.getName().startsWith("goodbye"));
+
+        assertNotSame(p1.getClass(), p2.getClass(),
+                "Different filters should produce different proxy classes");
     }
 
     @Test

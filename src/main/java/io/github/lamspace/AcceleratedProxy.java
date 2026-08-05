@@ -22,6 +22,7 @@ import io.github.lamspace.internal.LookupManager;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 /**
  * Entry point for creating dynamic proxies.
@@ -30,6 +31,10 @@ import java.lang.reflect.Method;
  * (subclass for concrete classes, implementation for interfaces), load it
  * via {@code MethodHandles.Lookup.defineHiddenClass(byte[], boolean)},
  * and route method calls through the provided {@link Interceptor}.
+ *
+ * <p>Generated proxy classes are cached by {@code {targetClass, filter,
+ * constructorArgs}} using {@link WeakCache} so repeated proxy creation
+ * for the same configuration reuses the generated class.
  *
  * <pre>{@code
  *   Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
@@ -44,6 +49,76 @@ import java.lang.reflect.Method;
 public final class AcceleratedProxy {
 
     private AcceleratedProxy() {
+    }
+
+    /**
+     * Composite cache key for generated proxy classes.
+     */
+    private record CacheParams(Class<?> targetClass, ClassFilter filter,
+                               Object[] constructorArgs) {
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof CacheParams other)) return false;
+            return targetClass == other.targetClass
+                    && filter == other.filter
+                    && Arrays.equals(constructorArgs, other.constructorArgs);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = System.identityHashCode(targetClass);
+            result = 31 * result + System.identityHashCode(filter);
+            result = 31 * result + Arrays.hashCode(constructorArgs);
+            return result;
+        }
+    }
+
+    /**
+     * Cache mapping {@code {targetClass, filter, constructorArgs}} to
+     * generated proxy classes. Keys are weakly referenced so proxy classes
+     * are eligible for GC when no longer in use.
+     */
+    private static final WeakCache<Class<?>, CacheParams, Class<?>> PROXY_CLASS_CACHE =
+            new WeakCache<>(
+                    (key, params) -> params, // subKeyFactory
+                    AcceleratedProxy::generateProxyClass // valueFactory
+            );
+
+    /**
+     * Generates and loads a proxy class for the given target and parameters.
+     * Called by the cache on cache miss.
+     */
+    private static Class<?> generateProxyClass(Class<?> target,
+                                                CacheParams params) {
+        try {
+            byte[] bytecode;
+
+            if (target.isInterface()) {
+                InterfaceGenerator generator = new InterfaceGenerator(target,
+                        params.filter());
+                bytecode = generator.generate();
+            } else {
+                ClassGenerator generator = new ClassGenerator(target,
+                        params.filter(), params.constructorArgs());
+                bytecode = generator.generate();
+            }
+
+            // Class loading: interface proxies use APS's own Lookup
+            // (they live in io.github.lamspace package, even for restricted
+            // modules like java.lang). Class proxies use LookupManager
+            // for access to the target class's package.
+            if (target.isInterface()) {
+                return java.lang.invoke.MethodHandles.lookup()
+                        .defineHiddenClass(bytecode, true).lookupClass();
+            } else {
+                return LookupManager.getLookup(target)
+                        .defineHiddenClass(bytecode, true).lookupClass();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Failed to generate proxy class for " + target.getName(), e);
+        }
     }
 
     /**
@@ -123,35 +198,27 @@ public final class AcceleratedProxy {
             constructorArgs = new Object[0];
         }
 
+        // Compute constructor argument types before the cache lookup —
+        // this is deterministic from the target and arguments.
+        Class<?>[] ctorArgTypes;
+        if (target.isInterface()) {
+            ctorArgTypes = new Class<?>[]{Interceptor.class};
+        } else {
+            ctorArgTypes = new Class<?>[1 + constructorArgs.length];
+            ctorArgTypes[0] = Interceptor.class;
+            for (int i = 0; i < constructorArgs.length; i++) {
+                Object arg = constructorArgs[i];
+                ctorArgTypes[i + 1] = (arg != null) ? arg.getClass()
+                        : Object.class;
+            }
+        }
+
         try {
-            byte[] bytecode;
-            Class<?>[] ctorArgTypes;
-
-            if (target.isInterface()) {
-                InterfaceGenerator generator = new InterfaceGenerator(target, filter);
-                bytecode = generator.generate();
-                ctorArgTypes = new Class<?>[]{Interceptor.class};
-            } else {
-                ClassGenerator generator = new ClassGenerator(target, filter,
-                        constructorArgs);
-                bytecode = generator.generate();
-                ctorArgTypes = generator.constructorArgs();
-            }
-
-            // Class loading: interface proxies use APS's own Lookup
-            // (they live in io.github.lamspace package, even for restricted
-            // modules like java.lang). Class proxies use LookupManager
-            // for access to the target class's package.
-            Class<?> proxyClass;
-            if (target.isInterface()) {
-                proxyClass = java.lang.invoke.MethodHandles.lookup()
-                        .defineHiddenClass(bytecode, true).lookupClass();
-            } else {
-                proxyClass = LookupManager.getLookup(target)
-                        .defineHiddenClass(bytecode, true).lookupClass();
-            }
-
+            CacheParams params = new CacheParams(target, filter,
+                    constructorArgs);
+            Class<?> proxyClass = PROXY_CLASS_CACHE.get(target, params);
             Constructor<?> ctor = proxyClass.getConstructor(ctorArgTypes);
+
             if (target.isInterface()) {
                 return (T) ctor.newInstance(interceptor);
             } else {

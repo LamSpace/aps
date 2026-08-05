@@ -55,7 +55,8 @@ public class MethodDispatcher {
      */
     public static List<String> dispatchMethods(ClassWriter cw, Class<?> targetClass,
                                                String generatedInternal,
-                                               ClassFilter filter) {
+                                               ClassFilter filter,
+                                               ClinitRegistry registry) {
         List<String> dispatchedMethods = new ArrayList<>();
 
         for (Method method : targetClass.getDeclaredMethods()) {
@@ -68,11 +69,11 @@ public class MethodDispatcher {
             boolean shouldIntercept = (filter == null) || filter.accept(method);
 
             int index = dispatchedMethods.size();
-            String methodFieldName = "_method$" + index;
+            String methodFieldName = "_method$" + method.getName() + "$" + index;
 
             addStaticField(cw, methodFieldName, "Ljava/lang/reflect/Method;");
 
-            ClinitRegistry.register(targetClass, method, generatedInternal,
+            registry.register(targetClass, method, generatedInternal,
                     methodFieldName, index);
 
             generateOverride(cw, method, generatedInternal, shouldIntercept,
@@ -181,7 +182,7 @@ public class MethodDispatcher {
                         + "[Ljava/lang/Object;)Ljava/lang/Object;",
                 true);
 
-        // 7. Unbox return value
+        // 6. Unbox return value
         Class<?> returnType = method.getReturnType();
         if (returnType == void.class) {
             mv.visitInsn(Opcodes.POP);

@@ -17,6 +17,7 @@
 package io.github.lamspace.internal;
 
 import java.lang.invoke.MethodHandles;
+import java.util.logging.Logger;
 
 /**
  * Obtains a {@link MethodHandles.Lookup} with the highest available privilege
@@ -24,6 +25,9 @@ import java.lang.invoke.MethodHandles;
  * gracefully to a regular lookup if the module system denies it.
  */
 public final class LookupManager {
+
+    private static final Logger LOGGER =
+            Logger.getLogger(LookupManager.class.getName());
 
     private LookupManager() {
         // static utility
@@ -41,9 +45,20 @@ public final class LookupManager {
      */
     public static MethodHandles.Lookup getLookup(Class<?> targetClass) {
         try {
-            return MethodHandles.privateLookupIn(targetClass, MethodHandles.lookup());
+            return MethodHandles.privateLookupIn(targetClass,
+                    MethodHandles.lookup());
         } catch (IllegalAccessException e) {
             // Module does not open the package — fall back to public access
+            LOGGER.warning(() -> "Module access denied for "
+                    + targetClass.getPackageName()
+                    + "; falling back to public lookup. "
+                    + "Some non-public methods may not be accessible.");
+            return MethodHandles.lookup();
+        } catch (IllegalArgumentException e) {
+            // Primitive and array classes are rejected by privateLookupIn —
+            // fall back to public lookup for these edge cases
+            LOGGER.fine(() -> "privateLookupIn rejected "
+                    + targetClass.getName() + ": " + e.getMessage());
             return MethodHandles.lookup();
         }
     }

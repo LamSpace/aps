@@ -54,7 +54,8 @@ final class InterfaceDispatcher {
      */
     static List<String> dispatchMethods(ClassWriter cw, Class<?> interfaceClass,
                                         String generatedInternal,
-                                        ClassFilter filter) {
+                                        ClassFilter filter,
+                                        ClinitRegistry registry) {
         List<String> dispatchedMethods = new ArrayList<>();
 
         for (Method method : interfaceClass.getMethods()) {
@@ -72,7 +73,7 @@ final class InterfaceDispatcher {
 
             addStaticField(cw, methodFieldName, "Ljava/lang/reflect/Method;");
 
-            ClinitRegistry.register(interfaceClass, method, generatedInternal,
+            registry.register(interfaceClass, method, generatedInternal,
                     methodFieldName, index);
 
             generateImplementation(cw, method, generatedInternal,

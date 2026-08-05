@@ -22,9 +22,9 @@ import java.util.List;
 
 /**
  * Collects (target class, method, generated class, field name, index) tuples
- * during method dispatch generation. ClassGenerator reads this registry
- * after all methods are generated to emit a single {@code <clinit>} block
- * that fills the {@code _methods} and {@code _handles} arrays.
+ * during method dispatch generation. Each {@code generate()} call creates its
+ * own instance, so concurrent proxy generation is safe without external
+ * synchronization.
  */
 final class ClinitRegistry {
 
@@ -41,9 +41,9 @@ final class ClinitRegistry {
                  String methodFieldName, int index) {
     }
 
-    private static final List<Entry> entries = new ArrayList<>();
+    private final List<Entry> entries = new ArrayList<>();
 
-    private ClinitRegistry() {
+    ClinitRegistry() {
     }
 
     /**
@@ -57,9 +57,9 @@ final class ClinitRegistry {
      * @param methodFieldName   the name of the static field holding the {@code Method} object
      * @param index             the dispatch table index for this method
      */
-    static void register(Class<?> targetClass, Method method,
-                         String generatedInternal,
-                         String methodFieldName, int index) {
+    void register(Class<?> targetClass, Method method,
+                  String generatedInternal,
+                  String methodFieldName, int index) {
         entries.add(new Entry(targetClass, method, generatedInternal,
                 methodFieldName, index));
     }
@@ -72,7 +72,7 @@ final class ClinitRegistry {
      *
      * @return a list of all registered entries in registration order
      */
-    static List<Entry> drain() {
+    List<Entry> drain() {
         List<Entry> result = new ArrayList<>(entries);
         entries.clear();
         return result;

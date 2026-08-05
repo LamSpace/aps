@@ -90,11 +90,12 @@ public class InterfaceGenerator {
         generateConstructor(cw, generatedInternal, callbackDesc);
 
         // -- Method implementations + static Method fields --
+        ClinitRegistry registry = new ClinitRegistry();
         InterfaceDispatcher.dispatchMethods(cw, interfaceClass,
-                generatedInternal, filter);
+                generatedInternal, filter, registry);
 
         // -- Drain ClinitRegistry entries for dispatch generation --
-        List<ClinitRegistry.Entry> entries = ClinitRegistry.drain();
+        List<ClinitRegistry.Entry> entries = registry.drain();
 
         // -- dispatch(Method, Object[]) for Object methods --
         List<Method> methods = new ArrayList<>();

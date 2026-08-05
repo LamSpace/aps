@@ -124,11 +124,12 @@ public class ClassGenerator {
         generateConstructor(cw, generatedInternal, targetInternal, callbackDesc);
 
         // -- Method overrides (populates ClinitRegistry + static fields) --
+        ClinitRegistry registry = new ClinitRegistry();
         List<String> dispatched = MethodDispatcher.dispatchMethods(
-                cw, targetClass, generatedInternal, filter);
+                cw, targetClass, generatedInternal, filter, registry);
 
         // -- Drain ClinitRegistry entries before dispatch and clinit generation --
-        List<ClinitRegistry.Entry> entries = ClinitRegistry.drain();
+        List<ClinitRegistry.Entry> entries = registry.drain();
 
         // -- dispatch(Method, Object[]) —
         List<Method> methods = new ArrayList<>();
@@ -145,14 +146,13 @@ public class ClassGenerator {
                 infos, true);
 
         // -- <clinit> initializer —
-        generateClinit(cw, generatedInternal, dispatched.size(), entries);
+        generateClinit(cw, generatedInternal, entries);
 
         cw.visitEnd();
         return cw.toByteArray();
     }
 
     private void generateClinit(ClassWriter cw, String generatedInternal,
-                                int methodCount,
                                 List<ClinitRegistry.Entry> entries) {
         if (entries.isEmpty()) {
             return;
@@ -280,7 +280,15 @@ public class ClassGenerator {
             Class<?>[] existing = ctor.getParameterTypes();
             if (existing.length == paramTypes.length) {
                 for (int i = 0; i < existing.length; i++) {
-                    if (!wrap(existing[i]).isAssignableFrom(wrap(paramTypes[i]))) {
+                    // Null arguments match any reference-type parameter
+                    if (constructorArgs[i] == null) {
+                        if (existing[i].isPrimitive()) {
+                            continue outer;
+                        }
+                        continue;
+                    }
+                    if (!wrap(existing[i])
+                            .isAssignableFrom(wrap(paramTypes[i]))) {
                         continue outer;
                     }
                 }
