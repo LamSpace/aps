@@ -19,20 +19,20 @@ package io.github.lamspace;
 import java.lang.reflect.Method;
 
 /**
- * Decides whether a method should be intercepted.
- * Methods not accepted by the filter are NOT routed through the
- * {@link Interceptor} — they call the superclass implementation
- * directly with zero interception overhead.
+ * Decides whether a method matches a Group's criteria.
+ * Replaces {@link ClassFilter} in the multi-interceptor API.
+ *
+ * @see Group#of(MethodPredicate, Interceptor)
  */
 @FunctionalInterface
-public interface ClassFilter {
+public interface MethodPredicate {
 
     /**
-     * Decides whether the given method should be intercepted.
+     * Tests whether the given method matches this predicate.
      *
      * @param method a method declared by the target class
-     * @return {@code true} to route this method through the Interceptor,
-     * {@code false} to skip interception
+     * @return {@code true} if the method should be assigned to the
+     *         associated Group's Interceptor
      */
-    boolean accept(Method method);
+    boolean test(Method method);
 }

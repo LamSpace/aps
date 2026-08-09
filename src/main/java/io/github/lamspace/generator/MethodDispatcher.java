@@ -16,13 +16,15 @@
 
 package io.github.lamspace.generator;
 
-import io.github.lamspace.ClassFilter;
 import io.github.lamspace.Interceptor;
+import io.github.lamspace.MethodMapping;
 import org.objectweb.asm.*;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -36,48 +38,62 @@ import java.util.List;
  */
 public class MethodDispatcher {
 
-    private static final String CALLBACK_FIELD = "_callback";
+    private static final String INTERCEPTOR_FIELD_PREFIX = "_interceptor$";
 
     private MethodDispatcher() {
     }
 
     /**
      * Generates method overrides and per-method static Method fields,
-     * and registers clinit entries for all proxyable methods on the target class.
+     * and registers clinit entries for all proxyable methods on the
+     * target class.
      *
      * @param cw                the ClassWriter for the generated subclass
      * @param targetClass       the class being proxied
      * @param generatedInternal ASM internal name of the generated class
-     * @param filter            if non-null, only methods accepted by the filter
-     *                          are routed through the Interceptor; others call
-     *                          super directly
+     * @param mapping           method → interceptor index mapping
+     * @param interceptorCount  number of distinct Interceptor instances
+     * @param registry          clinit entry registry
      * @return list of method names for which dispatchers were generated
      */
-    public static List<String> dispatchMethods(ClassWriter cw, Class<?> targetClass,
+    public static List<String> dispatchMethods(ClassWriter cw,
+                                               Class<?> targetClass,
                                                String generatedInternal,
-                                               ClassFilter filter,
+                                               MethodMapping mapping,
+                                               int interceptorCount,
                                                ClinitRegistry registry) {
         List<String> dispatchedMethods = new ArrayList<>();
 
-        for (Method method : targetClass.getDeclaredMethods()) {
+        // Stable sort for cross-JVM determinism (must match
+        // AcceleratedProxy.matchMethods)
+        Method[] methods = targetClass.getDeclaredMethods();
+        Arrays.sort(methods,
+                Comparator.comparing(Method::getName)
+                        .thenComparing(m -> Arrays.toString(
+                                m.getParameterTypes())));
+
+        for (Method method : methods) {
             int mods = method.getModifiers();
             if (Modifier.isStatic(mods) || Modifier.isFinal(mods)
                     || Modifier.isPrivate(mods)) {
                 continue;
             }
 
-            boolean shouldIntercept = (filter == null) || filter.accept(method);
-
             int index = dispatchedMethods.size();
-            String methodFieldName = "_method$" + method.getName() + "$" + index;
+            int interceptorIndex = mapping.indices()[index];
+            boolean shouldIntercept = interceptorIndex >= 0;
 
-            addStaticField(cw, methodFieldName, "Ljava/lang/reflect/Method;");
+            String methodFieldName = "_method$" + method.getName()
+                    + "$" + index;
+
+            addStaticField(cw, methodFieldName,
+                    "Ljava/lang/reflect/Method;");
 
             registry.register(targetClass, method, generatedInternal,
                     methodFieldName, index);
 
-            generateOverride(cw, method, generatedInternal, shouldIntercept,
-                    methodFieldName, index);
+            generateOverride(cw, method, generatedInternal,
+                    shouldIntercept, interceptorIndex, methodFieldName);
 
             dispatchedMethods.add(method.getName());
         }
@@ -85,7 +101,8 @@ public class MethodDispatcher {
         return dispatchedMethods;
     }
 
-    private static void addStaticField(ClassWriter cw, String name, String desc) {
+    private static void addStaticField(ClassWriter cw, String name,
+                                       String desc) {
         var fv = cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC,
                 name, desc, null, null);
         fv.visitEnd();
@@ -94,11 +111,12 @@ public class MethodDispatcher {
     private static void generateOverride(ClassWriter cw, Method method,
                                          String generatedInternal,
                                          boolean shouldIntercept,
-                                         String methodFieldName,
-                                         int methodIndex) {
+                                         int interceptorIndex,
+                                         String methodFieldName) {
         String name = method.getName();
         String desc = Type.getMethodDescriptor(method);
-        String targetInternal = Type.getInternalName(method.getDeclaringClass());
+        String targetInternal = Type.getInternalName(
+                method.getDeclaringClass());
 
         Class<?>[] exceptions = method.getExceptionTypes();
         String[] exceptionNames = new String[exceptions.length];
@@ -119,7 +137,8 @@ public class MethodDispatcher {
             if (returnType == void.class) {
                 mv.visitInsn(Opcodes.RETURN);
             } else if (returnType.isPrimitive()) {
-                mv.visitInsn(Type.getReturnType(desc).getOpcode(Opcodes.IRETURN));
+                mv.visitInsn(Type.getReturnType(desc)
+                        .getOpcode(Opcodes.IRETURN));
             } else {
                 mv.visitInsn(Opcodes.ARETURN);
             }
@@ -128,25 +147,29 @@ public class MethodDispatcher {
             return;
         }
 
-        // -- Try block: call callback.intercept(proxy, method, index, args) --
+        // -- Try block: call interceptor.intercept(proxy, method, args) --
         Label tryStart = new Label();
         Label tryEnd = new Label();
         Label catchRuntime = new Label();
         Label catchError = new Label();
         Label catchChecked = new Label();
 
-        mv.visitTryCatchBlock(tryStart, tryEnd, catchRuntime, "java/lang/RuntimeException");
-        mv.visitTryCatchBlock(tryStart, tryEnd, catchError, "java/lang/Error");
-        mv.visitTryCatchBlock(tryStart, tryEnd, catchChecked, "java/lang/Exception");
+        mv.visitTryCatchBlock(tryStart, tryEnd, catchRuntime,
+                "java/lang/RuntimeException");
+        mv.visitTryCatchBlock(tryStart, tryEnd, catchError,
+                "java/lang/Error");
+        mv.visitTryCatchBlock(tryStart, tryEnd, catchChecked,
+                "java/lang/Exception");
 
         mv.visitLabel(tryStart);
 
         Class<?>[] paramTypes = method.getParameterTypes();
 
-        // 1. Load interceptor field
+        // 1. Load interceptor field: this._interceptor$N
+        String fieldName = INTERCEPTOR_FIELD_PREFIX + interceptorIndex;
         mv.visitVarInsn(Opcodes.ALOAD, 0);
         mv.visitFieldInsn(Opcodes.GETFIELD, generatedInternal,
-                CALLBACK_FIELD, Type.getDescriptor(Interceptor.class));
+                fieldName, Type.getDescriptor(Interceptor.class));
 
         // 2. Arg 1: proxy = this
         mv.visitVarInsn(Opcodes.ALOAD, 0);
@@ -171,7 +194,8 @@ public class MethodDispatcher {
                 mv.visitVarInsn(Opcodes.ALOAD, slot);
             }
             mv.visitInsn(Opcodes.AASTORE);
-            slot += (type == double.class || type == long.class) ? 2 : 1;
+            slot += (type == double.class || type == long.class)
+                    ? 2 : 1;
         }
 
         // 5. Call interceptor.intercept(proxy, method, args)
@@ -189,9 +213,11 @@ public class MethodDispatcher {
             mv.visitInsn(Opcodes.RETURN);
         } else if (returnType.isPrimitive()) {
             BytecodeUtils.unboxPrimitive(mv, returnType);
-            mv.visitInsn(Type.getReturnType(desc).getOpcode(Opcodes.IRETURN));
+            mv.visitInsn(Type.getReturnType(desc)
+                    .getOpcode(Opcodes.IRETURN));
         } else {
-            mv.visitTypeInsn(Opcodes.CHECKCAST, Type.getInternalName(returnType));
+            mv.visitTypeInsn(Opcodes.CHECKCAST,
+                    Type.getInternalName(returnType));
             mv.visitInsn(Opcodes.ARETURN);
         }
 
@@ -205,11 +231,13 @@ public class MethodDispatcher {
         mv.visitLabel(catchError);
         mv.visitInsn(Opcodes.ATHROW);
 
-        // -- Catch checked Exceptions: wrap in UndeclaredThrowableException --
+        // -- Catch checked Exceptions: wrap in
+        //    UndeclaredThrowableException --
         mv.visitLabel(catchChecked);
         int excSlot = slot + 1;
         mv.visitVarInsn(Opcodes.ASTORE, excSlot);
-        mv.visitTypeInsn(Opcodes.NEW, "java/lang/reflect/UndeclaredThrowableException");
+        mv.visitTypeInsn(Opcodes.NEW,
+                "java/lang/reflect/UndeclaredThrowableException");
         mv.visitInsn(Opcodes.DUP);
         mv.visitVarInsn(Opcodes.ALOAD, excSlot);
         mv.visitMethodInsn(Opcodes.INVOKESPECIAL,
@@ -227,7 +255,8 @@ public class MethodDispatcher {
         int slot = 1;
         for (Class<?> type : method.getParameterTypes()) {
             mv.visitVarInsn(BytecodeUtils.loadOpcode(type), slot);
-            slot += (type == double.class || type == long.class) ? 2 : 1;
+            slot += (type == double.class || type == long.class)
+                    ? 2 : 1;
         }
     }
 

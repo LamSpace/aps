@@ -196,8 +196,8 @@ class AcceleratedProxyInterfaceProxyTest {
     @Test
     void shouldThrowForFilteredMethods() {
         Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
-                (obj, method, args) -> 42,
-                method -> method.getName().startsWith("add"));
+                Group.of(m -> m.getName().startsWith("add"),
+                        (obj, method, args) -> 42));
 
         assertEquals(42, proxy.add(1, 2));
         assertThrows(AbstractMethodError.class, () -> proxy.multiply(3L, 4L));
@@ -235,6 +235,7 @@ class AcceleratedProxyInterfaceProxyTest {
     @Test
     void shouldRejectNullInterceptor() {
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.proxy(Runnable.class, null));
+                () -> AcceleratedProxy.proxy(Runnable.class,
+                        (Interceptor) null));
     }
 }

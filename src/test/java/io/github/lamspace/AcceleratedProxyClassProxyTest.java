@@ -207,8 +207,9 @@ class AcceleratedProxyClassProxyTest {
     @Test
     void shouldProxyClassWithoutDefaultConstructor() {
         Bean proxy = AcceleratedProxy.proxy(Bean.class,
-                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args),
-                null, "Bob");
+                new Object[]{"Bob"},
+                Group.otherwise((obj, method, args) ->
+                        AcceleratedProxy.invokeSuper(obj, method, args)));
 
         assertEquals("Bob", proxy.getName());
     }
@@ -218,8 +219,8 @@ class AcceleratedProxyClassProxyTest {
     @Test
     void shouldSkipFilteredMethods() {
         Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
-                (obj, method, args) -> 999,
-                method -> method.getName().startsWith("add"));
+                Group.of(m -> m.getName().startsWith("add"),
+                        (obj, method, args) -> 999));
 
         assertEquals(999, proxy.add(1, 2));
         // multiply is not filtered — calls super directly
@@ -258,7 +259,8 @@ class AcceleratedProxyClassProxyTest {
     @Test
     void shouldRejectNullInterceptor() {
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.proxy(Greeter.class, null));
+                () -> AcceleratedProxy.proxy(Greeter.class,
+                        (Interceptor) null));
     }
 
     // ---- Overloaded methods ----
@@ -309,11 +311,11 @@ class AcceleratedProxyClassProxyTest {
     @Test
     void shouldUseDifferentClassesForDifferentFilters() {
         Greeter p1 = AcceleratedProxy.proxy(Greeter.class,
-                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args),
-                m -> m.getName().startsWith("hello"));
+                Group.of(m -> m.getName().startsWith("hello"),
+                        (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args)));
         Greeter p2 = AcceleratedProxy.proxy(Greeter.class,
-                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args),
-                m -> m.getName().startsWith("goodbye"));
+                Group.of(m -> m.getName().startsWith("goodbye"),
+                        (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args)));
 
         assertNotSame(p1.getClass(), p2.getClass(),
                 "Different filters should produce different proxy classes");

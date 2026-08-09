@@ -16,40 +16,7 @@
 
 | 优先级 | 事项                          | 说明                                                |
 |--------|-------------------------------|-----------------------------------------------------|
-| P2     | **注解驱动 API**              | 如 `@Intercept` 标注方法，减少样板代码              |
-| P2     | **Maven Central 发布**        | 让其他项目能通过 Maven/Gradle 依赖引入              |
-| P2     | **多 Interceptor / 方法分组** | 当前只有单 Interceptor + filter，更细粒度的拦截控制 |
-
-### 注解驱动 API 草图
-
-```java
-// 当前 API
-Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
-            System.out.println("before " + method.getName());
-            return AcceleratedProxy.invokeSuper(obj, method, args);
-        });
-
-// 注解驱动 API（v2 设想）
-@Intercept
-class MyInterceptor {
-    @Around("get*")
-    Object log(Object proxy, Method method, Object[] args) {
-        System.out.println("before " + method.getName());
-        return AcceleratedProxy.invokeSuper(proxy, method, args);
-    }
-}
-
-Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MyInterceptor());
-```
-
-> **命名考虑：** `intercept()` vs `proxy()` — 统一使用 `proxy()` 更简洁，但 `intercept()` 明确表达"注解驱动拦截"语义，两者均合理，待实现时确定。
-
-### Maven Central 发布
-
-- GroupId: `io.github.lamspace`
-- ArtifactId: `aps`
-- 版本: 当前 `0.1.0-SNAPSHOT`，正式发布时升级至 `1.0.0`
-- 需要：Sonatype OSSRH 账号、GPG 签名、发布流水线
+| P2     | **多 Interceptor / 方法分组** | ✅ 已完成 — 通过 `Group.of()`/`Group.otherwise()` 绑定不同方法族到不同 Interceptor
 
 ### 多 Interceptor / 方法分组
 
@@ -66,15 +33,17 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 
 ## 第三阶段：高级特性
 
-| 优先级 | 事项                 | 说明                                                   |
-|--------|----------------------|--------------------------------------------------------|
-| P3     | **接口默认方法调用** | 在拦截器中调用接口 `default` 方法，需 `findSpecial`    |
-| P3     | **多接口代理**       | 一个代理类实现多个接口                                 |
-| P3     | **静态方法代理**     | 需生成委托代码 — 静态方法不参与虚方法分派              |
-| P3     | **构造器拦截**       | 对象创建时的 hook，类似 CGLib 的 `Enhancer` 构造器回调 |
-| P3     | **热加载/热替换**    | 运行时重新生成代理类，适合长期运行的框架场景           |
-| P3     | **虚拟线程兼容性**   | 验证 APS 代理在虚拟线程上的行为，确认不 pin 载体线程   |
-| P3     | **JPMS 强封装模块**  | 处理 `java.base` 等强封装模块中类的代理访问            |
+| 优先级 | 事项                   | 说明                                                                  |
+|--------|------------------------|-----------------------------------------------------------------------|
+| P3     | **注解驱动 API**       | 如 `@Intercept` 标注方法，减少样板代码，声明式方法匹配                |
+| P3     | **Maven Central 发布** | 让其他项目能通过 Maven/Gradle 依赖引入，GroupId: `io.github.lamspace` |
+| P3     | **接口默认方法调用**   | 在拦截器中调用接口 `default` 方法，需 `findSpecial`                   |
+| P3     | **多接口代理**         | 一个代理类实现多个接口                                                |
+| P3     | **静态方法代理**       | 需生成委托代码 — 静态方法不参与虚方法分派                             |
+| P3     | **构造器拦截**         | 对象创建时的 hook，类似 CGLib 的 `Enhancer` 构造器回调                |
+| P3     | **热加载/热替换**      | 运行时重新生成代理类，适合长期运行的框架场景                          |
+| P3     | **虚拟线程兼容性**     | 验证 APS 代理在虚拟线程上的行为，确认不 pin 载体线程                  |
+| P3     | **JPMS 强封装模块**    | 处理 `java.base` 等强封装模块中类的代理访问                           |
 
 ### 接口默认方法调用
 
@@ -99,6 +68,29 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 - 隐藏类一旦定义不可修改
 - 需要生成新的类名并重新装载
 - 旧实例继续使用旧类，新实例使用新类
+
+### 注解驱动 API
+
+- 声明式方法匹配替代编程式 `if-else`，减少样板代码
+- 适用于大型项目中跨多个代理类复用同一拦截模式的场景
+- 命名考虑：`intercept()` vs `proxy()` — 统一使用 `proxy()` 更简洁，`intercept()` 明确表达"注解驱动拦截"语义
+
+```java
+
+@Intercept
+class MetricsInterceptor {
+    @Around("get*")
+    Object measure(Object proxy, Method method, Object[] args) {
+        return AcceleratedProxy.invokeSuper(proxy, method, args);
+    }
+}
+```
+
+### Maven Central 发布
+
+- GroupId: `io.github.lamspace`，ArtifactId: `aps`
+- 版本: 发布时升级至 `1.0.0`
+- 需要：Sonatype OSSRH 账号、GPG 签名、发布流水线
 
 ---
 

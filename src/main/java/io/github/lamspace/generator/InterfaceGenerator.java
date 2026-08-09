@@ -16,8 +16,8 @@
 
 package io.github.lamspace.generator;
 
-import io.github.lamspace.ClassFilter;
 import io.github.lamspace.Interceptor;
+import io.github.lamspace.MethodMapping;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -32,36 +32,35 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Generates a proxy implementation class that {@code extends Object}
  * and {@code implements} the target interface and {@code DispatchTarget}.
- * <p>
- * For each interface method, generates an implementation that delegates
- * to {@link io.github.lamspace.Interceptor#intercept}. The generated
- * {@code dispatch(Method, Object[])} method routes Object methods
- * ({@code equals}, {@code hashCode}, {@code toString}) to direct
- * {@code INVOKESPECIAL} super calls; all other methods throw
- * {@code AbstractMethodError}.
+ *
+ * <p>Stores one instance field per distinct Interceptor. Each interface
+ * method implementation directly {@code GETFIELD}s its assigned field.
  */
 public class InterfaceGenerator {
 
     private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
     private final Class<?> interfaceClass;
-    private final ClassFilter filter;
+    private final Interceptor[] interceptors;
+    private final MethodMapping mapping;
 
     /**
      * Creates a generator for the given interface.
      *
      * @param interfaceClass the interface to implement
-     * @param filter         method filter; {@code null} means all methods
-     *                       are routed through the interceptor
+     * @param interceptors   deduped interceptor instances
+     * @param mapping        method → interceptor index mapping
      */
-    public InterfaceGenerator(Class<?> interfaceClass, ClassFilter filter) {
+    public InterfaceGenerator(Class<?> interfaceClass,
+                              Interceptor[] interceptors,
+                              MethodMapping mapping) {
         this.interfaceClass = interfaceClass;
-        this.filter = filter;
+        this.interceptors = interceptors.clone();
+        this.mapping = mapping;
     }
 
     /**
-     * Generates the implementation class bytecode. The class is placed in
-     * the same runtime package as the target interface.
+     * Generates the implementation class bytecode.
      *
      * @return valid JVM classfile bytes
      */
@@ -69,30 +68,33 @@ public class InterfaceGenerator {
         String targetInternal = Type.getInternalName(interfaceClass);
         String simpleName = targetInternal.substring(
                 targetInternal.lastIndexOf('/') + 1);
-        // Place generated class in the APS package. The interface may be in a
-        // restricted module (e.g., java.lang) where we cannot define classes.
         String generatedInternal = "io/github/lamspace/"
-                + simpleName + "$$AcceleratedProxy$$" + COUNTER.getAndIncrement();
+                + simpleName + "$$AcceleratedProxy$$"
+                + COUNTER.getAndIncrement();
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 
         // Implements target interface + DispatchTarget
         cw.visit(Opcodes.V24, Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER,
                 generatedInternal, null, "java/lang/Object",
-                new String[]{targetInternal, "io/github/lamspace/DispatchTarget"});
+                new String[]{targetInternal,
+                        "io/github/lamspace/DispatchTarget"});
 
-        // -- Interceptor field --
-        String callbackDesc = Type.getDescriptor(Interceptor.class);
-        cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL,
-                "_callback", callbackDesc, null, null);
+        // -- Interceptor fields (one per distinct interceptor) --
+        String interceptorDesc = Type.getDescriptor(Interceptor.class);
+        for (int i = 0; i < interceptors.length; i++) {
+            cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL,
+                    "_interceptor$" + i, interceptorDesc, null, null);
+        }
 
-        // -- Constructor: stores interceptor, calls super() --
-        generateConstructor(cw, generatedInternal, callbackDesc);
+        // -- Constructor: stores interceptors, calls super() --
+        generateConstructor(cw, generatedInternal, interceptorDesc);
 
         // -- Method implementations + static Method fields --
         ClinitRegistry registry = new ClinitRegistry();
         InterfaceDispatcher.dispatchMethods(cw, interfaceClass,
-                generatedInternal, filter, registry);
+                generatedInternal, mapping, interceptors.length,
+                registry);
 
         // -- Drain ClinitRegistry entries for dispatch generation --
         List<ClinitRegistry.Entry> entries = registry.drain();
@@ -102,10 +104,12 @@ public class InterfaceGenerator {
         for (ClinitRegistry.Entry entry : entries) {
             methods.add(entry.method());
         }
-        Map<Method, Integer> hashMap = DispatchGenerator.resolveHashes(methods);
+        Map<Method, Integer> hashMap =
+                DispatchGenerator.resolveHashes(methods);
         List<MethodInfo> infos = new ArrayList<>();
         for (ClinitRegistry.Entry entry : entries) {
-            infos.add(new MethodInfo(entry.method(), entry.methodFieldName(),
+            infos.add(new MethodInfo(entry.method(),
+                    entry.methodFieldName(),
                     hashMap.get(entry.method())));
         }
         DispatchGenerator.generateDispatch(cw, generatedInternal,
@@ -118,22 +122,32 @@ public class InterfaceGenerator {
         return cw.toByteArray();
     }
 
-    private void generateConstructor(ClassWriter cw, String generatedInternal,
-                                     String callbackDesc) {
+    private void generateConstructor(ClassWriter cw,
+                                     String generatedInternal,
+                                     String interceptorDesc) {
+        // Build descriptor: (LInterceptor;...LInterceptor;)V
+        StringBuilder desc = new StringBuilder("(");
+        for (int i = 0; i < interceptors.length; i++) {
+            desc.append(interceptorDesc);
+        }
+        desc.append(")V");
+
         MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>",
-                "(" + callbackDesc + ")V", null, null);
+                desc.toString(), null, null);
         mv.visitCode();
         // super()
         mv.visitVarInsn(Opcodes.ALOAD, 0);
         mv.visitMethodInsn(Opcodes.INVOKESPECIAL,
                 "java/lang/Object", "<init>", "()V", false);
-        // this._callback = callback (slot 1)
-        mv.visitVarInsn(Opcodes.ALOAD, 0);
-        mv.visitVarInsn(Opcodes.ALOAD, 1);
-        mv.visitFieldInsn(Opcodes.PUTFIELD, generatedInternal,
-                "_callback", callbackDesc);
+        // this._interceptor$i = arg(i+1)
+        for (int i = 0; i < interceptors.length; i++) {
+            mv.visitVarInsn(Opcodes.ALOAD, 0);
+            mv.visitVarInsn(Opcodes.ALOAD, 1 + i);
+            mv.visitFieldInsn(Opcodes.PUTFIELD, generatedInternal,
+                    "_interceptor$" + i, interceptorDesc);
+        }
         mv.visitInsn(Opcodes.RETURN);
-        mv.visitMaxs(2, 2);
+        mv.visitMaxs(2, 1 + interceptors.length);
         mv.visitEnd();
     }
 
@@ -153,7 +167,6 @@ public class InterfaceGenerator {
             String targetInternal = Type.getInternalName(
                     entry.targetClass());
 
-            // Store the Method object via reflection
             mv.visitLdcInsn(Type.getType("L" + targetInternal + ";"));
             mv.visitLdcInsn(method.getName());
 
@@ -166,15 +179,14 @@ public class InterfaceGenerator {
                 BytecodeUtils.pushClassConstant(mv, paramTypes[i]);
                 mv.visitInsn(Opcodes.AASTORE);
             }
-            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Class",
+            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
+                    "java/lang/Class",
                     "getDeclaredMethod",
                     "(Ljava/lang/String;[Ljava/lang/Class;)"
                             + "Ljava/lang/reflect/Method;",
                     false);
             mv.visitFieldInsn(Opcodes.PUTSTATIC, generatedInternal,
                     methodField, "Ljava/lang/reflect/Method;");
-            // No MethodHandle storage — interfaces have no super
-            // implementation to bind.
         }
 
         mv.visitInsn(Opcodes.RETURN);
