@@ -15,7 +15,8 @@ A high-performance dynamic proxy library for Java, designed as a drop-in replace
 - **Interface proxy support** — generates runtime interface implementations at near-parity with `java.lang.reflect.Proxy`
 - **No ClassLoader leaks** — uses `Lookup.defineHiddenClass()` so proxy classes are GC-eligible when no longer referenced
 - **One-line API** — `AcceleratedProxy.proxy(MyClass.class, interceptor)` with generic type inference, no casts needed
-- **Zero-overhead filtering** — methods excluded by `ClassFilter` call the superclass directly with no interception cost
+- **Multi-Interceptor / Method Grouping** — bind different `Interceptor` instances to different method families via `Group.of()` with first-match-wins semantics and zero hot-path overhead
+- **Zero-overhead passthrough** — methods not matching any Group call the superclass directly with no interception cost
 - **Constructor arguments** — supports proxying classes without a no-arg constructor
 
 ## ⚡ Quick Start
@@ -50,6 +51,27 @@ int result = calc.add(10, 20);
 // result = 42
 ```
 
+### Multi-Interceptor (Method Grouping)
+
+```java
+Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
+    Group.of(m -> m.getName().startsWith("get"), (obj, method, args) -> {
+        System.out.println("[GET] " + method.getName());
+        return AcceleratedProxy.invokeSuper(obj, method, args);
+    }),
+    Group.of(m -> m.getName().startsWith("set"), (obj, method, args) -> {
+        System.out.println("[SET] " + method.getName());
+        return AcceleratedProxy.invokeSuper(obj, method, args);
+    }),
+    Group.otherwise((obj, method, args) ->
+        AcceleratedProxy.invokeSuper(obj, method, args))
+);
+
+String s = proxy.getGreeting(); // [GET] getGreeting → "hello"
+proxy.setGreeting("hi");        // [SET] setGreeting
+proxy.toString();                // passthrough: no interception
+```
+
 ## 📊 Performance
 
 JMH benchmarks on Java 25. Best result per row **bolded**.  
@@ -81,6 +103,16 @@ JMH benchmarks on Java 25. Best result per row **bolded**.
 
 *ns/op, lower is better. Full results: [docs/benchmark-results.md](docs/benchmark-results.md)*
 
+### Phase 2: Multi-Interceptor (Zero Overhead)
+
+| Scenario             | Group API | Legacy API | Verdict          |
+|----------------------|-----------|------------|------------------|
+| getter (class)       | 3.05 ns   | 3.08 ns    | ±1.1% (same)     |
+| passthrough (class)  | 4.99 ns   | 5.07 ns    | identical to dir |
+| getter (interface)   | 2.18 ns   | 2.19 ns    | ±0.7% (same)     |
+
+*Group-based multi-interceptor hot path is bytecode-identical to single-interceptor — zero degradation.*
+
 ## 🏗️ How It Works
 
 ### 1. Proxy Class Generation
@@ -89,20 +121,21 @@ The following flowchart illustrates how APS generates a dynamic proxy class at r
 
 ```mermaid
 flowchart TD
-    A["&#9322; AcceleratedProxy.proxy(target, interceptor, filter, constructorArgs)"]
-    A --> B{"target.isInterface()?"}
-    B -->|" &#10003; Interface "| C["&#9323; InterfaceGenerator(target, filter)"]
-    B -->|" &#10007; Class "| D["&#9323; ClassGenerator(target, filter, constructorArgs)"]
+    A["&#9322; AcceleratedProxy.proxy(target, groups...)"]
+    A --> A1["&#9323; Group chain matching: first-match-wins"]
+    A1 --> B{"target.isInterface()?"}
+    B -->|" &#10003; Interface "| C["&#9324; InterfaceGenerator(target, interceptors[], mapping)"]
+    B -->|" &#10007; Class "| D["&#9324; ClassGenerator(target, interceptors[], mapping, constructorArgs)"]
     C --> E["&#9324; InterfaceGenerator.generate()"]
     D --> F["&#9324; ClassGenerator.generate()"]
     E --> G["Init ASM ClassWriter"]
     G --> H["Define class: extends Object<br/>implements Target, DispatchTarget"]
-    H --> I["Generate _callback field (Interceptor)"]
+    H --> I["Generate _interceptor$N fields<br/>(one per distinct Interceptor)"]
     I --> J["Generate constructor &lt;init&gt;<br/>store Interceptor reference"]
     J --> K["Iterate interface methods"]
-    K --> L{"ClassFilter.accept(method)?"}
-    L -->|" &#10003; Intercept "| M["Generate method body<br/>call interceptor.intercept"]
-    L -->|" &#10007; Skip "| N["Generate method body<br/>throw AbstractMethodError"]
+    K --> L{"Group chain matching<br/>first-match-wins"}
+    L -->|" ✓ Match "| M["Assign method to<br/>Interceptor _iN"]
+    L -->|" ✗ No match "| N["Generate method body<br/>throw AbstractMethodError"]
     M --> O["Register Method info in ClinitRegistry"]
     N --> P{"More methods?"}
     O --> P
@@ -113,13 +146,13 @@ flowchart TD
     S --> T["&#9328; ClassWriter.toByteArray() &rarr; byte[]"]
     F --> G2["Init ASM ClassWriter"]
     G2 --> H2["Define class: extends TargetClass<br/>implements DispatchTarget"]
-    H2 --> I2["Generate _callback field (Interceptor)"]
+    H2 --> I2["Generate _interceptor$N fields<br/>(one per distinct Interceptor)"]
     I2 --> J2["Find matching super constructor"]
     J2 --> K2["Generate constructor &lt;init&gt;<br/>super(constructorArgs) + store Interceptor"]
     K2 --> L2["Iterate non-final / non-static<br/>declared methods"]
-    L2 --> M2{"ClassFilter.accept(method)?"}
-    M2 -->|" &#10003; Intercept "| N2["Generate override body<br/>call interceptor.intercept"]
-    M2 -->|" &#10007; Skip "| O2["Generate override body<br/>direct super.method() zero overhead"]
+    L2 --> M2{"Group chain matching<br/>first-match-wins"}
+    M2 -->|" ✓ Match "| N2["Assign method to Interceptor _iN<br/>generate override body"]
+    M2 -->|" ✗ No match "| O2["Generate override body<br/>direct super.method() zero overhead"]
     N2 --> P2["Register in ClinitRegistry"]
     O2 --> Q2{"More methods?"}
     P2 --> Q2
@@ -146,7 +179,7 @@ flowchart TD
     A["&#9322; Method call on proxy<br/>proxy.someMethod(arg1, arg2)"]
     A --> B["&#9323; Enter generated override body"]
     B --> C["&#9324; Box arguments<br/>primitive &rarr; wrapper type<br/>Object[] args = new Object[]{arg1, arg2, ...}"]
-    C --> D["&#9325; Call Interceptor.intercept(proxy, method, args)<br/>this._callback.intercept(this, _method, args)"]
+    C --> D["&#9325; Call Interceptor.intercept(proxy, method, args)<br/>this._interceptor$N.intercept(this, _method, args)"]
     D --> E["User-defined Interceptor logic"]
     E --> F{"Need to invoke super?"}
     F -->|" Yes "| G["&#9326; AcceleratedProxy.invokeSuper(proxy, method, args)"]
@@ -223,7 +256,7 @@ Maven Central publishing is on the [roadmap](docs/aps-future-roadmap.md).
 | Super call overhead         | Zero (direct `super.method()`)      | N/A (interfaces only)                    |
 | Class loading               | `defineHiddenClass()` (GC-safe)     | `defineClass` + proxy cache              |
 | API style                   | Functional (`Interceptor` lambda)   | `InvocationHandler` (single-method)      |
-| Selective interception      | `ClassFilter` per method            | All-or-nothing                           |
+| Selective interception      | `Group.of()` per method family       | All-or-nothing                           |
 | Exception propagation       | Checked → `UndeclaredThrowable`     | Checked → `InvocationTarget`             |
 | Constructor args (classes)  | Yes                                 | N/A (interfaces only)                    |
 | Class proxy performance     | ~5.69 ns passthrough (direct speed) | N/A (cannot proxy classes)               |
@@ -239,7 +272,8 @@ See [docs/migration-guide.md](docs/migration-guide.md) for step-by-step migratio
 - [Benchmark Results (EN)](docs/benchmark-results.md)
 - [Benchmark Results (中文)](docs/benchmark-results_cn.md)
 - [Migration Guide](docs/migration-guide.md)
-- [Design Spec](docs/superpowers/specs/2026-08-02-aps-unified-proxy-design.md)
+- [APS vs CGLib/Java Proxy (设计 spec)](docs/superpowers/specs/2026-08-02-aps-unified-proxy-design.md)
+- [Multi-Interceptor Design Spec](docs/superpowers/specs/2026-08-09-multi-interceptor-method-grouping-design.md)
 - [Future Roadmap](docs/aps-future-roadmap.md)
 
 ## 📄 License

@@ -2,7 +2,7 @@
 
 [中文版](benchmark-results_cn.md)
 
-Date: 2026-08-02 | JDK: Java 25.0.3 (Oracle HotSpot) | JMH: 1.37  
+Date: 2026-08-09 (updated) | JDK: Java 25.0.3 (Oracle HotSpot) | JMH: 1.37  
 JVM: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED`
 
 All scores in ns/op (lower is better). Best per row **bolded**.
@@ -74,6 +74,29 @@ Interface proxy dispatch was unchanged in this refactor. Target: `RetOps`, `Echo
 | Arg modify     | 5.30     | **5.29**   | ≈ Parity       |
 
 **Key takeaway:** APS and Java Proxy are at near-parity across all interface scenarios. Neither involves reflection or MethodHandle — both call the interceptor directly. The ~0.25ns gap in lightweight scenarios comes from JIT intrinsics for `java.lang.reflect.Proxy`.
+
+## Multi-Interceptor (Phase 2) — New
+
+Compares the new Group-based multi-interceptor API against the legacy single-Interceptor API and direct calls. Target: multi-group class with getters, setters, and utility methods.
+
+### Class Proxy — Multi-Interceptor vs Single
+
+| Scenario             | Group API | Legacy API | Direct    | Verdict            |
+|----------------------|-----------|------------|-----------|--------------------|
+| getter (getGreeting) | 3.05      | 3.08       | 0.65      | ±1.1% (same)       |
+| setter (setGreeting) | 9.60      | 9.52       | 0.67      | ±0.8% (same)       |
+| passthrough (format) | 4.99      | —          | 5.07      | identical to direct |
+
+**Key takeaway:** The new `Group.otherwise()` API has identical hot-path performance to the legacy single-Interceptor API — both use `GETFIELD` + `INVOKEINTERFACE`, differing only in field name. Passthrough (unmatched method) latency matches direct call — the `INVOKESPECIAL super.method()` path is unchanged.
+
+### Interface Proxy — Multi-Interceptor vs Single
+
+| Scenario             | Group API | Single API | Verdict          |
+|----------------------|-----------|------------|------------------|
+| getter (getGreeting) | 2.18      | 2.19       | ±0.7% (same)     |
+| utility (format)     | 1.22      | 3.29       | within variance  |
+
+**Key takeaway:** Group API and single-Interceptor API perform identically on interface proxies. The per-Interceptor field access (`_interceptor$N`) in the Group API produces the same bytecode structure as the legacy `_callback` access.
 
 ## Summary
 

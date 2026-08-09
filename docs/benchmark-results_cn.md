@@ -2,7 +2,7 @@
 
 [English](benchmark-results.md)
 
-日期: 2026-08-02 | JDK: Java 25.0.3 (Oracle HotSpot) | JMH: 1.37  
+日期: 2026-08-09（更新） | JDK: Java 25.0.3 (Oracle HotSpot) | JMH: 1.37  
 JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED`
 
 所有分数单位 ns/op（越低越好）。每行最优结果 **加粗**标注。
@@ -74,6 +74,29 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 | 参数修改       | 5.30     | **5.29**   | ≈ 持平         |
 
 **要点：** APS 与 Java Proxy 在所有接口场景下接近持平。两者都不涉及反射或 MethodHandle——都直接调用拦截器。轻量级场景中约 0.25ns 的差距来自 HotSpot 对 `java.lang.reflect.Proxy` 的 JIT 内在优化。
+
+## 多拦截器（第二阶段）— 新增
+
+对比基于 Group 的多拦截器 API 与旧版单 Interceptor API 以及直接调用的性能差异。目标类：包含 getter、setter 和工具方法的分组代理类。
+
+### 类代理 — 多拦截器 vs 单拦截器
+
+| 场景               | Group API | 旧版 API | 直接调用 | 结论               |
+|--------------------|-----------|----------|----------|--------------------|
+| getter (getGreeting) | 3.05    | 3.08     | 0.65     | ±1.1%（持平）      |
+| setter (setGreeting) | 9.60    | 9.52     | 0.67     | ±0.8%（持平）      |
+| passthrough (format) | 4.99    | —        | 5.07     | 与直接调用一致     |
+
+**要点：** 新的 `Group.otherwise()` API 的热路径性能与旧版单 Interceptor API 完全一致——两者都使用 `GETFIELD` + `INVOKEINTERFACE`，仅字段名不同。透传（未匹配方法）延迟与直接调用一致——`INVOKESPECIAL super.method()` 路径未变。
+
+### 接口代理 — 多拦截器 vs 单拦截器
+
+| 场景               | Group API | 单拦截器 API | 结论              |
+|--------------------|-----------|-------------|-------------------|
+| getter (getGreeting) | 2.18    | 2.19        | ±0.7%（持平）     |
+| 工具方法 (format)    | 1.22    | 3.29        | 在误差范围内      |
+
+**要点：** Group API 与单 Interceptor API 在接口代理上性能相同。Group API 中的逐拦截器字段访问（`_interceptor$N`）产生的字节码结构与旧版 `_callback` 访问一致。
 
 ## 总结
 

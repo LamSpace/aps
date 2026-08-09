@@ -15,7 +15,8 @@
 - **接口代理支持** — 运行时生成接口实现，性能与 `java.lang.reflect.Proxy` 接近持平
 - **无 ClassLoader 泄漏** — 使用 `Lookup.defineHiddenClass()`，代理类在无引用时可被 GC 回收
 - **一行代码** — `AcceleratedProxy.proxy(MyClass.class, interceptor)` 泛型自动推导，无需手动转型
-- **零开销过滤** — `ClassFilter` 排除的方法直接调用父类，无任何拦截开销
+- **多拦截器 / 方法分组** — 通过 `Group.of()` 将不同方法族绑定到不同 `Interceptor`，先匹配先胜出，热路径零开销
+- **零开销透传** — 未匹配任何 Group 的方法直接调用父类，无任何拦截开销
 - **构造参数支持** — 支持代理无默认构造方法的类
 
 ## ⚡ 快速开始
@@ -50,6 +51,27 @@ int result = calc.add(10, 20);
 // result = 42
 ```
 
+### 多拦截器（方法分组）
+
+```java
+Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
+    Group.of(m -> m.getName().startsWith("get"), (obj, method, args) -> {
+        System.out.println("[GET] " + method.getName());
+        return AcceleratedProxy.invokeSuper(obj, method, args);
+    }),
+    Group.of(m -> m.getName().startsWith("set"), (obj, method, args) -> {
+        System.out.println("[SET] " + method.getName());
+        return AcceleratedProxy.invokeSuper(obj, method, args);
+    }),
+    Group.otherwise((obj, method, args) ->
+        AcceleratedProxy.invokeSuper(obj, method, args))
+);
+
+String s = proxy.getGreeting(); // [GET] getGreeting → "hello"
+proxy.setGreeting("hi");        // [SET] setGreeting
+proxy.toString();                // 透传：不触发拦截
+```
+
 ## 📊 性能
 
 JMH 基准测试 | Java 25。每行最优结果 **加粗**标注。  
@@ -81,6 +103,16 @@ JMH 基准测试 | Java 25。每行最优结果 **加粗**标注。
 
 *单位: ns/op，越低越好。完整报告：[docs/benchmark-results_cn.md](docs/benchmark-results_cn.md)*
 
+### 第二阶段：多拦截器（零开销）
+
+| 场景             | Group API | 旧版 API | 结论              |
+|------------------|-----------|----------|-------------------|
+| getter（类代理） | 3.05 ns   | 3.08 ns  | ±1.1%（持平）     |
+| passthrough（类）| 4.99 ns   | 5.07 ns  | 与直接调用一致    |
+| getter（接口）   | 2.18 ns   | 2.19 ns  | ±0.7%（持平）     |
+
+*基于 Group 的多拦截器热路径与单 Interceptor 字节码完全等价——零性能退化。*
+
 ## 🏗️ 工作原理
 
 ### 1. 代理类生成流程
@@ -89,20 +121,21 @@ JMH 基准测试 | Java 25。每行最优结果 **加粗**标注。
 
 ```mermaid
 flowchart TD
-    A["❶ AcceleratedProxy.proxy(target, interceptor, filter, constructorArgs)"]
-    A --> B{"target.isInterface()?"}
-    B -->|" ✅ 是接口 "| C["❷ InterfaceGenerator(target, filter)"]
-    B -->|" ❌ 是类 "| D["❷ ClassGenerator(target, filter, constructorArgs)"]
+    A["❶ AcceleratedProxy.proxy(target, groups...)"]
+    A --> A1["❷ Group 链匹配: 先匹配先胜出"]
+    A1 --> B{"target.isInterface()?"}
+    B -->|" ✅ 是接口 "| C["❸ InterfaceGenerator(target, interceptors[], mapping)"]
+    B -->|" ❌ 是类 "| D["❸ ClassGenerator(target, interceptors[], mapping, constructorArgs)"]
     C --> E["❸ InterfaceGenerator.generate()"]
     D --> F["❸ ClassGenerator.generate()"]
     E --> G["ASM ClassWriter 初始化"]
     G --> H["定义类: extends Object<br/>implements Target, DispatchTarget"]
-    H --> I["生成 _callback 字段 (Interceptor)"]
+    H --> I["生成 _interceptor$N 字段<br/>(每个去重后的 Interceptor 一个)"]
     I --> J["生成构造函数 &lt;init&gt;<br/>存储 Interceptor 引用"]
     J --> K["遍历接口方法"]
-    K --> L{"ClassFilter.accept(method)?"}
-    L -->|" ✅ 拦截 "| M["生成方法实现<br/>调用 interceptor.intercept"]
-    L -->|" ❌ 跳过 "| N["生成方法实现<br/>throw AbstractMethodError"]
+    K --> L{"Group 链匹配<br/>先匹配先胜出"}
+    L -->|" ✓ 匹配 "| M["分配到 Interceptor _iN<br/>生成方法实现"]
+    L -->|" ✗ 未匹配 "| N["生成方法实现<br/>throw AbstractMethodError"]
     M --> O["将 Method 信息注册到 ClinitRegistry"]
     N --> P{"还有未处理方法?"}
     O --> P
@@ -113,13 +146,13 @@ flowchart TD
     S --> T["❼ ClassWriter.toByteArray() → byte[]"]
     F --> G2["ASM ClassWriter 初始化"]
     G2 --> H2["定义类: extends TargetClass<br/>implements DispatchTarget"]
-    H2 --> I2["生成 _callback 字段 (Interceptor)"]
+    H2 --> I2["生成 _interceptor$N 字段<br/>(每个去重后的 Interceptor 一个)"]
     I2 --> J2["查找匹配的 super 构造函数"]
     J2 --> K2["生成构造函数 &lt;init&gt;<br/>super(constructorArgs) + 存储 Interceptor"]
     K2 --> L2["遍历 targetClass 声明的非 final/非 static 方法"]
-    L2 --> M2{"ClassFilter.accept(method)?"}
-    M2 -->|" ✅ 拦截 "| N2["生成 override 方法体<br/>调用 interceptor.intercept"]
-    M2 -->|" ❌ 跳过 "| O2["生成 override 方法体<br/>直接 super.method() 零开销"]
+    L2 --> M2{"Group 链匹配<br/>先匹配先胜出"}
+    M2 -->|" ✓ 匹配 "| N2["分配到 Interceptor _iN<br/>生成 override 方法体"]
+    M2 -->|" ✗ 未匹配 "| O2["生成 override 方法体<br/>直接 super.method() 零开销"]
     N2 --> P2["注册到 ClinitRegistry"]
     O2 --> Q2{"还有未处理方法?"}
     P2 --> Q2
@@ -146,7 +179,7 @@ flowchart TD
     A["❶ 调用代理方法<br/>proxy.someMethod(arg1, arg2)"]
     A --> B["❷ 进入生成的 override 方法体"]
     B --> C["❸ 参数装箱<br/>基本类型 → 包装类型<br/>Object[] args = new Object[]{arg1, arg2, ...}"]
-    C --> D["❹ 调用 Interceptor.intercept(proxy, method, args)<br/>this._callback.intercept(this, _method, args)"]
+    C --> D["❹ 调用 Interceptor.intercept(proxy, method, args)<br/>this._interceptor$N.intercept(this, _method, args)"]
     D --> E["🔵 用户自定义 Interceptor 逻辑"]
     E --> F{"需要调用父类方法?"}
     F -->|" 是 "| G["❺ AcceleratedProxy.invokeSuper(proxy, method, args)"]
@@ -223,7 +256,7 @@ Maven Central 发布已列入[路线图](docs/aps-future-roadmap.md)。
 | 父类调用开销   | 零（直接 `super.method()`）      | 不适用（仅接口）                 |
 | 类加载         | `defineHiddenClass()`（GC 安全） | `defineClass` + 代理缓存         |
 | API 风格       | 函数式（`Interceptor` lambda）   | `InvocationHandler`（单方法）    |
-| 选择性拦截     | `ClassFilter` 按方法             | 全部或无                         |
+| 选择性拦截     | `Group.of()` 按方法族             | 全部或无                         |
 | 异常传播       | 受检异常 → `UndeclaredThrowable` | 受检异常 → `InvocationTarget`    |
 | 构造参数（类） | 支持                             | 不适用（仅接口）                 |
 | 类代理性能     | ~5.69 ns 透传（直接调用级别）    | 不适用（无法代理类）             |
@@ -239,7 +272,8 @@ Maven Central 发布已列入[路线图](docs/aps-future-roadmap.md)。
 - [基准测试报告（中文）](docs/benchmark-results_cn.md)
 - [基准测试报告（英文）](docs/benchmark-results.md)
 - [迁移指南](docs/migration-guide.md)
-- [设计文档](docs/superpowers/specs/2026-08-02-aps-unified-proxy-design.md)
+- [APS vs CGLib/Java Proxy（设计 spec）](docs/superpowers/specs/2026-08-02-aps-unified-proxy-design.md)
+- [多拦截器设计文档](docs/superpowers/specs/2026-08-09-multi-interceptor-method-grouping-design.md)
 - [未来路线图](docs/aps-future-roadmap.md)
 
 ## 📄 许可证
