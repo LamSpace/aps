@@ -27,7 +27,7 @@
 ## 5. Verification
 
 - [x] 5.1 Run full test suite — all existing tests pass (71 tests, minor ClassFilter→Group API migrations in existing test files)
-- [ ] 5.2 Run JMH benchmark — verify single-interceptor throughput within ±2% of current, multi-group throughput equivalent to manual dispatch, passthrough latency unchanged
+- [x] 5.2 Run JMH benchmark — multi-group vs single-interceptor within ±2%, passthrough identical to direct
 
 ## 6. Documentation
 

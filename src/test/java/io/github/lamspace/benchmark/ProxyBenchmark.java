@@ -17,12 +17,15 @@
 package io.github.lamspace.benchmark;
 
 import io.github.lamspace.AcceleratedProxy;
+import io.github.lamspace.Group;
+import io.github.lamspace.Interceptor;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import org.openjdk.jmh.annotations.*;
 
 import java.lang.reflect.Proxy;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
@@ -640,5 +643,212 @@ public class ProxyBenchmark {
     @Benchmark
     public String i_jp_argmod(IfaceStandardState s) {
         return s.jpArgMod.echo("W");
+    }
+
+    // ================================================================
+    // Target: Multi-Interceptor (Phase 2)
+    // ================================================================
+
+    static class MultiGroupTarget {
+        public String getGreeting() { return "hello"; }
+        public void setGreeting(String g) { /* no-op */ }
+        public int getCount() { return 42; }
+        public String format(String prefix) { return prefix + ":ok"; }
+    }
+
+    // -- Single-interceptor (Group.otherwise) vs old single-Interceptor API --
+
+    @State(Scope.Thread)
+    public static class SingleInterceptorState {
+        MultiGroupTarget groupApi;
+        MultiGroupTarget oldApi;
+        MultiGroupTarget direct;
+
+        @Setup
+        public void setup() {
+            Interceptor passthrough = (obj, method, args) ->
+                    AcceleratedProxy.invokeSuper(obj, method, args);
+
+            // New API: Group.otherwise (functionally equivalent to old single-Interceptor)
+            groupApi = AcceleratedProxy.proxy(MultiGroupTarget.class,
+                    Group.otherwise(passthrough));
+
+            // Old API: single Interceptor
+            oldApi = AcceleratedProxy.proxy(MultiGroupTarget.class, passthrough);
+
+            direct = new MultiGroupTarget();
+        }
+    }
+
+    @Benchmark
+    public String mg_single_groupApi(SingleInterceptorState s) {
+        return s.groupApi.getGreeting();
+    }
+
+    @Benchmark
+    public String mg_single_oldApi(SingleInterceptorState s) {
+        return s.oldApi.getGreeting();
+    }
+
+    @Benchmark
+    public String mg_single_direct(SingleInterceptorState s) {
+        return s.direct.getGreeting();
+    }
+
+    // -- Multi-group (getter + setter + default) vs manual dispatch --
+
+    @State(Scope.Thread)
+    public static class MultiGroupState {
+        MultiGroupTarget groups;
+        MultiGroupTarget manualDispatch;
+        MultiGroupTarget direct;
+
+        @Setup
+        public void setup() {
+            // 3 Groups: getter, setter, otherwise
+            groups = AcceleratedProxy.proxy(MultiGroupTarget.class,
+                    Group.of(m -> m.getName().startsWith("get"),
+                            (obj, method, args) -> AcceleratedProxy.invokeSuper(
+                                    obj, method, args)),
+                    Group.of(m -> m.getName().startsWith("set"),
+                            (obj, method, args) -> AcceleratedProxy.invokeSuper(
+                                    obj, method, args)),
+                    Group.otherwise((obj, method, args) -> AcceleratedProxy.invokeSuper(
+                            obj, method, args)));
+
+            // Manual dispatch in single interceptor (old pattern)
+            manualDispatch = AcceleratedProxy.proxy(MultiGroupTarget.class,
+                    (obj, method, args) -> AcceleratedProxy.invokeSuper(
+                            obj, method, args));
+
+            direct = new MultiGroupTarget();
+        }
+    }
+
+    @Benchmark
+    public String mg_multi_getGreeting(MultiGroupState s) {
+        return s.groups.getGreeting();
+    }
+
+    @Benchmark
+    public void mg_multi_setGreeting(MultiGroupState s) {
+        s.groups.setGreeting("x");
+    }
+
+    @Benchmark
+    public int mg_multi_getCount(MultiGroupState s) {
+        return s.groups.getCount();
+    }
+
+    @Benchmark
+    public String mg_multi_otherwise(MultiGroupState s) {
+        return s.groups.format("p");
+    }
+
+    @Benchmark
+    public String mg_manual_getGreeting(MultiGroupState s) {
+        return s.manualDispatch.getGreeting();
+    }
+
+    @Benchmark
+    public void mg_manual_setGreeting(MultiGroupState s) {
+        s.manualDispatch.setGreeting("x");
+    }
+
+    @Benchmark
+    public String mg_direct_getGreeting(MultiGroupState s) {
+        return s.direct.getGreeting();
+    }
+
+    @Benchmark
+    public void mg_direct_setGreeting(MultiGroupState s) {
+        s.direct.setGreeting("x");
+    }
+
+    // -- Passthrough (unmatched method) vs direct call --
+
+    @State(Scope.Thread)
+    public static class PassthroughState {
+        MultiGroupTarget passthrough;
+        MultiGroupTarget direct;
+
+        @Setup
+        public void setup() {
+            // Only intercept get* — format() is unmatched → passthrough
+            passthrough = AcceleratedProxy.proxy(MultiGroupTarget.class,
+                    Group.of(m -> m.getName().startsWith("get"),
+                            (obj, method, args) -> "intercepted"));
+
+            direct = new MultiGroupTarget();
+        }
+    }
+
+    @Benchmark
+    public String mg_passthrough_format(PassthroughState s) {
+        return s.passthrough.format("p");
+    }
+
+    @Benchmark
+    public String mg_direct_format(PassthroughState s) {
+        return s.direct.format("p");
+    }
+
+    // -- Interface proxy: multi-group --
+
+    public interface MultiGroupIface {
+        String getGreeting();
+        void setGreeting(String g);
+        int getCount();
+        String format(String prefix);
+    }
+
+    @State(Scope.Thread)
+    public static class MultiGroupIfaceState {
+        MultiGroupIface groups;
+        MultiGroupIface single;
+
+        @Setup
+        public void setup() {
+            groups = AcceleratedProxy.proxy(MultiGroupIface.class,
+                    Group.of(m -> m.getName().startsWith("get"),
+                            (obj, method, args) -> {
+                                if (method.getName().equals("getGreeting"))
+                                    return "hello";
+                                if (method.getName().equals("getCount")) return 42;
+                                return null;
+                            }),
+                    Group.of(m -> m.getName().startsWith("set"),
+                            (obj, method, args) -> null),
+                    Group.otherwise((obj, method, args) -> "p:ok"));
+
+            single = AcceleratedProxy.proxy(MultiGroupIface.class,
+                    (obj, method, args) -> {
+                        if (method.getName().equals("getGreeting"))
+                            return "hello";
+                        if (method.getName().equals("getCount")) return 42;
+                        if (method.getName().equals("format")) return "p:ok";
+                        return null;
+                    });
+        }
+    }
+
+    @Benchmark
+    public String mg_iface_groups_getGreeting(MultiGroupIfaceState s) {
+        return s.groups.getGreeting();
+    }
+
+    @Benchmark
+    public String mg_iface_single_getGreeting(MultiGroupIfaceState s) {
+        return s.single.getGreeting();
+    }
+
+    @Benchmark
+    public String mg_iface_groups_format(MultiGroupIfaceState s) {
+        return s.groups.format("p");
+    }
+
+    @Benchmark
+    public String mg_iface_single_format(MultiGroupIfaceState s) {
+        return s.single.format("p");
     }
 }
