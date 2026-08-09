@@ -95,17 +95,22 @@ The system SHALL generate a `dispatch(Method, Object[])` method in every proxy c
 
 ### Requirement: Proxy class caching
 
-The system SHALL cache generated proxy classes keyed by the `{targetClass, filter}` tuple to avoid re-generating bytecode for the same proxy configuration.
+The system SHALL cache generated proxy classes keyed by the `{targetClass, mapping, constructorArgs}` tuple to avoid re-generating bytecode for the same proxy configuration. The `mapping` captures the method-to-interceptor-index assignment produced by Group chain matching.
 
 #### Scenario: Cache hit returns existing class
 
-- **WHEN** user calls `AcceleratedProxy.proxy(SomeClass.class, interceptor, filter)` twice with the same class and filter
+- **WHEN** user calls `AcceleratedProxy.proxy(SomeClass.class, group1, group2)` twice with identical Group configurations and constructor arguments
 - **THEN** the system reuses the previously generated proxy class instead of generating new bytecode
 - **AND** both proxy instances use the same class
 
-#### Scenario: Different filters produce different classes
+#### Scenario: Different group configs produce different classes
 
-- **WHEN** user creates two proxies for the same class with different ClassFilter instances
+- **WHEN** user creates two proxies for the same class with different Group declarations (different predicates, different interceptors, or different declaration order)
+- **THEN** the system generates two distinct proxy classes
+
+#### Scenario: Different constructor args produce different classes
+
+- **WHEN** user creates two class proxies with the same Group declarations but different constructor arguments
 - **THEN** the system generates two distinct proxy classes
 
 ### Requirement: Unified hidden class loading
