@@ -93,7 +93,7 @@ public final class AcceleratedProxy {
             return targetClass == other.targetClass
                     && mapping.equals(other.mapping)
                     && Arrays.equals(constructorArgs,
-                            other.constructorArgs);
+                    other.constructorArgs);
         }
 
         @Override
@@ -112,9 +112,9 @@ public final class AcceleratedProxy {
      */
     private static final WeakCache<Class<?>, CacheParams, Class<?>>
             PROXY_CLASS_CACHE = new WeakCache<>(
-                    (key, params) -> params,
-                    AcceleratedProxy::generateProxyClass
-            );
+            (key, params) -> params,
+            AcceleratedProxy::generateProxyClass
+    );
 
     /**
      * Evaluates the Group chain against every proxyable method on the
@@ -204,7 +204,7 @@ public final class AcceleratedProxy {
      * Called by the cache on cache miss.
      */
     private static Class<?> generateProxyClass(Class<?> target,
-                                                CacheParams params) {
+                                               CacheParams params) {
         try {
             byte[] bytecode;
             MethodMapping mapping = params.mapping();

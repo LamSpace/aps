@@ -32,7 +32,7 @@ public interface MethodPredicate {
      *
      * @param method a method declared by the target class
      * @return {@code true} if the method should be assigned to the
-     *         associated Group's Interceptor
+     * associated Group's Interceptor
      */
     boolean test(Method method);
 }

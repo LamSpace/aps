@@ -8,19 +8,23 @@
 package io.github.lamspace;
 
 import org.junit.jupiter.api.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class DuplicateMatchWarningTest {
 
     interface OverlapTarget {
         String getUserName();
+
         void setUserName(String name);
+
         int getAge();
     }
 
@@ -108,10 +112,12 @@ class DuplicateMatchWarningTest {
         }
 
         @Override
-        public void flush() {}
+        public void flush() {
+        }
 
         @Override
-        public void close() {}
+        public void close() {
+        }
 
         List<LogRecord> records() {
             return records;

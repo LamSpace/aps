@@ -55,21 +55,25 @@ int result = calc.add(10, 20);
 
 ```java
 Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
-    Group.of(m -> m.getName().startsWith("get"), (obj, method, args) -> {
-        System.out.println("[GET] " + method.getName());
-        return AcceleratedProxy.invokeSuper(obj, method, args);
-    }),
-    Group.of(m -> m.getName().startsWith("set"), (obj, method, args) -> {
-        System.out.println("[SET] " + method.getName());
-        return AcceleratedProxy.invokeSuper(obj, method, args);
-    }),
-    Group.otherwise((obj, method, args) ->
-        AcceleratedProxy.invokeSuper(obj, method, args))
+        Group.of(m -> m.getName().startsWith("get"), (obj, method, args) -> {
+            System.out.println("[GET] " + method.getName());
+            return AcceleratedProxy.invokeSuper(obj, method, args);
+        }),
+        Group.of(m -> m.getName().startsWith("set"), (obj, method, args) -> {
+            System.out.println("[SET] " + method.getName());
+            return AcceleratedProxy.invokeSuper(obj, method, args);
+        }),
+        Group.otherwise((obj, method, args) ->
+                AcceleratedProxy.invokeSuper(obj, method, args))
 );
 
 String s = proxy.getGreeting(); // [GET] getGreeting → "hello"
-proxy.setGreeting("hi");        // [SET] setGreeting
-proxy.toString();                // passthrough: no interception
+proxy.
+
+setGreeting("hi");        // [SET] setGreeting
+proxy.
+
+toString();                // passthrough: no interception
 ```
 
 ## 📊 Performance
@@ -105,11 +109,11 @@ JMH benchmarks on Java 25. Best result per row **bolded**.
 
 ### Phase 2: Multi-Interceptor (Zero Overhead)
 
-| Scenario             | Group API | Legacy API | Verdict          |
-|----------------------|-----------|------------|------------------|
-| getter (class)       | 3.05 ns   | 3.08 ns    | ±1.1% (same)     |
-| passthrough (class)  | 4.99 ns   | 5.07 ns    | identical to dir |
-| getter (interface)   | 2.18 ns   | 2.19 ns    | ±0.7% (same)     |
+| Scenario            | Group API | Legacy API | Verdict          |
+|---------------------|-----------|------------|------------------|
+| getter (class)      | 3.05 ns   | 3.08 ns    | ±1.1% (same)     |
+| passthrough (class) | 4.99 ns   | 5.07 ns    | identical to dir |
+| getter (interface)  | 2.18 ns   | 2.19 ns    | ±0.7% (same)     |
 
 *Group-based multi-interceptor hot path is bytecode-identical to single-interceptor — zero degradation.*
 
@@ -256,7 +260,7 @@ Maven Central publishing is on the [roadmap](docs/aps-future-roadmap.md).
 | Super call overhead         | Zero (direct `super.method()`)      | N/A (interfaces only)                    |
 | Class loading               | `defineHiddenClass()` (GC-safe)     | `defineClass` + proxy cache              |
 | API style                   | Functional (`Interceptor` lambda)   | `InvocationHandler` (single-method)      |
-| Selective interception      | `Group.of()` per method family       | All-or-nothing                           |
+| Selective interception      | `Group.of()` per method family      | All-or-nothing                           |
 | Exception propagation       | Checked → `UndeclaredThrowable`     | Checked → `InvocationTarget`             |
 | Constructor args (classes)  | Yes                                 | N/A (interfaces only)                    |
 | Class proxy performance     | ~5.69 ns passthrough (direct speed) | N/A (cannot proxy classes)               |

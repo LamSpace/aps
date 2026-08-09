@@ -85,7 +85,7 @@ public class ClassGenerator {
      * Returns the parameter types for the generated class constructor.
      *
      * @return an array of Interceptor.class (one per distinct interceptor)
-     *         followed by the types of the constructor arguments
+     * followed by the types of the constructor arguments
      */
     public Class<?>[] constructorArgs() {
         Class<?>[] all = new Class<?>[interceptors.length
@@ -111,7 +111,7 @@ public class ClassGenerator {
         String targetInternal = Type.getInternalName(targetClass);
         String packagePrefix = targetInternal.contains("/")
                 ? targetInternal.substring(0,
-                        targetInternal.lastIndexOf('/') + 1)
+                targetInternal.lastIndexOf('/') + 1)
                 : "";
         String simpleName = targetInternal.substring(
                 targetInternal.lastIndexOf('/') + 1);

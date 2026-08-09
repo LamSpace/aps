@@ -8,13 +8,16 @@
 package io.github.lamspace;
 
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class GroupMatchingTest {
 
     interface Sample {
         String getName();
+
         void setName(String name);
+
         int getAge();
     }
 

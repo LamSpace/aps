@@ -650,10 +650,19 @@ public class ProxyBenchmark {
     // ================================================================
 
     static class MultiGroupTarget {
-        public String getGreeting() { return "hello"; }
+        public String getGreeting() {
+            return "hello";
+        }
+
         public void setGreeting(String g) { /* no-op */ }
-        public int getCount() { return 42; }
-        public String format(String prefix) { return prefix + ":ok"; }
+
+        public int getCount() {
+            return 42;
+        }
+
+        public String format(String prefix) {
+            return prefix + ":ok";
+        }
     }
 
     // -- Single-interceptor (Group.otherwise) vs old single-Interceptor API --
@@ -797,8 +806,11 @@ public class ProxyBenchmark {
 
     public interface MultiGroupIface {
         String getGreeting();
+
         void setGreeting(String g);
+
         int getCount();
+
         String format(String prefix);
     }
 

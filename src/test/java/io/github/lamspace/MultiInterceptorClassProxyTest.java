@@ -8,17 +8,25 @@
 package io.github.lamspace;
 
 import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class MultiInterceptorClassProxyTest {
 
     public static class Greeter {
-        public String getGreeting() { return "hello"; }
+        public String getGreeting() {
+            return "hello";
+        }
+
         public void setGreeting(String g) { /* no-op */ }
+
         @Override
-        public String toString() { return "Greeter"; }
+        public String toString() {
+            return "Greeter";
+        }
     }
 
     @Test

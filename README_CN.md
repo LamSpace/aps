@@ -55,21 +55,25 @@ int result = calc.add(10, 20);
 
 ```java
 Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
-    Group.of(m -> m.getName().startsWith("get"), (obj, method, args) -> {
-        System.out.println("[GET] " + method.getName());
-        return AcceleratedProxy.invokeSuper(obj, method, args);
-    }),
-    Group.of(m -> m.getName().startsWith("set"), (obj, method, args) -> {
-        System.out.println("[SET] " + method.getName());
-        return AcceleratedProxy.invokeSuper(obj, method, args);
-    }),
-    Group.otherwise((obj, method, args) ->
-        AcceleratedProxy.invokeSuper(obj, method, args))
+        Group.of(m -> m.getName().startsWith("get"), (obj, method, args) -> {
+            System.out.println("[GET] " + method.getName());
+            return AcceleratedProxy.invokeSuper(obj, method, args);
+        }),
+        Group.of(m -> m.getName().startsWith("set"), (obj, method, args) -> {
+            System.out.println("[SET] " + method.getName());
+            return AcceleratedProxy.invokeSuper(obj, method, args);
+        }),
+        Group.otherwise((obj, method, args) ->
+                AcceleratedProxy.invokeSuper(obj, method, args))
 );
 
 String s = proxy.getGreeting(); // [GET] getGreeting → "hello"
-proxy.setGreeting("hi");        // [SET] setGreeting
-proxy.toString();                // 透传：不触发拦截
+proxy.
+
+setGreeting("hi");        // [SET] setGreeting
+proxy.
+
+toString();                // 透传：不触发拦截
 ```
 
 ## 📊 性能
@@ -105,11 +109,11 @@ JMH 基准测试 | Java 25。每行最优结果 **加粗**标注。
 
 ### 第二阶段：多拦截器（零开销）
 
-| 场景             | Group API | 旧版 API | 结论              |
-|------------------|-----------|----------|-------------------|
-| getter（类代理） | 3.05 ns   | 3.08 ns  | ±1.1%（持平）     |
-| passthrough（类）| 4.99 ns   | 5.07 ns  | 与直接调用一致    |
-| getter（接口）   | 2.18 ns   | 2.19 ns  | ±0.7%（持平）     |
+| 场景              | Group API | 旧版 API | 结论           |
+|-------------------|-----------|----------|----------------|
+| getter（类代理）  | 3.05 ns   | 3.08 ns  | ±1.1%（持平）  |
+| passthrough（类） | 4.99 ns   | 5.07 ns  | 与直接调用一致 |
+| getter（接口）    | 2.18 ns   | 2.19 ns  | ±0.7%（持平）  |
 
 *基于 Group 的多拦截器热路径与单 Interceptor 字节码完全等价——零性能退化。*
 
@@ -256,7 +260,7 @@ Maven Central 发布已列入[路线图](docs/aps-future-roadmap.md)。
 | 父类调用开销   | 零（直接 `super.method()`）      | 不适用（仅接口）                 |
 | 类加载         | `defineHiddenClass()`（GC 安全） | `defineClass` + 代理缓存         |
 | API 风格       | 函数式（`Interceptor` lambda）   | `InvocationHandler`（单方法）    |
-| 选择性拦截     | `Group.of()` 按方法族             | 全部或无                         |
+| 选择性拦截     | `Group.of()` 按方法族            | 全部或无                         |
 | 异常传播       | 受检异常 → `UndeclaredThrowable` | 受检异常 → `InvocationTarget`    |
 | 构造参数（类） | 支持                             | 不适用（仅接口）                 |
 | 类代理性能     | ~5.69 ns 透传（直接调用级别）    | 不适用（无法代理类）             |

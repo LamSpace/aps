@@ -81,20 +81,20 @@ Compares the new Group-based multi-interceptor API against the legacy single-Int
 
 ### Class Proxy — Multi-Interceptor vs Single
 
-| Scenario             | Group API | Legacy API | Direct    | Verdict            |
-|----------------------|-----------|------------|-----------|--------------------|
-| getter (getGreeting) | 3.05      | 3.08       | 0.65      | ±1.1% (same)       |
-| setter (setGreeting) | 9.60      | 9.52       | 0.67      | ±0.8% (same)       |
-| passthrough (format) | 4.99      | —          | 5.07      | identical to direct |
+| Scenario             | Group API | Legacy API | Direct | Verdict             |
+|----------------------|-----------|------------|--------|---------------------|
+| getter (getGreeting) | 3.05      | 3.08       | 0.65   | ±1.1% (same)        |
+| setter (setGreeting) | 9.60      | 9.52       | 0.67   | ±0.8% (same)        |
+| passthrough (format) | 4.99      | —          | 5.07   | identical to direct |
 
 **Key takeaway:** The new `Group.otherwise()` API has identical hot-path performance to the legacy single-Interceptor API — both use `GETFIELD` + `INVOKEINTERFACE`, differing only in field name. Passthrough (unmatched method) latency matches direct call — the `INVOKESPECIAL super.method()` path is unchanged.
 
 ### Interface Proxy — Multi-Interceptor vs Single
 
-| Scenario             | Group API | Single API | Verdict          |
-|----------------------|-----------|------------|------------------|
-| getter (getGreeting) | 2.18      | 2.19       | ±0.7% (same)     |
-| utility (format)     | 1.22      | 3.29       | within variance  |
+| Scenario             | Group API | Single API | Verdict         |
+|----------------------|-----------|------------|-----------------|
+| getter (getGreeting) | 2.18      | 2.19       | ±0.7% (same)    |
+| utility (format)     | 1.22      | 3.29       | within variance |
 
 **Key takeaway:** Group API and single-Interceptor API perform identically on interface proxies. The per-Interceptor field access (`_interceptor$N`) in the Group API produces the same bytecode structure as the legacy `_callback` access.
 
