@@ -12,16 +12,16 @@
 
 ---
 
-## 第二阶段：功能扩展
+## 第二阶段：功能扩展（已完成）
 
 | 优先级 | 事项                          | 说明                                                |
 |--------|-------------------------------|-----------------------------------------------------|
-| P2     | **多 Interceptor / 方法分组** | ✅ 已完成 — 通过 `Group.of()`/`Group.otherwise()` 绑定不同方法族到不同 Interceptor
+| P2     | **多 Interceptor / 方法分组** | 当前只有单 Interceptor + filter，更细粒度的拦截控制 |
 
 ### 多 Interceptor / 方法分组
 
 ```java
-// 设想：不同方法组绑定不同 Interceptor
+// 不同方法组绑定不同 Interceptor
 Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
                 Group.of(m -> m.getName().startsWith("get"), getterInterceptor),
                 Group.of(m -> m.getName().startsWith("set"), setterInterceptor),
