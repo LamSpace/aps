@@ -35,7 +35,7 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 
 | 顺序 | 优先级 | 事项                   | 说明                                                                  |
 |------|--------|------------------------|-----------------------------------------------------------------------|
-| 1    | P3     | **接口默认方法调用**   | 在拦截器中调用接口 `default` 方法，需 `findSpecial`                   |
+| 1    | P3     | **接口默认方法调用**（已完成） | 在拦截器中调用接口 `default` 方法，`INVOKESPECIAL` 直调默认实现    |
 | 2    | P3     | **多接口代理**         | 一个代理类实现多个接口                                                |
 | 3    | P3     | **注解驱动 API**       | 如 `@Intercept` 标注方法，减少样板代码，声明式方法匹配                |
 | 4    | P3     | **构造器拦截**         | 对象创建时的 hook，类似 CGLib 的 `Enhancer` 构造器回调                |
@@ -45,11 +45,11 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 | 8    | P3     | **JPMS 强封装模块**    | 处理 `java.base` 等强封装模块中类的代理访问                           |
 | 9    | P3     | **Maven Central 发布** | 让其他项目能通过 Maven/Gradle 依赖引入，GroupId: `io.github.lamspace` |
 
-### 接口默认方法调用
+### 接口默认方法调用（已完成）
 
-- 当前 `AcceleratedProxy.invokeSuper()` 在接口代理上对接口方法抛出 `AbstractMethodError`
-- 需使用 `MethodHandles.Lookup.findSpecial()` 绑定接口默认实现
-- 对 `default` 方法和非 `default` 接口方法需区分处理
+- `AcceleratedProxy.invokeSuper()` 对接口 `default` 方法现会调用其默认实现（直接声明与继承统一走 `INVOKESPECIAL` 快路径，零 `MethodHandle` 开销）
+- 非 `default` 接口方法仍抛 `AbstractMethodError`
+- 附带修复：`<clinit>` 改用 `getMethod` 支持继承方法解析
 
 ### 多接口代理
 
