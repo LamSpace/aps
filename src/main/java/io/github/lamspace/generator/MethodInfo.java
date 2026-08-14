@@ -26,8 +26,16 @@ import java.lang.reflect.Method;
  *                        generated class (e.g., {@code "_method$0"})
  * @param methodHash      pre-computed {@code Method.hashCode()} used as
  *                        the dispatch discriminator via {@code ldc}
+ * @param defaultOwner    the interface holding the {@code default}
+ *                        implementation for this method, or {@code null} if
+ *                        abstract or a class proxy
  */
-record MethodInfo(Method method, String staticFieldName, int methodHash) {
+record MethodInfo(Method method, String staticFieldName, int methodHash,
+                  Class<?> defaultOwner) {
+    MethodInfo(Method method, String staticFieldName, int methodHash) {
+        this(method, staticFieldName, methodHash, null);
+    }
+
     MethodInfo {
         if (method == null || staticFieldName == null) {
             throw new NullPointerException();

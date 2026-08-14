@@ -90,10 +90,9 @@ public final class DispatchGenerator {
      * @param generatedInternal      ASM internal name of the generated class
      * @param superInternal          ASM internal name of the superclass (target class
      *                               for class proxies, "java/lang/Object" for interface)
-     * @param interfaceInternalName  ASM internal name of the target interface, or
-     *                               {@code null} for class proxies (owner of the
-     *                               {@code INVOKESPECIAL} for default methods)
-     * @param infos                  per-method metadata with pre-resolved hashes
+     * @param infos                  per-method metadata; the {@code defaultOwner}
+     *                               field carries the interface owner for default
+     *                               methods (null for class proxies)
      * @param isClassProxy           true = class proxy (direct super calls),
      *                               false = interface proxy (AbstractMethodError
      *                               for non-default methods, direct INVOKESPECIAL
@@ -102,7 +101,6 @@ public final class DispatchGenerator {
     static void generateDispatch(ClassWriter cw,
                                  String generatedInternal,
                                  String superInternal,
-                                 String interfaceInternalName,
                                  List<MethodInfo> infos,
                                  boolean isClassProxy) {
         String desc = "(Ljava/lang/reflect/Method;[Ljava/lang/Object;)Ljava/lang/Object;";
@@ -142,7 +140,6 @@ public final class DispatchGenerator {
             // Branch body
             Class<?> declaringClass = method.getDeclaringClass();
             boolean isObjectMethod = declaringClass == Object.class;
-            boolean isDefault = method.isDefault();
 
             if (isClassProxy || isObjectMethod) {
                 // Direct super call: this.super.method(args...)
@@ -178,7 +175,7 @@ public final class DispatchGenerator {
                     BytecodeUtils.boxPrimitive(mv, rt);
                 }
                 mv.visitInsn(Opcodes.ARETURN);
-            } else if (isDefault) {
+            } else if (info.defaultOwner() != null) {
                 // Default interface method: invoke the interface's default
                 // implementation directly. Owner is the target interface (a
                 // direct superinterface), so method resolution finds inherited
@@ -201,7 +198,7 @@ public final class DispatchGenerator {
                 }
 
                 mv.visitMethodInsn(Opcodes.INVOKESPECIAL,
-                        interfaceInternalName,
+                        Type.getInternalName(info.defaultOwner()),
                         method.getName(),
                         Type.getMethodDescriptor(method),
                         true); // interface owner

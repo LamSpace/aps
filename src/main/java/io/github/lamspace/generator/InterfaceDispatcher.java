@@ -21,10 +21,7 @@ import io.github.lamspace.MethodMapping;
 import org.objectweb.asm.*;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -47,7 +44,7 @@ final class InterfaceDispatcher {
      * clinit entries for all public instance methods on the interface.
      *
      * @param cw                the ClassWriter for the generated class
-     * @param interfaceClass    the interface being implemented
+     * @param resolved          the resolved (merged, sorted) method list
      * @param generatedInternal ASM internal name of the generated class
      * @param mapping           method → interceptor index mapping
      * @param interceptorCount  number of distinct Interceptor instances
@@ -55,41 +52,29 @@ final class InterfaceDispatcher {
      * @return list of method names for which dispatchers were generated
      */
     static List<String> dispatchMethods(ClassWriter cw,
-                                        Class<?> interfaceClass,
+                                        List<InterfaceMethodResolver.ResolvedMethod> resolved,
                                         String generatedInternal,
                                         MethodMapping mapping,
                                         int interceptorCount,
                                         ClinitRegistry registry) {
         List<String> dispatchedMethods = new ArrayList<>();
 
-        // Stable sort for cross-JVM determinism (must match
-        // AcceleratedProxy.matchMethods)
-        Method[] methods = interfaceClass.getMethods();
-        Arrays.sort(methods,
-                Comparator.comparing(Method::getName)
-                        .thenComparing(m -> Arrays.toString(
-                                m.getParameterTypes())));
+        for (int i = 0; i < resolved.size(); i++) {
+            InterfaceMethodResolver.ResolvedMethod rm = resolved.get(i);
+            Method method = rm.canonical();
 
-        for (Method method : methods) {
-            int mods = method.getModifiers();
-            // Skip static and final methods — they can't be overridden
-            if (Modifier.isStatic(mods) || Modifier.isFinal(mods)) {
-                continue;
-            }
-
-            int index = dispatchedMethods.size();
-            int interceptorIndex = mapping.indices()[index];
+            int interceptorIndex = mapping.indices()[i];
             boolean shouldIntercept = interceptorIndex >= 0;
 
-            String suffix = "$" + index;
+            String suffix = "$" + i;
             String methodFieldName = "_method$" + method.getName()
                     + suffix;
 
             addStaticField(cw, methodFieldName,
                     "Ljava/lang/reflect/Method;");
 
-            registry.register(interfaceClass, method,
-                    generatedInternal, methodFieldName, index);
+            registry.register(rm.owner(), method, generatedInternal,
+                    methodFieldName, i);
 
             generateImplementation(cw, method, generatedInternal,
                     shouldIntercept, interceptorIndex, methodFieldName);

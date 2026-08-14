@@ -40,21 +40,21 @@ public class InterfaceGenerator {
 
     private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
-    private final Class<?> interfaceClass;
+    private final Class<?>[] interfaces;
     private final Interceptor[] interceptors;
     private final MethodMapping mapping;
 
     /**
-     * Creates a generator for the given interface.
+     * Creates a generator for the given interfaces.
      *
-     * @param interfaceClass the interface to implement
-     * @param interceptors   deduped interceptor instances
-     * @param mapping        method → interceptor index mapping
+     * @param interfaces   the interfaces to implement
+     * @param interceptors deduped interceptor instances
+     * @param mapping      method → interceptor index mapping
      */
-    public InterfaceGenerator(Class<?> interfaceClass,
+    public InterfaceGenerator(Class<?>[] interfaces,
                               Interceptor[] interceptors,
                               MethodMapping mapping) {
-        this.interfaceClass = interfaceClass;
+        this.interfaces = interfaces.clone();
         this.interceptors = interceptors.clone();
         this.mapping = mapping;
     }
@@ -65,20 +65,31 @@ public class InterfaceGenerator {
      * @return valid JVM classfile bytes
      */
     public byte[] generate() {
-        String targetInternal = Type.getInternalName(interfaceClass);
-        String simpleName = targetInternal.substring(
-                targetInternal.lastIndexOf('/') + 1);
-        String generatedInternal = "io/github/lamspace/"
-                + simpleName + "$$AcceleratedProxy$$"
-                + COUNTER.getAndIncrement();
+        List<InterfaceMethodResolver.ResolvedMethod> resolved =
+                InterfaceMethodResolver.resolve(interfaces);
+
+        String baseName;
+        if (interfaces.length == 1) {
+            String targetInternal = Type.getInternalName(interfaces[0]);
+            baseName = targetInternal.substring(
+                    targetInternal.lastIndexOf('/') + 1);
+        } else {
+            baseName = "MultiInterface";
+        }
+        String generatedInternal = "io/github/lamspace/" + baseName
+                + "$$AcceleratedProxy$$" + COUNTER.getAndIncrement();
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 
-        // Implements target interface + DispatchTarget
+        // Implements all interfaces + DispatchTarget
+        String[] implemented = new String[interfaces.length + 1];
+        for (int i = 0; i < interfaces.length; i++) {
+            implemented[i] = Type.getInternalName(interfaces[i]);
+        }
+        implemented[interfaces.length] = "io/github/lamspace/DispatchTarget";
+
         cw.visit(Opcodes.V24, Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER,
-                generatedInternal, null, "java/lang/Object",
-                new String[]{targetInternal,
-                        "io/github/lamspace/DispatchTarget"});
+                generatedInternal, null, "java/lang/Object", implemented);
 
         // -- Interceptor fields (one per distinct interceptor) --
         String interceptorDesc = Type.getDescriptor(Interceptor.class);
@@ -92,28 +103,32 @@ public class InterfaceGenerator {
 
         // -- Method implementations + static Method fields --
         ClinitRegistry registry = new ClinitRegistry();
-        InterfaceDispatcher.dispatchMethods(cw, interfaceClass,
-                generatedInternal, mapping, interceptors.length,
-                registry);
+        InterfaceDispatcher.dispatchMethods(cw, resolved, generatedInternal,
+                mapping, interceptors.length, registry);
 
         // -- Drain ClinitRegistry entries for dispatch generation --
         List<ClinitRegistry.Entry> entries = registry.drain();
 
-        // -- dispatch(Method, Object[]) for Object methods --
-        List<Method> methods = new ArrayList<>();
-        for (ClinitRegistry.Entry entry : entries) {
-            methods.add(entry.method());
+        // -- dispatch(Method, Object[]): one branch per Method variant, each
+        //    carrying the merged method's default owner so every hash routes
+        //    to the same handler --
+        List<Method> allVariants = new ArrayList<>();
+        for (InterfaceMethodResolver.ResolvedMethod rm : resolved) {
+            allVariants.addAll(rm.variants());
         }
         Map<Method, Integer> hashMap =
-                DispatchGenerator.resolveHashes(methods);
+                DispatchGenerator.resolveHashes(allVariants);
         List<MethodInfo> infos = new ArrayList<>();
-        for (ClinitRegistry.Entry entry : entries) {
-            infos.add(new MethodInfo(entry.method(),
-                    entry.methodFieldName(),
-                    hashMap.get(entry.method())));
+        for (int i = 0; i < resolved.size(); i++) {
+            InterfaceMethodResolver.ResolvedMethod rm = resolved.get(i);
+            String fieldName = entries.get(i).methodFieldName();
+            for (Method variant : rm.variants()) {
+                infos.add(new MethodInfo(variant, fieldName,
+                        hashMap.get(variant), rm.defaultOwner()));
+            }
         }
         DispatchGenerator.generateDispatch(cw, generatedInternal,
-                "java/lang/Object", targetInternal, infos, false);
+                "java/lang/Object", infos, false);
 
         // -- <clinit> for Method objects only --
         generateClinit(cw, generatedInternal, entries);

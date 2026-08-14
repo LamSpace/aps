@@ -18,6 +18,7 @@ package io.github.lamspace;
 
 import io.github.lamspace.generator.ClassGenerator;
 import io.github.lamspace.generator.InterfaceGenerator;
+import io.github.lamspace.generator.InterfaceMethodResolver;
 import io.github.lamspace.internal.LookupManager;
 
 import java.lang.reflect.Constructor;
@@ -84,6 +85,7 @@ public final class AcceleratedProxy {
      * same generated class.
      */
     private record CacheParams(Class<?> targetClass,
+                               Class<?>[] interfaces,
                                MethodMapping mapping,
                                Object[] constructorArgs) {
         @Override
@@ -91,14 +93,17 @@ public final class AcceleratedProxy {
             if (this == o) return true;
             if (!(o instanceof CacheParams other)) return false;
             return targetClass == other.targetClass
+                    && Arrays.equals(interfaces, other.interfaces)
                     && mapping.equals(other.mapping)
-                    && Arrays.equals(constructorArgs,
-                    other.constructorArgs);
+                    && Arrays.equals(constructorArgs, other.constructorArgs);
         }
 
         @Override
         public int hashCode() {
-            int result = System.identityHashCode(targetClass);
+            int result = targetClass != null
+                    ? System.identityHashCode(targetClass) : 0;
+            result = 31 * result + (interfaces != null
+                    ? Arrays.hashCode(interfaces) : 0);
             result = 31 * result + mapping.hashCode();
             result = 31 * result + Arrays.hashCode(constructorArgs);
             return result;
@@ -117,41 +122,53 @@ public final class AcceleratedProxy {
     );
 
     /**
-     * Evaluates the Group chain against every proxyable method on the
-     * target. Returns deduped interceptors and a stable-sorted
-     * method-to-index mapping. Only proxyable methods are included —
-     * static, final, and (for class targets) private methods are excluded.
+     * Evaluates the Group chain against every proxyable method of the given
+     * interfaces. Merges the interfaces' methods (see
+     * {@link InterfaceMethodResolver}), then matches each against the Group
+     * chain. Returns deduped interceptors and a stable-sorted
+     * method-to-index mapping.
+     */
+    private static MatchResult matchMethods(Class<?>[] interfaces,
+                                            Group[] groups) {
+        List<InterfaceMethodResolver.ResolvedMethod> resolved =
+                InterfaceMethodResolver.resolve(interfaces);
+        Method[] methods = new Method[resolved.size()];
+        for (int i = 0; i < resolved.size(); i++) {
+            methods[i] = resolved.get(i).canonical();
+        }
+        return matchMethods(methods, groups);
+    }
+
+    /**
+     * Evaluates the Group chain against every proxyable method on the target
+     * class. Only non-static, non-final, non-private methods are included.
      */
     private static MatchResult matchMethods(Class<?> target,
                                             Group[] groups) {
-        Method[] rawMethods;
-        if (target.isInterface()) {
-            rawMethods = target.getMethods();
-        } else {
-            rawMethods = target.getDeclaredMethods();
-        }
-
-        // 1. Filter to proxyable methods (same criteria as the dispatchers)
+        Method[] rawMethods = target.getDeclaredMethods();
         List<Method> proxyable = new ArrayList<>();
         for (Method m : rawMethods) {
             int mods = m.getModifiers();
-            if (Modifier.isStatic(mods) || Modifier.isFinal(mods)) {
-                continue;
-            }
-            if (!target.isInterface() && Modifier.isPrivate(mods)) {
+            if (Modifier.isStatic(mods) || Modifier.isFinal(mods)
+                    || Modifier.isPrivate(mods)) {
                 continue;
             }
             proxyable.add(m);
         }
-        Method[] methods = proxyable.toArray(new Method[0]);
+        return matchMethods(proxyable.toArray(new Method[0]), groups);
+    }
 
-        // 2. Stable sort for cross-JVM determinism
+    /**
+     * Sorts the methods for cross-JVM determinism and matches each against
+     * the Group chain, returning deduped interceptors and the mapping.
+     */
+    private static MatchResult matchMethods(Method[] methods,
+                                            Group[] groups) {
         Arrays.sort(methods,
                 Comparator.comparing(Method::getName)
                         .thenComparing(m -> Arrays.toString(
                                 m.getParameterTypes())));
 
-        // 3. Match each method against the Group chain
         int[] indices = new int[methods.length];
         List<Interceptor> interceptorList = new ArrayList<>();
         Map<Interceptor, Integer> interceptorIndex = new IdentityHashMap<>();
@@ -203,7 +220,7 @@ public final class AcceleratedProxy {
      * Generates and loads a proxy class for the given target and parameters.
      * Called by the cache on cache miss.
      */
-    private static Class<?> generateProxyClass(Class<?> target,
+    private static Class<?> generateProxyClass(Class<?> key,
                                                CacheParams params) {
         try {
             byte[] bytecode;
@@ -212,27 +229,23 @@ public final class AcceleratedProxy {
             // Dummy array: generators only need .length, not the instances
             Interceptor[] dummy = new Interceptor[interceptorCount];
 
-            if (target.isInterface()) {
-                InterfaceGenerator generator = new InterfaceGenerator(target,
-                        dummy, mapping);
+            if (params.interfaces() != null) {
+                InterfaceGenerator generator = new InterfaceGenerator(
+                        params.interfaces(), dummy, mapping);
                 bytecode = generator.generate();
-            } else {
-                ClassGenerator generator = new ClassGenerator(target,
-                        dummy, mapping, params.constructorArgs());
-                bytecode = generator.generate();
-            }
-
-            if (target.isInterface()) {
                 return java.lang.invoke.MethodHandles.lookup()
                         .defineHiddenClass(bytecode, true).lookupClass();
             } else {
+                Class<?> target = params.targetClass();
+                ClassGenerator generator = new ClassGenerator(target,
+                        dummy, mapping, params.constructorArgs());
+                bytecode = generator.generate();
                 return LookupManager.getLookup(target)
                         .defineHiddenClass(bytecode, true).lookupClass();
             }
         } catch (Exception e) {
             throw new RuntimeException(
-                    "Failed to generate proxy class for "
-                            + target.getName(), e);
+                    "Failed to generate proxy class", e);
         }
     }
 
@@ -313,11 +326,15 @@ public final class AcceleratedProxy {
             constructorArgs = new Object[0];
         }
 
+        if (target.isInterface()) {
+            return (T) proxyInterfaces(new Class<?>[]{target}, groups);
+        }
+
         // 1. Match methods to interceptors
         MatchResult matchResult = matchMethods(target, groups);
 
         // 2. Cache lookup (keyed on mapping shape, not instances)
-        CacheParams params = new CacheParams(target,
+        CacheParams params = new CacheParams(target, null,
                 matchResult.mapping(), constructorArgs);
 
         try {
@@ -349,6 +366,51 @@ public final class AcceleratedProxy {
         } catch (Exception e) {
             throw new RuntimeException(
                     "Failed to create proxy for " + target.getName(), e);
+        }
+    }
+
+    /**
+     * Creates a proxy implementing all given interfaces. Methods with the
+     * same signature and return type are merged; ambiguous conflicts throw
+     * {@link IllegalArgumentException} (see {@link InterfaceMethodResolver}).
+     *
+     * @param interfaces the interfaces to implement
+     * @param groups     one or more Group bindings
+     * @return a proxy instance implementing every interface
+     */
+    private static Object proxyInterfaces(Class<?>[] interfaces,
+                                          Group... groups) {
+        if (interfaces == null || interfaces.length == 0) {
+            throw new IllegalArgumentException(
+                    "interfaces must not be null or empty");
+        }
+        if (groups == null || groups.length == 0) {
+            throw new IllegalArgumentException(
+                    "groups must not be null or empty");
+        }
+        for (Class<?> itf : interfaces) {
+            if (itf == null || !itf.isInterface()) {
+                throw new IllegalArgumentException(
+                        "interfaces must contain only interfaces");
+            }
+        }
+        Class<?>[] copy = interfaces.clone();
+        MatchResult matchResult = matchMethods(copy, groups);
+        CacheParams params = new CacheParams(null, copy,
+                matchResult.mapping(), new Object[0]);
+        try {
+            Class<?> proxyClass = PROXY_CLASS_CACHE.get(copy[0], params);
+            int interceptorCount = matchResult.interceptors().length;
+            Object[] initArgs = new Object[interceptorCount];
+            System.arraycopy(matchResult.interceptors(), 0, initArgs, 0,
+                    interceptorCount);
+            Class<?>[] ctorArgTypes = new Class<?>[interceptorCount];
+            Arrays.fill(ctorArgTypes, Interceptor.class);
+            Constructor<?> ctor = proxyClass.getConstructor(ctorArgTypes);
+            return ctor.newInstance((Object[]) initArgs);
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Failed to create proxy for interfaces", e);
         }
     }
 }
