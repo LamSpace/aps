@@ -2,7 +2,7 @@
 
 [中文版](benchmark-results_cn.md)
 
-Date: 2026-08-09 (updated) | JDK: Java 25.0.3 (Oracle HotSpot) | JMH: 1.37  
+Date: 2026-08-14 (updated) | JDK: Java 25.0.3 (Oracle HotSpot) | JMH: 1.37  
 JVM: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED`
 
 All scores in ns/op (lower is better). Best per row **bolded**.
@@ -74,6 +74,17 @@ Interface proxy dispatch was unchanged in this refactor. Target: `RetOps`, `Echo
 | Arg modify     | 5.30     | **5.29**   | ≈ Parity       |
 
 **Key takeaway:** APS and Java Proxy are at near-parity across all interface scenarios. Neither involves reflection or MethodHandle — both call the interceptor directly. The ~0.25ns gap in lightweight scenarios comes from JIT intrinsics for `java.lang.reflect.Proxy`.
+
+## Interface Default Method Invocation (Phase 3) — New
+
+Compares APS `invokeSuper` default-method passthrough against the JDK `InvocationHandler.invokeDefault` reference. Target: `DefaultGreeter` (directly-declared `greet()` and inherited `inheritedGreet()`).
+
+| Scenario          | APS      | Java Proxy | Best   |
+|-------------------|----------|------------|--------|
+| default (`greet`) | **3.08** | 21.80      | **APS** |
+| inherited default | **3.67** | 22.10      | **APS** |
+
+**Key takeaway:** APS invokes interface default methods ~7× faster than JDK `Proxy.invokeDefault`. Directly-declared and inherited defaults share one `INVOKESPECIAL` fast path (inherited costs ~0.6 ns/op extra for interface-method resolution) with no `MethodHandle` overhead.
 
 ## Multi-Interceptor (Phase 2) — New
 

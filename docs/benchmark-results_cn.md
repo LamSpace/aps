@@ -2,7 +2,7 @@
 
 [English](benchmark-results.md)
 
-日期: 2026-08-09（更新） | JDK: Java 25.0.3 (Oracle HotSpot) | JMH: 1.37  
+日期: 2026-08-14（更新） | JDK: Java 25.0.3 (Oracle HotSpot) | JMH: 1.37  
 JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED`
 
 所有分数单位 ns/op（越低越好）。每行最优结果 **加粗**标注。
@@ -74,6 +74,17 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 | 参数修改       | 5.30     | **5.29**   | ≈ 持平         |
 
 **要点：** APS 与 Java Proxy 在所有接口场景下接近持平。两者都不涉及反射或 MethodHandle——都直接调用拦截器。轻量级场景中约 0.25ns 的差距来自 HotSpot 对 `java.lang.reflect.Proxy` 的 JIT 内在优化。
+
+## 接口默认方法调用（第三阶段）— 新增
+
+对比 APS `invokeSuper` 默认方法透传与 JDK `InvocationHandler.invokeDefault` 参照的性能差异。目标接口：`DefaultGreeter`（直接声明的 `greet()` 与继承的 `inheritedGreet()`）。
+
+| 场景             | APS      | Java Proxy | 最优   |
+|------------------|----------|------------|--------|
+| default（greet） | **3.08** | 21.80      | **APS** |
+| 继承 default     | **3.67** | 22.10      | **APS** |
+
+**要点：** APS 调用接口默认方法比 JDK `Proxy.invokeDefault` 快约 7×。直接声明与继承的默认方法共用同一条 `INVOKESPECIAL` 快路径（继承多出约 0.6 ns/op 用于接口方法解析），全程无 `MethodHandle` 开销。
 
 ## 多拦截器（第二阶段）— 新增
 

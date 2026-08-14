@@ -23,6 +23,7 @@ import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import org.openjdk.jmh.annotations.*;
 
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -862,5 +863,72 @@ public class ProxyBenchmark {
     @Benchmark
     public String mg_iface_single_format(MultiGroupIfaceState s) {
         return s.single.format("p");
+    }
+
+    // ================================================================
+    // Target: Interface default method invocation (Phase 3)
+    // ================================================================
+
+    public interface DefaultParent {
+        default String inheritedGreet() {
+            return "Hello, inherited";
+        }
+    }
+
+    public interface DefaultGreeter extends DefaultParent {
+        String hello(String name);
+
+        default String greet() {
+            return "Hello, World";
+        }
+    }
+
+    @State(Scope.Thread)
+    public static class DefaultMethodState {
+        DefaultGreeter aps;
+        DefaultGreeter javaProxy;
+
+        @Setup
+        public void setup() {
+            aps = AcceleratedProxy.proxy(DefaultGreeter.class,
+                    (obj, method, args) -> {
+                        if (method.isDefault()) {
+                            return AcceleratedProxy.invokeSuper(
+                                    obj, method, args);
+                        }
+                        return null;
+                    });
+
+            javaProxy = (DefaultGreeter) Proxy.newProxyInstance(
+                    DefaultGreeter.class.getClassLoader(),
+                    new Class<?>[]{DefaultGreeter.class},
+                    (proxy, method, args) -> {
+                        if (method.isDefault()) {
+                            return InvocationHandler.invokeDefault(
+                                    proxy, method, args);
+                        }
+                        return null;
+                    });
+        }
+    }
+
+    @Benchmark
+    public String i_default_greet(DefaultMethodState s) {
+        return s.aps.greet();
+    }
+
+    @Benchmark
+    public String i_default_inherited(DefaultMethodState s) {
+        return s.aps.inheritedGreet();
+    }
+
+    @Benchmark
+    public String i_jp_default_greet(DefaultMethodState s) {
+        return s.javaProxy.greet();
+    }
+
+    @Benchmark
+    public String i_jp_default_inherited(DefaultMethodState s) {
+        return s.javaProxy.inheritedGreet();
     }
 }
