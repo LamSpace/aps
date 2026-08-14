@@ -109,6 +109,19 @@ Compares the new Group-based multi-interceptor API against the legacy single-Int
 
 **Key takeaway:** Group API and single-Interceptor API perform identically on interface proxies. The per-Interceptor field access (`_interceptor$N`) in the Group API produces the same bytecode structure as the legacy `_callback` access.
 
+## Multi-Interface Proxy (Phase 3)
+
+`AcceleratedProxy.proxy(Class<?>[], ...)` implements several interfaces in one proxy. The interface path was unified onto `Class<?>[]` (single-interface = the `N == 1` case). No new benchmark rows are added: cross-interface merging/conflict detection run at creation time, and a merged method costs the same as an equivalent single-interface method.
+
+A before/after JMH comparison (`ba7ba8e` → `master`) verified the refactor adds no overhead:
+
+| Path                      | Delta                                    |
+|---------------------------|------------------------------------------|
+| Interface proxy (changed) | ≤ 4.8% (only `i_eightArgs`); rest ≤ 0.7% |
+| Class proxy (unchanged)   | up to ±32% (allocation-heavy methods)    |
+
+The class-proxy path is byte-identical (`MethodDispatcher` untouched, `ClassGenerator` changed only in its `generateDispatch` call site), so its spread is pure run-to-run noise and bounds the measurement floor. Interface-proxy numbers sit well within it — no regression.
+
 ## Summary
 
 APS is the best-performing class proxy — it beats CGLib by 3–7× in all scenarios with actual work, and runs at direct-call speed for passthrough dispatch. For interface proxies, `java.lang.reflect.Proxy` is faster in lightweight scenarios (HotSpot intrinsics); APS reaches parity in string-heavy scenarios (passthrough, arg-modify).

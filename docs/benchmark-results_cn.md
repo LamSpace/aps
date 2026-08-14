@@ -109,6 +109,19 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 
 **要点：** Group API 与单 Interceptor API 在接口代理上性能相同。Group API 中的逐拦截器字段访问（`_interceptor$N`）产生的字节码结构与旧版 `_callback` 访问一致。
 
+## 多接口代理（第三阶段）
+
+`AcceleratedProxy.proxy(Class<?>[], ...)` 在一个代理对象中实现多个接口。接口路径已统一为 `Class<?>[]`（单接口即 N=1 特例）。未新增基准项：跨接口合并/冲突检测在创建期执行，合并后的方法与等量单接口方法开销相同。
+
+前后对照（`ba7ba8e` → `master`）验证该重构无额外开销：
+
+| 路径             | 偏差                                    |
+|------------------|-----------------------------------------|
+| 接口代理（已改） | ≤ 4.8%（仅 `i_eightArgs`）；其余 ≤ 0.7% |
+| 类代理（未改）   | 最高 ±32%（分配密集型方法）             |
+
+类代理路径字节级一致（`MethodDispatcher` 未动，`ClassGenerator` 仅改 `generateDispatch` 调用点），因此其波动纯属单 fork 运行间噪声，界定了测量误差范围。接口代理数据完全落在该范围内——无性能回归。
+
 ## 总结
 
 APS 是同类最优的类代理方案——在所有有实际工作的场景中比 CGLib 快 3–7×，透传调度达到直接调用速度。对于接口代理，`java.lang.reflect.Proxy` 在轻量级场景更快（HotSpot 内在优化）；APS 在字符串密集场景（透传、参数修改）中与之持平。
