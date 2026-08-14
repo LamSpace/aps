@@ -12,7 +12,7 @@
 
 - **零开销父类调度** — hashCode 驱动的 `dispatch()` 开关直接调用 `super.method(args)`；无 MethodHandle、无反射、JIT 可内联
 - **统一 API** — 单一入口 `AcceleratedProxy.proxy(target, interceptor)` 同时支持类和接口
-- **接口代理支持** — 运行时生成接口实现，性能与 `java.lang.reflect.Proxy` 接近持平
+- **接口代理支持** — 运行时生成接口实现，无反射
 - **无 ClassLoader 泄漏** — 使用 `Lookup.defineHiddenClass()`，代理类在无引用时可被 GC 回收
 - **一行代码** — `AcceleratedProxy.proxy(MyClass.class, interceptor)` 泛型自动推导，无需手动转型
 - **多拦截器 / 方法分组** — 通过 `Group.of()` 将不同方法族绑定到不同 `Interceptor`，先匹配先胜出，热路径零开销
@@ -98,12 +98,12 @@ JMH 基准测试 | Java 25。每行最优结果 **加粗**标注。
 
 | 场景          | APS      | Java Proxy |
 |---------------|----------|------------|
-| int 返回值    | 1.30     | **1.05**   |
-| String 返回值 | **5.69** | 5.77       |
-| void 返回值   | 1.30     | **1.05**   |
-| 空操作        | 1.31     | **1.05**   |
-| 透传          | **5.69** | 5.77       |
-| 参数修改      | 5.30     | **5.29**   |
+| int 返回值    | 2.58     | **1.03**   |
+| String 返回值 | 6.23     | **5.20**   |
+| void 返回值   | 3.11     | **1.03**   |
+| 空操作        | 1.30     | **1.03**   |
+| 透传          | **4.61** | 4.65       |
+| 参数修改      | 5.41     | **5.41**   |
 
 *单位: ns/op，越低越好。完整报告：[docs/benchmark-results_cn.md](docs/benchmark-results_cn.md)*
 
@@ -264,7 +264,7 @@ Maven Central 发布已列入[路线图](docs/aps-future-roadmap.md)。
 | 异常传播       | 受检异常 → `UndeclaredThrowable` | 受检异常 → `InvocationTarget`    |
 | 构造参数（类） | 支持                             | 不适用（仅接口）                 |
 | 类代理性能     | ~5.69 ns 透传（直接调用级别）    | 不适用（无法代理类）             |
-| 接口代理性能   | 接近持平（~0.25ns 差距）         | 略优（JIT 内在优化）             |
+| 接口代理性能   | 无反射；字符串密集场景持平       | 轻量级场景更快（JIT 内在优化）   |
 | 依赖           | 第三方（APS + ASM）              | JDK 内置                         |
 
 ## 🔄 从 CGLib 迁移

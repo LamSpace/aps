@@ -12,7 +12,7 @@ A high-performance dynamic proxy library for Java, designed as a drop-in replace
 
 - **Zero-overhead super dispatch** — hashCode-driven `dispatch()` switch calls `super.method(args)` directly; no MethodHandle, no reflection, JIT-inlinable
 - **Unified API** — single `AcceleratedProxy.proxy(target, interceptor)` entry point for both classes and interfaces
-- **Interface proxy support** — generates runtime interface implementations at near-parity with `java.lang.reflect.Proxy`
+- **Interface proxy support** — generates runtime interface implementations without reflection
 - **No ClassLoader leaks** — uses `Lookup.defineHiddenClass()` so proxy classes are GC-eligible when no longer referenced
 - **One-line API** — `AcceleratedProxy.proxy(MyClass.class, interceptor)` with generic type inference, no casts needed
 - **Multi-Interceptor / Method Grouping** — bind different `Interceptor` instances to different method families via `Group.of()` with first-match-wins semantics and zero hot-path overhead
@@ -98,12 +98,12 @@ JMH benchmarks on Java 25. Best result per row **bolded**.
 
 | Scenario      | APS      | Java Proxy |
 |---------------|----------|------------|
-| int return    | 1.30     | **1.05**   |
-| String return | **5.69** | 5.77       |
-| void return   | 1.30     | **1.05**   |
-| No-op         | 1.31     | **1.05**   |
-| Passthrough   | **5.69** | 5.77       |
-| Arg modify    | 5.30     | **5.29**   |
+| int return    | 2.58     | **1.03**   |
+| String return | 6.23     | **5.20**   |
+| void return   | 3.11     | **1.03**   |
+| No-op         | 1.30     | **1.03**   |
+| Passthrough   | **4.61** | 4.65       |
+| Arg modify    | 5.41     | **5.41**   |
 
 *ns/op, lower is better. Full results: [docs/benchmark-results.md](docs/benchmark-results.md)*
 
@@ -264,7 +264,7 @@ Maven Central publishing is on the [roadmap](docs/aps-future-roadmap.md).
 | Exception propagation       | Checked → `UndeclaredThrowable`     | Checked → `InvocationTarget`             |
 | Constructor args (classes)  | Yes                                 | N/A (interfaces only)                    |
 | Class proxy performance     | ~5.69 ns passthrough (direct speed) | N/A (cannot proxy classes)               |
-| Interface proxy performance | Near-parity (~0.25ns gap)           | Slight edge (JIT intrinsics)             |
+| Interface proxy performance | No reflection; parity in string-heavy cases | Faster in lightweight scenarios (JIT intrinsics) |
 | Dependencies                | Third-party (APS + ASM)             | Built into JDK                           |
 
 ## 🔄 Migration from CGLib
