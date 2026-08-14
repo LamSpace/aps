@@ -43,7 +43,7 @@ public class ProxyBenchmark {
     // Target: Return-type coverage (2 params, varying return)
     // ================================================================
 
-    interface RetOps {
+    public interface RetOps {
         int intOp(int a, int b);
 
         long longOp(long a, long b);
@@ -317,7 +317,7 @@ public class ProxyBenchmark {
     // Target: Parameter-count coverage
     // ================================================================
 
-    interface ParamCount {
+    public interface ParamCount {
         String zeroArg();
 
         String oneArg(String a);
@@ -502,7 +502,7 @@ public class ProxyBenchmark {
     // Target: Standard scenarios (no-op, passthrough, arg-modify)
     // ================================================================
 
-    interface Echo {
+    public interface Echo {
         String echo(String in);
     }
 

@@ -57,23 +57,23 @@ No-op, passthrough, and argument modification. Target: `EchoImpl`.
 
 ## Interface Proxy
 
-Interface proxy dispatch was unchanged in this refactor. Target: `RetOps`, `Echo`, `ParamCount`.
+Interface proxies compare APS against `java.lang.reflect.Proxy` (`Proxy` + `InvocationHandler`) across return types, parameter counts, and standard scenarios. Target: `RetOps`, `ParamCount`, `Echo`.
 
 | Scenario       | APS      | Java Proxy | Best           |
 |----------------|----------|------------|----------------|
-| int return     | 1.30     | **1.05**   | **Java Proxy** |
-| String return  | **5.69** | 5.77       | **APS**        |
-| void return    | 1.30     | **1.05**   | **Java Proxy** |
-| boolean return | 1.31     | **1.07**   | **Java Proxy** |
-| Integer return | 1.38     | **1.28**   | ≈ Parity       |
-| 0 args         | 1.32     | **1.07**   | **Java Proxy** |
-| 2 args         | 1.31     | **1.05**   | **Java Proxy** |
-| 8 args         | 80.50    | **80.09**  | ≈ Parity       |
-| No-op          | 1.31     | **1.05**   | **Java Proxy** |
-| Passthrough    | **5.69** | 5.77       | **APS**        |
-| Arg modify     | 5.30     | **5.29**   | ≈ Parity       |
+| int return     | 2.58     | **1.03**   | **Java Proxy** |
+| String return  | 6.23     | **5.20**   | **Java Proxy** |
+| void return    | 3.11     | **1.03**   | **Java Proxy** |
+| boolean return | 5.63     | **3.84**   | **Java Proxy** |
+| Integer return | 3.63     | **1.03**   | **Java Proxy** |
+| 0 args         | 2.08     | **1.03**   | **Java Proxy** |
+| 2 args         | 4.63     | **3.90**   | **Java Proxy** |
+| 8 args         | 14.54    | **13.17**  | **Java Proxy** |
+| No-op          | 1.30     | **1.03**   | **Java Proxy** |
+| Passthrough    | **4.61** | 4.65       | **APS**        |
+| Arg modify     | 5.41     | **5.41**   | ≈ Parity       |
 
-**Key takeaway:** APS and Java Proxy are at near-parity across all interface scenarios. Neither involves reflection or MethodHandle — both call the interceptor directly. The ~0.25ns gap in lightweight scenarios comes from JIT intrinsics for `java.lang.reflect.Proxy`.
+**Key takeaway:** `java.lang.reflect.Proxy` outperforms APS in lightweight interface scenarios (no-op, primitive/wrapper returns) by ~0.3–2.6 ns/op, driven by HotSpot intrinsics for the JDK proxy classes. APS reaches parity in string-heavy scenarios (passthrough, arg-modify) where the interceptor work dominates the dispatch cost.
 
 ## Interface Default Method Invocation (Phase 3) — New
 
@@ -111,6 +111,6 @@ Compares the new Group-based multi-interceptor API against the legacy single-Int
 
 ## Summary
 
-APS is the best-performing class proxy — it beats CGLib by 3–7× in all scenarios with actual work, and runs at direct-call speed for passthrough dispatch. For interface proxies, APS is near-parity with `java.lang.reflect.Proxy` with a gap (~0.02–0.30ns) imperceptible in any real application.
+APS is the best-performing class proxy — it beats CGLib by 3–7× in all scenarios with actual work, and runs at direct-call speed for passthrough dispatch. For interface proxies, `java.lang.reflect.Proxy` is faster in lightweight scenarios (HotSpot intrinsics); APS reaches parity in string-heavy scenarios (passthrough, arg-modify).
 
 Raw JMH output: `java --enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED -cp <classpath> io.github.lamspace.benchmark.ProxyBenchmark`
