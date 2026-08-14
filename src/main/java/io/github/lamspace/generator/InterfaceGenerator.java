@@ -113,7 +113,7 @@ public class InterfaceGenerator {
                     hashMap.get(entry.method())));
         }
         DispatchGenerator.generateDispatch(cw, generatedInternal,
-                "java/lang/Object", infos, false);
+                "java/lang/Object", targetInternal, infos, false);
 
         // -- <clinit> for Method objects only --
         generateClinit(cw, generatedInternal, entries);
@@ -181,7 +181,7 @@ public class InterfaceGenerator {
             }
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
                     "java/lang/Class",
-                    "getDeclaredMethod",
+                    "getMethod",
                     "(Ljava/lang/String;[Ljava/lang/Class;)"
                             + "Ljava/lang/reflect/Method;",
                     false);

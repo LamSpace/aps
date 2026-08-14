@@ -86,18 +86,23 @@ public final class DispatchGenerator {
     /**
      * Generates the dispatch method bytecode.
      *
-     * @param cw                ClassWriter
-     * @param generatedInternal ASM internal name of the generated class
-     * @param superInternal     ASM internal name of the superclass (target class
-     *                          for class proxies, "java/lang/Object" for interface)
-     * @param infos             per-method metadata with pre-resolved hashes
-     * @param isClassProxy      true = class proxy (direct super calls),
-     *                          false = interface proxy (AbstractMethodError
-     *                          for non-Object methods)
+     * @param cw                     ClassWriter
+     * @param generatedInternal      ASM internal name of the generated class
+     * @param superInternal          ASM internal name of the superclass (target class
+     *                               for class proxies, "java/lang/Object" for interface)
+     * @param interfaceInternalName  ASM internal name of the target interface, or
+     *                               {@code null} for class proxies (owner of the
+     *                               {@code INVOKESPECIAL} for default methods)
+     * @param infos                  per-method metadata with pre-resolved hashes
+     * @param isClassProxy           true = class proxy (direct super calls),
+     *                               false = interface proxy (AbstractMethodError
+     *                               for non-default methods, direct INVOKESPECIAL
+     *                               for default methods)
      */
     static void generateDispatch(ClassWriter cw,
                                  String generatedInternal,
                                  String superInternal,
+                                 String interfaceInternalName,
                                  List<MethodInfo> infos,
                                  boolean isClassProxy) {
         String desc = "(Ljava/lang/reflect/Method;[Ljava/lang/Object;)Ljava/lang/Object;";
@@ -137,6 +142,7 @@ public final class DispatchGenerator {
             // Branch body
             Class<?> declaringClass = method.getDeclaringClass();
             boolean isObjectMethod = declaringClass == Object.class;
+            boolean isDefault = method.isDefault();
 
             if (isClassProxy || isObjectMethod) {
                 // Direct super call: this.super.method(args...)
@@ -165,6 +171,41 @@ public final class DispatchGenerator {
                         false);
 
                 // Box return if needed
+                Class<?> rt = method.getReturnType();
+                if (rt == void.class) {
+                    mv.visitInsn(Opcodes.ACONST_NULL);
+                } else if (rt.isPrimitive()) {
+                    BytecodeUtils.boxPrimitive(mv, rt);
+                }
+                mv.visitInsn(Opcodes.ARETURN);
+            } else if (isDefault) {
+                // Default interface method: invoke the interface's default
+                // implementation directly. Owner is the target interface (a
+                // direct superinterface), so method resolution finds inherited
+                // default methods too.
+                mv.visitVarInsn(Opcodes.ALOAD, 0); // this
+
+                Class<?>[] paramTypes = method.getParameterTypes();
+                int argSlot = 2; // args parameter
+                for (int j = 0; j < paramTypes.length; j++) {
+                    mv.visitVarInsn(Opcodes.ALOAD, argSlot);
+                    BytecodeUtils.pushInt(mv, j);
+                    mv.visitInsn(Opcodes.AALOAD);
+                    Class<?> pt = paramTypes[j];
+                    if (pt.isPrimitive()) {
+                        BytecodeUtils.unboxPrimitive(mv, pt);
+                    } else if (pt != Object.class) {
+                        mv.visitTypeInsn(Opcodes.CHECKCAST,
+                                Type.getInternalName(pt));
+                    }
+                }
+
+                mv.visitMethodInsn(Opcodes.INVOKESPECIAL,
+                        interfaceInternalName,
+                        method.getName(),
+                        Type.getMethodDescriptor(method),
+                        true); // interface owner
+
                 Class<?> rt = method.getReturnType();
                 if (rt == void.class) {
                     mv.visitInsn(Opcodes.ACONST_NULL);

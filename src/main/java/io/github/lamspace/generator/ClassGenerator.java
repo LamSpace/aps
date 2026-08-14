@@ -159,7 +159,7 @@ public class ClassGenerator {
                     hashMap.get(entry.method())));
         }
         DispatchGenerator.generateDispatch(cw, generatedInternal,
-                targetInternal, infos, true);
+                targetInternal, null, infos, true);
 
         // -- <clinit> initializer --
         generateClinit(cw, generatedInternal, entries);
