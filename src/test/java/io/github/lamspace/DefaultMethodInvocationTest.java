@@ -47,6 +47,12 @@ class DefaultMethodInvocationTest {
         String own();
     }
 
+    interface ThrowingDefault {
+        default String boom() {
+            throw new IllegalStateException("boom");
+        }
+    }
+
     @Test
     void invokeSuperOnDirectlyDeclaredDefaultReturnsDefaultImpl() {
         DirectDefault proxy = AcceleratedProxy.proxy(DirectDefault.class,
@@ -93,5 +99,50 @@ class DefaultMethodInvocationTest {
                     return null;
                 });
         assertEquals("Hello, inherited", proxy.inheritedGreet());
+    }
+
+    @Test
+    void invokeSuperOnNonDefaultStillThrows() {
+        DirectDefault proxy = AcceleratedProxy.proxy(DirectDefault.class,
+                (obj, method, args) ->
+                        AcceleratedProxy.invokeSuper(obj, method, args));
+        assertThrows(AbstractMethodError.class, () -> proxy.hello("x"));
+    }
+
+    @Test
+    void interceptorCanReplaceDefault() {
+        DirectDefault proxy = AcceleratedProxy.proxy(DirectDefault.class,
+                (obj, method, args) -> "[overridden]");
+        assertEquals("[overridden]", proxy.greet());
+    }
+
+    @Test
+    void defaultMethodSeesModifiedArguments() {
+        DirectDefault proxy = AcceleratedProxy.proxy(DirectDefault.class,
+                (obj, method, args) -> {
+                    if (method.getName().equals("add")) {
+                        args[0] = (int) args[0] + 10;
+                        return AcceleratedProxy.invokeSuper(obj, method, args);
+                    }
+                    return null;
+                });
+        assertEquals(17, proxy.add(3, 4));
+    }
+
+    @Test
+    void objectMethodsStillDispatchCorrectly() {
+        DirectDefault proxy = AcceleratedProxy.proxy(DirectDefault.class,
+                (obj, method, args) ->
+                        AcceleratedProxy.invokeSuper(obj, method, args));
+        assertNotNull(proxy.toString());
+        assertEquals(proxy.hashCode(), proxy.hashCode());
+    }
+
+    @Test
+    void exceptionFromDefaultMethodPropagates() {
+        ThrowingDefault proxy = AcceleratedProxy.proxy(ThrowingDefault.class,
+                (obj, method, args) ->
+                        AcceleratedProxy.invokeSuper(obj, method, args));
+        assertThrows(IllegalStateException.class, proxy::boom);
     }
 }
