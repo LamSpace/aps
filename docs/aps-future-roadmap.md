@@ -33,17 +33,17 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 
 ## 第三阶段：高级特性
 
-| 顺序 | 优先级 | 事项                   | 说明                                                                  |
-|------|--------|------------------------|-----------------------------------------------------------------------|
-| 1    | P3     | **接口默认方法调用**（已完成） | 在拦截器中调用接口 `default` 方法，`INVOKESPECIAL` 直调默认实现    |
-| 2    | P3     | **多接口代理**         | 一个代理类实现多个接口                                                |
-| 3    | P3     | **注解驱动 API**       | 如 `@Intercept` 标注方法，减少样板代码，声明式方法匹配                |
-| 4    | P3     | **构造器拦截**         | 对象创建时的 hook，类似 CGLib 的 `Enhancer` 构造器回调                |
-| 5    | P3     | **静态方法代理**       | 需生成委托代码 — 静态方法不参与虚方法分派                             |
-| 6    | P3     | **热加载/热替换**      | 运行时重新生成代理类，适合长期运行的框架场景                          |
-| 7    | P3     | **虚拟线程兼容性**     | 验证 APS 代理在虚拟线程上的行为，确认不 pin 载体线程                  |
-| 8    | P3     | **JPMS 强封装模块**    | 处理 `java.base` 等强封装模块中类的代理访问                           |
-| 9    | P3     | **Maven Central 发布** | 让其他项目能通过 Maven/Gradle 依赖引入，GroupId: `io.github.lamspace` |
+| 顺序 | 优先级 | 事项                           | 说明                                                                  |
+|------|--------|--------------------------------|-----------------------------------------------------------------------|
+| 1    | P3     | **接口默认方法调用**（已完成） | 在拦截器中调用接口 `default` 方法，`INVOKESPECIAL` 直调默认实现       |
+| 2    | P3     | **多接口代理**（已完成）       | 一个代理类实现多个接口                                                |
+| 3    | P3     | **注解驱动 API**               | 如 `@Intercept` 标注方法，减少样板代码，声明式方法匹配                |
+| 4    | P3     | **构造器拦截**                 | 对象创建时的 hook，类似 CGLib 的 `Enhancer` 构造器回调                |
+| 5    | P3     | **静态方法代理**               | 需生成委托代码 — 静态方法不参与虚方法分派                             |
+| 6    | P3     | **热加载/热替换**              | 运行时重新生成代理类，适合长期运行的框架场景                          |
+| 7    | P3     | **虚拟线程兼容性**             | 验证 APS 代理在虚拟线程上的行为，确认不 pin 载体线程                  |
+| 8    | P3     | **JPMS 强封装模块**            | 处理 `java.base` 等强封装模块中类的代理访问                           |
+| 9    | P3     | **Maven Central 发布**         | 让其他项目能通过 Maven/Gradle 依赖引入，GroupId: `io.github.lamspace` |
 
 ### 接口默认方法调用（已完成）
 
@@ -51,11 +51,11 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 - 非 `default` 接口方法仍抛 `AbstractMethodError`
 - 附带修复：`<clinit>` 改用 `getMethod` 支持继承方法解析
 
-### 多接口代理
+### 多接口代理（已完成）
 
-- 当前 `InterfaceGenerator` 只接收单个 `interfaceClass`，生成类仅实现该接口 + `DispatchTarget`
-- 需扩展为接收 `Class<?>[]`，生成类的 `implements` 列表包含全部接口，`proxy()` 入口同步支持多接口
-- 需处理跨接口方法冲突：相同签名 + 相同返回类型可合并为一个实现；`default` 方法冲突需明确解析优先级
+- `AcceleratedProxy.proxy(Class<?>[] interfaces, Interceptor)` / `proxy(Class<?>[], Group...)` 生成一个实现全部接口的代理类，返回 `Object`，调用方按需 cast
+- 内部接口路径统一为 `Class<?>[]`，单接口即长度 1 的特例（字节级一致，不影响基准）
+- 冲突规则：相同签名 + 相同返回类型合并；不同返回类型抛 `IllegalArgumentException`；两个 `default` 抛 `IllegalArgumentException`；一个 `default` + 一个抽象合并并调用该 default
 
 ### 注解驱动 API
 

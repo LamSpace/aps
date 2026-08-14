@@ -16,6 +16,7 @@ A high-performance dynamic proxy library for Java, designed as a drop-in replace
 - **No ClassLoader leaks** — uses `Lookup.defineHiddenClass()` so proxy classes are GC-eligible when no longer referenced
 - **One-line API** — `AcceleratedProxy.proxy(MyClass.class, interceptor)` with generic type inference, no casts needed
 - **Multi-Interceptor / Method Grouping** — bind different `Interceptor` instances to different method families via `Group.of()` with first-match-wins semantics and zero hot-path overhead
+- **Multi-interface proxy** — `AcceleratedProxy.proxy(new Class<?>[]{...}, interceptor)` implements several interfaces in one proxy object
 - **Zero-overhead passthrough** — methods not matching any Group call the superclass directly with no interception cost
 - **Constructor arguments** — supports proxying classes without a no-arg constructor
 
@@ -74,6 +75,18 @@ setGreeting("hi");        // [SET] setGreeting
 proxy.
 
 toString();                // passthrough: no interception
+```
+
+### Multi-Interface Proxy
+
+```java
+Object p = AcceleratedProxy.proxy(new Class<?>[]{Greeter.class, Auditable.class},
+        (obj, method, args) -> {
+            System.out.println("calling " + method.getName());
+            return null;
+        });
+Greeter g = (Greeter) p;   // one object, multiple interface views
+Auditable a = (Auditable) p;
 ```
 
 ## 📊 Performance

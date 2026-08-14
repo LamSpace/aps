@@ -16,6 +16,7 @@
 - **无 ClassLoader 泄漏** — 使用 `Lookup.defineHiddenClass()`，代理类在无引用时可被 GC 回收
 - **一行代码** — `AcceleratedProxy.proxy(MyClass.class, interceptor)` 泛型自动推导，无需手动转型
 - **多拦截器 / 方法分组** — 通过 `Group.of()` 将不同方法族绑定到不同 `Interceptor`，先匹配先胜出，热路径零开销
+- **多接口代理** — `AcceleratedProxy.proxy(new Class<?>[]{...}, interceptor)` 在一个代理对象中实现多个接口
 - **零开销透传** — 未匹配任何 Group 的方法直接调用父类，无任何拦截开销
 - **构造参数支持** — 支持代理无默认构造方法的类
 
@@ -74,6 +75,18 @@ setGreeting("hi");        // [SET] setGreeting
 proxy.
 
 toString();                // 透传：不触发拦截
+```
+
+### 多接口代理
+
+```java
+Object p = AcceleratedProxy.proxy(new Class<?>[]{Greeter.class, Auditable.class},
+        (obj, method, args) -> {
+            System.out.println("正在调用 " + method.getName());
+            return null;
+        });
+Greeter g = (Greeter) p;   // 一个对象，多个接口视角
+Auditable a = (Auditable) p;
 ```
 
 ## 📊 性能

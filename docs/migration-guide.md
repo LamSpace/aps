@@ -123,6 +123,31 @@ ServiceImpl proxy = AcceleratedProxy.proxy(ServiceImpl.class,
 | Requires target instance      | Built-in super-call binding                       |
 | `Proxy.newProxyInstance(...)` | `AcceleratedProxy.proxy(Class, Interceptor)`      |
 
+### Multi-interface
+
+`java.lang.reflect.Proxy` supports one handler across several interfaces:
+
+```java
+Object proxy = Proxy.newProxyInstance(
+        loader,
+        new Class<?>[]{A.class, B.class},
+        handler);
+```
+
+APS mirrors this with `AcceleratedProxy.proxy(new Class<?>[]{A.class, B.class}, interceptor)`:
+
+```java
+Object p = AcceleratedProxy.proxy(new Class<?>[]{A.class, B.class},
+        (obj, method, args) -> {
+            System.out.println("before " + method.getName());
+            return null;
+        });
+A a = (A) p;   // one object, multiple interface views
+B b = (B) p;
+```
+
+Methods with the same signature and return type across interfaces are merged; ambiguous conflicts throw `IllegalArgumentException`.
+
 ---
 
 ## Feature Comparison
