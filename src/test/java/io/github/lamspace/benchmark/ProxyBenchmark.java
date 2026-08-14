@@ -931,4 +931,61 @@ public class ProxyBenchmark {
     public String i_jp_default_inherited(DefaultMethodState s) {
         return s.javaProxy.inheritedGreet();
     }
+
+    // ================================================================
+    // Multi-interface proxy: interface count adds no per-call cost
+    // ================================================================
+
+    public interface MultiGreeter {
+        String hello(String name);
+    }
+
+    public interface MultiAuditable {
+        String audit();
+    }
+
+    public interface CombinedGreeter {
+        String hello(String name);
+
+        String audit();
+    }
+
+    @State(Scope.Thread)
+    public static class MultiInterfaceState {
+        CombinedGreeter single;
+        MultiGreeter multiA;
+        MultiAuditable multiB;
+
+        @Setup
+        public void setup() {
+            Interceptor interceptor = (obj, method, args) -> "x";
+            single = AcceleratedProxy.proxy(CombinedGreeter.class,
+                    interceptor);
+            Object multi = AcceleratedProxy.proxy(
+                    new Class<?>[]{MultiGreeter.class, MultiAuditable.class},
+                    interceptor);
+            multiA = (MultiGreeter) multi;
+            multiB = (MultiAuditable) multi;
+        }
+    }
+
+    @Benchmark
+    public String mi_single_hello(MultiInterfaceState s) {
+        return s.single.hello("x");
+    }
+
+    @Benchmark
+    public String mi_multi_hello(MultiInterfaceState s) {
+        return s.multiA.hello("x");
+    }
+
+    @Benchmark
+    public String mi_single_audit(MultiInterfaceState s) {
+        return s.single.audit();
+    }
+
+    @Benchmark
+    public String mi_multi_audit(MultiInterfaceState s) {
+        return s.multiB.audit();
+    }
 }

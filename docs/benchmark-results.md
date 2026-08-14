@@ -111,9 +111,18 @@ Compares the new Group-based multi-interceptor API against the legacy single-Int
 
 ## Multi-Interface Proxy (Phase 3)
 
-`AcceleratedProxy.proxy(Class<?>[], ...)` implements several interfaces in one proxy. The interface path was unified onto `Class<?>[]` (single-interface = the `N == 1` case). No new benchmark rows are added: cross-interface merging/conflict detection run at creation time, and a merged method costs the same as an equivalent single-interface method.
+`AcceleratedProxy.proxy(Class<?>[], ...)` implements several interfaces in one proxy. The interface path was unified onto `Class<?>[]` (single-interface = the `N == 1` case); cross-interface merging/conflict detection run at creation time, outside the measured loop.
 
-A before/after JMH comparison (`ba7ba8e` → `master`) verified the refactor adds no overhead:
+Multi-interface proxy vs an equivalent single-interface proxy (same method count, minimal interceptor):
+
+| Scenario        | Single-interface | Multi-interface | Delta |
+|-----------------|------------------|-----------------|-------|
+| `hello(String)` | 1.292 ns         | 1.296 ns        | +0.3% |
+| `audit()`       | 1.284 ns         | 1.316 ns        | +2.5% |
+
+Interface count adds no per-call cost — a multi-interface proxy's method body is byte-identical to the single-interface equivalent.
+
+A before/after JMH comparison (`ba7ba8e` → `master`) also verified the refactor adds no overhead to existing benchmarks:
 
 | Path                      | Delta                                    |
 |---------------------------|------------------------------------------|
