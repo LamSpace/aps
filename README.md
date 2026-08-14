@@ -263,7 +263,7 @@ Maven Central publishing is on the [roadmap](docs/aps-future-roadmap.md).
 | Selective interception      | `Group.of()` per method family      | All-or-nothing                           |
 | Exception propagation       | Checked → `UndeclaredThrowable`     | Checked → `InvocationTarget`             |
 | Constructor args (classes)  | Yes                                 | N/A (interfaces only)                    |
-| Class proxy performance     | ~5.69 ns passthrough (direct speed) | N/A (cannot proxy classes)               |
+| Class proxy performance     | ~4.76 ns passthrough (direct speed) | N/A (cannot proxy classes)               |
 | Interface proxy performance | No reflection; parity in string-heavy cases | Faster in lightweight scenarios (JIT intrinsics) |
 | Dependencies                | Third-party (APS + ASM)             | Built into JDK                           |
 
