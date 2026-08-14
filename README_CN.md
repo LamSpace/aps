@@ -269,6 +269,7 @@ Maven Central 发布已列入[路线图](docs/aps-future-roadmap.md)。
 | 特性           | APS                              | `java.lang.reflect.Proxy`        |
 |----------------|----------------------------------|----------------------------------|
 | 代理目标       | 类**和**接口                     | 仅接口                           |
+| 多接口         | 支持（`Class<?>[]`）             | 支持（`Class<?>[]`）             |
 | 调度机制       | hashCode 开关 + `INVOKESPECIAL`  | 生成字节码 + `InvocationHandler` |
 | 父类调用开销   | 零（直接 `super.method()`）      | 不适用（仅接口）                 |
 | 类加载         | `defineHiddenClass()`（GC 安全） | `defineClass` + 代理缓存         |
