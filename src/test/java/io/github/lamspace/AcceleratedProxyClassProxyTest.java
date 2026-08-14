@@ -253,7 +253,7 @@ class AcceleratedProxyClassProxyTest {
     @Test
     void shouldRejectNullTarget() {
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.proxy(null, (obj, method, args) -> null));
+                () -> AcceleratedProxy.proxy((Class<?>) null, (obj, method, args) -> null));
     }
 
     @Test

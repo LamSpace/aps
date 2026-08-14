@@ -300,6 +300,39 @@ public final class AcceleratedProxy {
     }
 
     /**
+     * Creates a proxy implementing all given interfaces. The returned object
+     * can be cast to each interface. Methods with the same signature and
+     * return type across interfaces are merged into a single implementation.
+     *
+     * @param interfaces  the interfaces to implement; must be non-null,
+     *                    non-empty, and contain only interfaces
+     * @param interceptor invoked for every method call on the proxy
+     * @return a proxy instance implementing every interface
+     * @throws IllegalArgumentException if interfaces is invalid or a
+     *                                  cross-interface method conflict is found
+     */
+    public static Object proxy(Class<?>[] interfaces,
+                               Interceptor interceptor) {
+        if (interceptor == null) {
+            throw new IllegalArgumentException(
+                    "interceptor must not be null");
+        }
+        return proxyInterfaces(interfaces, Group.otherwise(interceptor));
+    }
+
+    /**
+     * Creates a proxy implementing all given interfaces with method-group-based
+     * interceptor assignment.
+     *
+     * @param interfaces the interfaces to implement
+     * @param groups     one or more Group bindings
+     * @return a proxy instance implementing every interface
+     */
+    public static Object proxy(Class<?>[] interfaces, Group... groups) {
+        return proxyInterfaces(interfaces, groups);
+    }
+
+    /**
      * Creates a proxy with method-group-based interceptor assignment
      * and constructor arguments (for class proxies only).
      *
