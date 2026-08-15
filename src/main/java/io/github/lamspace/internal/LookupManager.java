@@ -20,9 +20,15 @@ import java.lang.invoke.MethodHandles;
 import java.util.logging.Logger;
 
 /**
- * Obtains a {@link MethodHandles.Lookup} with the highest available privilege
- * for a given target class. Tries full private access first; degrades
- * gracefully to a regular lookup if the module system denies it.
+ * Obtains a {@link MethodHandles.Lookup} with private access to the given
+ * target class.
+ *
+ * <p>Attempts {@link MethodHandles#privateLookupIn(Class, MethodHandles.Lookup)}
+ * to obtain full private access. If the target class is in a strongly
+ * encapsulated module whose package is not open, an
+ * {@link IllegalArgumentException} is thrown with an actionable
+ * {@code --add-opens} hint. Primitive and array types (rejected by
+ * {@code privateLookupIn}) fall back to a public lookup.
  */
 public final class LookupManager {
 
@@ -34,26 +40,35 @@ public final class LookupManager {
     }
 
     /**
-     * Returns a Lookup with the maximum available access for {@code targetClass}.
+     * Returns a Lookup with private access to {@code targetClass}.
      * <p>
      * Attempts {@link MethodHandles#privateLookupIn(Class, MethodHandles.Lookup)}
-     * first (full private access). If the target module is not open, falls back
-     * to a regular {@link MethodHandles#lookup() public Lookup}.
+     * to obtain full private access. If the target class is in a strongly
+     * encapsulated module whose package is not open, an
+     * {@link IllegalArgumentException} is thrown with an actionable
+     * {@code --add-opens} hint. Primitive and array types (rejected by
+     * {@code privateLookupIn}) fall back to a public lookup.
      *
      * @param targetClass the class to obtain a Lookup for
-     * @return a Lookup with as much access as the runtime permits
+     * @return a Lookup with private access to the target class
+     * @throws IllegalArgumentException if the target module does not open the
+     *                                  target class's package
      */
     public static MethodHandles.Lookup getLookup(Class<?> targetClass) {
         try {
             return MethodHandles.privateLookupIn(targetClass,
                     MethodHandles.lookup());
         } catch (IllegalAccessException e) {
-            // Module does not open the package — fall back to public access
-            LOGGER.warning(() -> "Module access denied for "
-                    + targetClass.getPackageName()
-                    + "; falling back to public lookup. "
-                    + "Some non-public methods may not be accessible.");
-            return MethodHandles.lookup();
+            String moduleName = targetClass.getModule().getName();
+            String packageName = targetClass.getPackageName();
+            throw new IllegalArgumentException(
+                    "Cannot access " + targetClass.getName() + " in module "
+                            + moduleName + " (package " + packageName
+                            + "): the package is not open to the unnamed "
+                            + "module. Add --add-opens " + moduleName + "/"
+                            + packageName + "=ALL-UNNAMED to the JVM "
+                            + "arguments, or declare 'opens " + packageName
+                            + ";' in the module's module-info.java.", e);
         } catch (IllegalArgumentException e) {
             // Primitive and array classes are rejected by privateLookupIn —
             // fall back to public lookup for these edge cases

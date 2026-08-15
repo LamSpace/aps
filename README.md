@@ -292,6 +292,26 @@ flowchart TD
 - Java 25+
 - ASM 9.7.1 (declared as compile dependency)
 
+## 🧩 JPMS / Strong Encapsulation
+
+APS class proxies are defined in the target class's package via
+`MethodHandles.privateLookupIn`. When the target class lives in a
+strongly encapsulated module — any package that is not `open`, including
+`java.base` packages such as `java.util` — `privateLookupIn` is denied and
+`proxy()` fails fast with an actionable error:
+
+```text
+Cannot access java.util.ArrayList in module java.base (package java.util):
+the package is not open to the unnamed module. Add --add-opens
+java.base/java.util=ALL-UNNAMED to the JVM arguments, ...
+```
+
+To proxy such a class, add the suggested `--add-opens` JVM argument, or
+declare `opens <package>;` in the target module's `module-info.java`.
+
+Interface proxies use a public lookup and support `public` interfaces only
+(same as `java.lang.reflect.Proxy`).
+
 ## 📦 Installation
 
 ### Build from source

@@ -273,6 +273,10 @@ public final class AcceleratedProxy {
                 return LookupManager.getLookup(target)
                         .defineHiddenClass(bytecode, true).lookupClass();
             }
+        } catch (IllegalArgumentException e) {
+            // Surface actionable errors (e.g. the --add-opens hint) as-is
+            // instead of burying them under a generic wrapper.
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException(
                     "Failed to generate proxy class", e);

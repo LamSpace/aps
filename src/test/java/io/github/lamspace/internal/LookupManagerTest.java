@@ -26,7 +26,8 @@ class LookupManagerTest {
 
     @Test
     void shouldReturnNonNullLookupForStandardClass() {
-        MethodHandles.Lookup lookup = LookupManager.getLookup(String.class);
+        // A classpath class lives in the unnamed module, which is always open.
+        MethodHandles.Lookup lookup = LookupManager.getLookup(LookupManager.class);
         assertNotNull(lookup);
     }
 
@@ -52,5 +53,17 @@ class LookupManagerTest {
         MethodHandles.Lookup lookup =
                 LookupManager.getLookup(LookupManagerTest.class);
         assertNotNull(lookup);
+    }
+
+    @Test
+    void shouldThrowActionableErrorForStronglyEncapsulatedClass() {
+        // java.util is exported but not open, so privateLookupIn is denied.
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> LookupManager.getLookup(java.util.ArrayList.class));
+
+        assertTrue(ex.getMessage().contains("--add-opens"),
+                "message should contain a --add-opens hint: "
+                        + ex.getMessage());
     }
 }

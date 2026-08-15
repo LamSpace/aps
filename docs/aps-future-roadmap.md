@@ -40,10 +40,11 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 | 3    | P3     | **注解驱动 API**（已完成）     | 如 `@Intercept` 标注方法，减少样板代码，声明式方法匹配                |
 | 4    | P3     | **构造器拦截**（已完成）       | 对象创建时的 hook，类似 CGLib 的 `Enhancer` 构造器回调                |
 | 5    | P3     | **静态方法代理**（已完成）     | 需生成委托代码 — 静态方法不参与虚方法分派                             |
-| 6    | P3     | **热加载/热替换**（部分完成）  | 类热重载（`evict`/`evictClassLoader`）+ 拦截器热替换（`rebind`）；跨 ClassLoader 热部署待 item 8 |
+| 6    | P3     | **热加载/热替换**（部分完成）  | 类热重载（`evict`/`evictClassLoader`）+ 拦截器热替换（`rebind`）；跨 ClassLoader 热部署（独立待办） |
 | 7    | P3     | **虚拟线程兼容性**（已完成）   | 验证 APS 代理在虚拟线程上的行为，确认不 pin 载体线程                  |
-| 8    | P3     | **JPMS 强封装模块**            | 处理 `java.base` 等强封装模块中类的代理访问                           |
+| 8    | P3     | **JPMS 强封装模块**（已完成）            | 处理 `java.base` 等强封装模块中类的代理访问                           |
 | 9    | P3     | **Maven Central 发布**         | 让其他项目能通过 Maven/Gradle 依赖引入，GroupId: `io.github.lamspace` |
+| 10   | P3     | **非 public 接口代理**         | 接口代理对首个接口走 `privateLookupIn`，支持代理包级私有的非 public 接口 |
 
 ### 接口默认方法调用（已完成）
 
@@ -120,17 +121,25 @@ Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MetricsInterceptor
 - 静态方法代理拦截器内的 `method.invoke(null, args)` 反射冷调用（约前 15 次）走 native accessor 会 pin，inflate 成生成 accessor 后消失——已知限制，非热路径
 - 验证：`VirtualThreadCompatibilityTest`（虚拟线程并发正确性 + JFR 零 pin 断言 + 虚拟线程内建代理）；手动诊断可用 `-Djdk.tracePinnedThreads=full`
 
-### JPMS 强封装模块
+### JPMS 强封装模块（已完成）
 
-- 接口代理用 `MethodHandles.lookup()`、类代理用 `LookupManager.getLookup(target)` 定义隐藏类，强封装模块（如 `java.base` 内部包）下可能抛 `IllegalAccessException`
-- 隐藏类定义在与 Lookup 相同的包/模块中，访问强封装模块需该模块 `open` 或取得 `MethodHandles.privateLookupIn(targetClass, lookup)`
-- 需明确策略：自动尝试 `privateLookupIn`，失败时给出可操作的报错（提示 `--add-opens`）
+- 类代理经 `LookupManager.getLookup(target)` 获取 lookup：优先 `MethodHandles.privateLookupIn`，成功即拿到目标类包内的私有访问
+- 目标类位于强封装模块（包未 `open`，含 `java.base`/`java.util` 等 JDK 模块）时，`privateLookupIn` 抛 `IllegalAccessException`，改为**快速失败**：抛 `IllegalArgumentException`，消息给出可操作的 `--add-opens <module>/<package>=ALL-UNNAMED` 提示（或 `opens` 声明）
+- 原始类型/数组仍降级到公共 lookup（非模块访问问题，且非合法代理目标）
+- 接口代理仍用 `MethodHandles.lookup()`，仅支持 public 接口（与 `java.lang.reflect.Proxy` 一致）；非 public 接口支持见 item 10
+- 附带：`generateProxyClass` 对 `IllegalArgumentException` 原样重抛，避免把可操作报错埋在 `Failed to generate proxy class` 下
 
 ### Maven Central 发布
 
 - GroupId: `io.github.lamspace`，ArtifactId: `aps`
 - 版本: 发布时升级至 `1.0.0`
 - 需要：Sonatype OSSRH 账号、GPG 签名、发布流水线
+
+### 非 public 接口代理
+
+- 当前接口代理用 `MethodHandles.lookup()` 定义隐藏类，隐藏类落在 `io.github.lamspace` 包，只能实现 public 接口
+- 计划：接口代理对首个接口也走 `LookupManager.getLookup`，把隐藏类定义在接口所在包，从而支持包级私有的非 public 接口
+- 待完善：多接口跨包时的冲突规则、缓存键语义
 
 ---
 

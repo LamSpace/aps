@@ -290,6 +290,23 @@ flowchart TD
 - Java 25+
 - ASM 9.7.1（编译依赖）
 
+## 🧩 JPMS / 强封装模块
+
+类代理通过 `MethodHandles.privateLookupIn` 将隐藏类定义在目标类所在包内。
+当目标类位于强封装模块（任何未 `open` 的包，含 `java.util` 等 `java.base` 包）时，
+`privateLookupIn` 会被拒绝，`proxy()` 会快速失败并给出可操作报错：
+
+```text
+Cannot access java.util.ArrayList in module java.base (package java.util):
+the package is not open to the unnamed module. Add --add-opens
+java.base/java.util=ALL-UNNAMED to the JVM arguments, ...
+```
+
+要代理此类，可加上提示的 `--add-opens` JVM 参数，或在目标模块的
+`module-info.java` 中声明 `opens <package>;`。
+
+接口代理使用公共 lookup，仅支持 public 接口（与 `java.lang.reflect.Proxy` 一致）。
+
 ## 📦 安装
 
 ### 源码构建
