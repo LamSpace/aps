@@ -1,6 +1,6 @@
 # Annotation-Driven API Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Add a declarative, annotation-driven API (`@Intercept` + `@Around` + `AcceleratedProxy.intercept`) that compiles down to the existing `Group`/`Interceptor` pipeline.
 
@@ -32,7 +32,7 @@
 - Consumes: nothing.
 - Produces: `@io.github.lamspace.Intercept` (type-level, RUNTIME), `@io.github.lamspace.Around` (method-level, RUNTIME) with elements `String value() default ""`, `String[] glob() default {}`, `String[] regex() default {}`, `Class<? extends Annotation>[] annotatedWith() default {}`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `src/test/java/io/github/lamspace/AnnotationDrivenApiTest.java` (with the license header):
 
@@ -77,12 +77,12 @@ class AnnotationDrivenApiTest {
 }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn -s /home/lam/repo/settings.xml test -Dtest=AnnotationDrivenApiTest`
 Expected: compilation fails — `Around` and `Intercept` do not exist.
 
-- [ ] **Step 3: Write the annotations**
+- [x] **Step 3: Write the annotations**
 
 Create `src/main/java/io/github/lamspace/Intercept.java` (license header first):
 
@@ -150,12 +150,12 @@ public @interface Around {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `mvn -s /home/lam/repo/settings.xml test -Dtest=AnnotationDrivenApiTest`
 Expected: PASS (2 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/main/java/io/github/lamspace/Intercept.java \
@@ -176,7 +176,7 @@ git commit -m "feat: add @Intercept and @Around annotations"
 - Consumes: `@Intercept`, `@Around` (Task 1); existing `Group`, `MethodPredicate`, `Interceptor`, `proxy(Class<T>, Group...)`, `LookupManager.getLookup`.
 - Produces: `public static <T> T intercept(Class<T> target, Object interceptor)`; private helpers `resolveAnnotationGroups`, `validateAroundMethod`, `toPredicate`, `buildGlobs`, `matchesAnyGlob`, `globMatches`, `toInterceptor`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `AnnotationDrivenApiTest.java` (add `import java.lang.reflect.Method;` and `import java.util.concurrent.atomic.AtomicReference;` to the import block):
 
@@ -213,12 +213,12 @@ Append to `AnnotationDrivenApiTest.java` (add `import java.lang.reflect.Method;`
     }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn -s /home/lam/repo/settings.xml test -Dtest=AnnotationDrivenApiTest`
 Expected: compilation fails — `AcceleratedProxy.intercept` does not exist.
 
-- [ ] **Step 3: Implement `intercept()` and helpers**
+- [x] **Step 3: Implement `intercept()` and helpers**
 
 In `AcceleratedProxy.java`, add these imports to the import block (keep existing imports intact; `LookupManager` is already imported):
 
@@ -383,17 +383,17 @@ Add the following methods immediately before the final closing brace of the clas
     }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `mvn -s /home/lam/repo/settings.xml test -Dtest=AnnotationDrivenApiTest`
 Expected: PASS (3 tests).
 
-- [ ] **Step 5: Run the full suite to check for regressions**
+- [x] **Step 5: Run the full suite to check for regressions**
 
 Run: `mvn -s /home/lam/repo/settings.xml test`
 Expected: BUILD SUCCESS; all existing tests still green.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/main/java/io/github/lamspace/AcceleratedProxy.java \
@@ -413,7 +413,7 @@ git commit -m "feat: add annotation-driven intercept() with glob matching"
 - Consumes: `toPredicate`, `buildGlobs` (Task 2).
 - Produces: `matchesAnyRegex`, `hasAnyAnnotation`, invalid-regex validation.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `AnnotationDrivenApiTest.java` (add `import java.lang.annotation.*;` and `import java.util.concurrent.atomic.AtomicInteger;`):
 
@@ -544,12 +544,12 @@ Append to `AnnotationDrivenApiTest.java` (add `import java.lang.annotation.*;` a
     }
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `mvn -s /home/lam/repo/settings.xml test -Dtest=AnnotationDrivenApiTest`
 Expected: `annotatedWith`/`regex` tests FAIL — the predicate ignores those dimensions (and the invalid-regex test does not throw).
 
-- [ ] **Step 3: Extend `toPredicate` and add helpers**
+- [x] **Step 3: Extend `toPredicate` and add helpers**
 
 Replace the `toPredicate` method added in Task 2 with:
 
@@ -611,12 +611,12 @@ Add these two helpers next to `matchesAnyGlob`/`globMatches`:
     }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `mvn -s /home/lam/repo/settings.xml test -Dtest=AnnotationDrivenApiTest`
 Expected: PASS (9 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/main/java/io/github/lamspace/AcceleratedProxy.java \
@@ -636,7 +636,7 @@ git commit -m "feat: add regex and annotatedWith dimensions to @Around matching"
 - Consumes: `intercept`, `validateAroundMethod`, `toInterceptor`, `resolveAnnotationGroups` (Tasks 2–3).
 - Produces: nothing new (tests only; fix code only if a test fails).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `AnnotationDrivenApiTest.java` (add `import java.util.concurrent.atomic.AtomicBoolean;`):
 
@@ -761,12 +761,12 @@ Append to `AnnotationDrivenApiTest.java` (add `import java.util.concurrent.atomi
     }
 ```
 
-- [ ] **Step 2: Run test to verify it fails (or passes — see note)**
+- [x] **Step 2: Run test to verify it fails (or passes — see note)**
 
 Run: `mvn -s /home/lam/repo/settings.xml test -Dtest=AnnotationDrivenApiTest`
 Expected: all these should PASS already (validation and adapter were implemented in Tasks 2–3). If any fails, that is a real gap — fix the corresponding private helper in `AcceleratedProxy.java` before proceeding.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/test/java/io/github/lamspace/AnnotationDrivenApiTest.java
@@ -784,7 +784,7 @@ git commit -m "test: cover adapter fidelity and @Around validation"
 - Consumes: `intercept`, `proxy`, `Group`, `invokeSuper` (public API).
 - Produces: nothing new.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `AnnotationDrivenApiTest.java`:
 
@@ -833,12 +833,12 @@ Append to `AnnotationDrivenApiTest.java`:
     }
 ```
 
-- [ ] **Step 2: Run test to verify it fails (or passes — see note)**
+- [x] **Step 2: Run test to verify it fails (or passes — see note)**
 
 Run: `mvn -s /home/lam/repo/settings.xml test -Dtest=AnnotationDrivenApiTest`
 Expected: both should PASS already (equivalence follows from the shared cache key; determinism from the name-sort in `resolveAnnotationGroups`). If either fails, that indicates a real defect in `resolveAnnotationGroups`/`toPredicate` — investigate before proceeding.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/test/java/io/github/lamspace/AnnotationDrivenApiTest.java
@@ -856,7 +856,7 @@ git commit -m "test: verify annotation-driven equivalence and determinism"
 - Consumes: `intercept`, `Group`, `AcceleratedProxy.invokeSuper`, `MultiGroupTarget` (already in `ProxyBenchmark`).
 - Produces: benchmark methods `ann_getGreeting`, `ann_prog_getGreeting`.
 
-- [ ] **Step 1: Add the benchmark state and methods**
+- [x] **Step 1: Add the benchmark state and methods**
 
 In `ProxyBenchmark.java`, add `import java.lang.reflect.Method;`, `import io.github.lamspace.Around;`, and `import io.github.lamspace.Intercept;` to the import block. Then append this block just before the final closing brace of the class (after the multi-interface state):
 
@@ -901,12 +901,12 @@ In `ProxyBenchmark.java`, add `import java.lang.reflect.Method;`, `import io.git
     }
 ```
 
-- [ ] **Step 2: Compile**
+- [x] **Step 2: Compile**
 
 Run: `mvn -s /home/lam/repo/settings.xml -q test-compile`
 Expected: BUILD SUCCESS (JMH annotation processor generates benchmark metadata).
 
-- [ ] **Step 3: Run the benchmark (smoke)**
+- [x] **Step 3: Run the benchmark (smoke)**
 
 ```bash
 mvn -s /home/lam/repo/settings.xml -q dependency:build-classpath -Dmdep.outputFile=target/cp.txt
@@ -917,7 +917,7 @@ java --enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNA
 
 Expected: two benchmark lines, `ann_getGreeting` and `ann_prog_getGreeting`, both ≈3 ns/op and within noise of each other (the annotation-driven adapter is a `LambdaMetafactory` call site equivalent to the hand-written lambda).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/test/java/io/github/lamspace/benchmark/ProxyBenchmark.java
@@ -937,7 +937,7 @@ git commit -m "bench: add annotation-driven vs programmatic benchmark"
 - Consumes: the final public API (`@Intercept`, `@Around`, `intercept`).
 - Produces: user-facing docs.
 
-- [ ] **Step 1: Update the roadmap**
+- [x] **Step 1: Update the roadmap**
 
 In `docs/aps-future-roadmap.md`, change the Phase 3 table row 3 from `**注解驱动 API**` to `**注解驱动 API**（已完成）`, and replace the existing `### 注解驱动 API` section (the one with the `@Around("get*")` example) with:
 
@@ -963,7 +963,7 @@ Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MetricsInterceptor
 ```
 ```
 
-- [ ] **Step 2: Update README.md**
+- [x] **Step 2: Update README.md**
 
 In `README.md`:
 
@@ -998,7 +998,7 @@ String s = proxy.getGreeting(); // routed through measure()
 - [Annotation-Driven API Design Spec](docs/superpowers/specs/2026-08-15-annotation-driven-api-design.md)
 ```
 
-- [ ] **Step 3: Update README_CN.md**
+- [x] **Step 3: Update README_CN.md**
 
 In `README_CN.md`, mirror Step 2 with Chinese copy:
 
@@ -1033,7 +1033,7 @@ String s = proxy.getGreeting(); // 经由 measure() 路由
 - [注解驱动 API 设计文档](docs/superpowers/specs/2026-08-15-annotation-driven-api-design.md)
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add docs/aps-future-roadmap.md README.md README_CN.md
