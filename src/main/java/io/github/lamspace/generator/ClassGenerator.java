@@ -16,9 +16,11 @@
 
 package io.github.lamspace.generator;
 
+import io.github.lamspace.ConstructorInterceptor;
 import io.github.lamspace.Interceptor;
 import io.github.lamspace.MethodMapping;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -48,6 +50,7 @@ public class ClassGenerator {
     private final Interceptor[] interceptors;
     private final MethodMapping mapping;
     private final Object[] constructorArgs;
+    private final boolean ctorIntercept;
 
     /**
      * Creates a generator for the given target class with no constructor
@@ -59,7 +62,7 @@ public class ClassGenerator {
      */
     public ClassGenerator(Class<?> targetClass, Interceptor[] interceptors,
                           MethodMapping mapping) {
-        this(targetClass, interceptors, mapping, new Object[0]);
+        this(targetClass, interceptors, mapping, false, new Object[0]);
     }
 
     /**
@@ -74,9 +77,26 @@ public class ClassGenerator {
     public ClassGenerator(Class<?> targetClass, Interceptor[] interceptors,
                           MethodMapping mapping,
                           Object... constructorArgs) {
+        this(targetClass, interceptors, mapping, false, constructorArgs);
+    }
+
+    /**
+     * Creates a generator for the given target class with constructor
+     * interception optionally enabled.
+     *
+     * @param targetClass     the class to proxy
+     * @param interceptors    deduped interceptor instances
+     * @param mapping         method → interceptor index mapping
+     * @param ctorIntercept   whether to emit the constructor interception hook
+     * @param constructorArgs arguments to pass to the superclass constructor
+     */
+    public ClassGenerator(Class<?> targetClass, Interceptor[] interceptors,
+                          MethodMapping mapping, boolean ctorIntercept,
+                          Object... constructorArgs) {
         this.targetClass = targetClass;
         this.interceptors = interceptors.clone();
         this.mapping = mapping;
+        this.ctorIntercept = ctorIntercept;
         this.constructorArgs = (constructorArgs == null)
                 ? new Object[0] : constructorArgs;
     }
@@ -132,6 +152,13 @@ public class ClassGenerator {
                     "_interceptor$" + i, interceptorDesc, null, null);
         }
 
+        // -- Reflected superclass Constructor for the interception hook --
+        if (ctorIntercept) {
+            cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC
+                    | Opcodes.ACC_FINAL, "_ctor$",
+                    "Ljava/lang/reflect/Constructor;", null, null);
+        }
+
         // -- Constructor: stores interceptors, delegates to super() --
         generateConstructor(cw, generatedInternal, targetInternal,
                 interceptorDesc);
@@ -170,13 +197,34 @@ public class ClassGenerator {
 
     private void generateClinit(ClassWriter cw, String generatedInternal,
                                 List<ClinitRegistry.Entry> entries) {
-        if (entries.isEmpty()) {
+        if (entries.isEmpty() && !ctorIntercept) {
             return;
         }
 
         MethodVisitor mv = cw.visitMethod(Opcodes.ACC_STATIC,
                 "<clinit>", "()V", null, null);
         mv.visitCode();
+
+        if (ctorIntercept) {
+            Class<?>[] paramTypes =
+                    findConstructor(targetClass, superParamTypes())
+                            .getParameterTypes();
+            mv.visitLdcInsn(Type.getType(
+                    "L" + Type.getInternalName(targetClass) + ";"));
+            BytecodeUtils.pushInt(mv, paramTypes.length);
+            mv.visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/Class");
+            for (int i = 0; i < paramTypes.length; i++) {
+                mv.visitInsn(Opcodes.DUP);
+                BytecodeUtils.pushInt(mv, i);
+                BytecodeUtils.pushClassConstant(mv, paramTypes[i]);
+                mv.visitInsn(Opcodes.AASTORE);
+            }
+            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Class",
+                    "getDeclaredConstructor",
+                    "([Ljava/lang/Class;)Ljava/lang/reflect/Constructor;", false);
+            mv.visitFieldInsn(Opcodes.PUTSTATIC, generatedInternal, "_ctor$",
+                    "Ljava/lang/reflect/Constructor;");
+        }
 
         for (ClinitRegistry.Entry entry : entries) {
             Method method = entry.method();
@@ -215,17 +263,19 @@ public class ClassGenerator {
                                      String generatedInternal,
                                      String targetInternal,
                                      String interceptorDesc) {
-        // Build descriptor: (LInterceptor;...LInterceptor; [superArgs])V
+        int ctorInterceptorSlot = 1 + interceptors.length;
+        Class<?>[] superParamTypes = superParamTypes();
+
+        // Build descriptor: (LInterceptor;... [LConstructorInterceptor;]
+        //                     [superArgs])V
         StringBuilder desc = new StringBuilder("(");
         for (int i = 0; i < interceptors.length; i++) {
             desc.append(interceptorDesc);
         }
-        Class<?>[] superParamTypes = new Class<?>[constructorArgs.length];
-        for (int i = 0; i < constructorArgs.length; i++) {
-            Object arg = constructorArgs[i];
-            Class<?> argType = (arg != null) ? arg.getClass()
-                    : Object.class;
-            superParamTypes[i] = argType;
+        if (ctorIntercept) {
+            desc.append(Type.getDescriptor(ConstructorInterceptor.class));
+        }
+        for (Class<?> argType : superParamTypes) {
             desc.append(Type.getDescriptor(argType));
         }
         desc.append(")V");
@@ -234,43 +284,47 @@ public class ClassGenerator {
                 desc.toString(), null, null);
         mv.visitCode();
 
-        // super(superArgs...)
-        mv.visitVarInsn(Opcodes.ALOAD, 0);
-        int slot = 1 + interceptors.length;
-        for (int i = 0; i < constructorArgs.length; i++) {
-            Class<?> argType = superParamTypes[i];
-            if (argType == int.class || argType == Integer.class
-                    || argType == boolean.class
-                    || argType == Boolean.class
-                    || argType == byte.class || argType == Byte.class
-                    || argType == char.class
-                    || argType == Character.class
-                    || argType == short.class
-                    || argType == Short.class) {
-                mv.visitVarInsn(Opcodes.ILOAD, slot);
-                slot++;
-            } else if (argType == long.class
-                    || argType == Long.class) {
-                mv.visitVarInsn(Opcodes.LLOAD, slot);
-                slot += 2;
-            } else if (argType == float.class
-                    || argType == Float.class) {
-                mv.visitVarInsn(Opcodes.FLOAD, slot);
-                slot++;
-            } else if (argType == double.class
-                    || argType == Double.class) {
-                mv.visitVarInsn(Opcodes.DLOAD, slot);
-                slot += 2;
-            } else {
-                mv.visitVarInsn(Opcodes.ALOAD, slot);
-                slot++;
+        if (ctorIntercept) {
+            generateInterceptedConstructor(mv, generatedInternal,
+                    targetInternal, ctorInterceptorSlot, superParamTypes);
+        } else {
+            // super(superArgs...)
+            mv.visitVarInsn(Opcodes.ALOAD, 0);
+            int slot = ctorInterceptorSlot;
+            for (Class<?> argType : superParamTypes) {
+                if (argType == int.class || argType == Integer.class
+                        || argType == boolean.class
+                        || argType == Boolean.class
+                        || argType == byte.class || argType == Byte.class
+                        || argType == char.class
+                        || argType == Character.class
+                        || argType == short.class
+                        || argType == Short.class) {
+                    mv.visitVarInsn(Opcodes.ILOAD, slot);
+                    slot++;
+                } else if (argType == long.class
+                        || argType == Long.class) {
+                    mv.visitVarInsn(Opcodes.LLOAD, slot);
+                    slot += 2;
+                } else if (argType == float.class
+                        || argType == Float.class) {
+                    mv.visitVarInsn(Opcodes.FLOAD, slot);
+                    slot++;
+                } else if (argType == double.class
+                        || argType == Double.class) {
+                    mv.visitVarInsn(Opcodes.DLOAD, slot);
+                    slot += 2;
+                } else {
+                    mv.visitVarInsn(Opcodes.ALOAD, slot);
+                    slot++;
+                }
             }
+            mv.visitMethodInsn(Opcodes.INVOKESPECIAL, targetInternal,
+                    "<init>",
+                    Type.getConstructorDescriptor(
+                            findConstructor(targetClass, superParamTypes)),
+                    false);
         }
-
-        String superDesc = Type.getConstructorDescriptor(
-                findConstructor(targetClass, superParamTypes));
-        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, targetInternal,
-                "<init>", superDesc, false);
 
         // this._interceptor$i = arg(i+1)
         for (int i = 0; i < interceptors.length; i++) {
@@ -283,6 +337,111 @@ public class ClassGenerator {
         mv.visitInsn(Opcodes.RETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
+    }
+
+    private void generateInterceptedConstructor(MethodVisitor mv,
+                                               String generatedInternal,
+                                               String targetInternal,
+                                               int ctorInterceptorSlot,
+                                               Class<?>[] superParamTypes) {
+        Constructor<?> ctor = findConstructor(targetClass, superParamTypes);
+        Class<?>[] declaredParams = ctor.getParameterTypes();
+
+        int firstArgSlot = ctorInterceptorSlot + 1;
+        int argsSlot = firstArgSlot + constructorArgs.length;
+        int rewrittenSlot = argsSlot + 1;
+        int exceptionSlot = argsSlot + 2;
+
+        // 1. box the super args (value types are always references) into Object[]
+        BytecodeUtils.pushInt(mv, constructorArgs.length);
+        mv.visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/Object");
+        int slot = firstArgSlot;
+        for (Class<?> vt : superParamTypes) {
+            mv.visitInsn(Opcodes.DUP);
+            BytecodeUtils.pushInt(mv, slot - firstArgSlot);
+            mv.visitVarInsn(BytecodeUtils.loadOpcode(vt), slot);
+            BytecodeUtils.boxPrimitive(mv, vt);
+            mv.visitInsn(Opcodes.AASTORE);
+            slot++;
+        }
+        mv.visitVarInsn(Opcodes.ASTORE, argsSlot);
+
+        // 2. rewritten = ctorInterceptor.before(_ctor$, args), wrapping
+        //    checked exceptions in UndeclaredThrowableException
+        Label tryStart = new Label();
+        Label tryEnd = new Label();
+        Label catchRuntime = new Label();
+        Label catchError = new Label();
+        Label catchChecked = new Label();
+        Label afterBefore = new Label();
+        mv.visitTryCatchBlock(tryStart, tryEnd, catchRuntime,
+                "java/lang/RuntimeException");
+        mv.visitTryCatchBlock(tryStart, tryEnd, catchError, "java/lang/Error");
+        mv.visitTryCatchBlock(tryStart, tryEnd, catchChecked,
+                "java/lang/Exception");
+        mv.visitLabel(tryStart);
+        mv.visitVarInsn(Opcodes.ALOAD, ctorInterceptorSlot);
+        mv.visitFieldInsn(Opcodes.GETSTATIC, generatedInternal, "_ctor$",
+                "Ljava/lang/reflect/Constructor;");
+        mv.visitVarInsn(Opcodes.ALOAD, argsSlot);
+        mv.visitMethodInsn(Opcodes.INVOKEINTERFACE,
+                "io/github/lamspace/ConstructorInterceptor", "before",
+                "(Ljava/lang/reflect/Constructor;[Ljava/lang/Object;)"
+                        + "[Ljava/lang/Object;", true);
+        mv.visitLabel(tryEnd);
+        mv.visitVarInsn(Opcodes.ASTORE, rewrittenSlot);
+        mv.visitJumpInsn(Opcodes.GOTO, afterBefore);
+        mv.visitLabel(catchRuntime);
+        mv.visitInsn(Opcodes.ATHROW);
+        mv.visitLabel(catchError);
+        mv.visitInsn(Opcodes.ATHROW);
+        mv.visitLabel(catchChecked);
+        mv.visitVarInsn(Opcodes.ASTORE, exceptionSlot);
+        mv.visitTypeInsn(Opcodes.NEW,
+                "java/lang/reflect/UndeclaredThrowableException");
+        mv.visitInsn(Opcodes.DUP);
+        mv.visitVarInsn(Opcodes.ALOAD, exceptionSlot);
+        mv.visitMethodInsn(Opcodes.INVOKESPECIAL,
+                "java/lang/reflect/UndeclaredThrowableException",
+                "<init>", "(Ljava/lang/Throwable;)V", false);
+        mv.visitInsn(Opcodes.ATHROW);
+        mv.visitLabel(afterBefore);
+
+        // 3. super(rewritten args, unboxed to the declared parameter types)
+        mv.visitVarInsn(Opcodes.ALOAD, 0);
+        for (int i = 0; i < declaredParams.length; i++) {
+            mv.visitVarInsn(Opcodes.ALOAD, rewrittenSlot);
+            BytecodeUtils.pushInt(mv, i);
+            mv.visitInsn(Opcodes.AALOAD);
+            Class<?> pt = declaredParams[i];
+            if (pt.isPrimitive()) {
+                BytecodeUtils.unboxPrimitive(mv, pt);
+            } else {
+                mv.visitTypeInsn(Opcodes.CHECKCAST, Type.getInternalName(pt));
+            }
+        }
+        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, targetInternal, "<init>",
+                Type.getConstructorDescriptor(ctor), false);
+
+        // 4. ctorInterceptor.after(this, _ctor$, rewritten)
+        mv.visitVarInsn(Opcodes.ALOAD, ctorInterceptorSlot);
+        mv.visitVarInsn(Opcodes.ALOAD, 0);
+        mv.visitFieldInsn(Opcodes.GETSTATIC, generatedInternal, "_ctor$",
+                "Ljava/lang/reflect/Constructor;");
+        mv.visitVarInsn(Opcodes.ALOAD, rewrittenSlot);
+        mv.visitMethodInsn(Opcodes.INVOKEINTERFACE,
+                "io/github/lamspace/ConstructorInterceptor", "after",
+                "(Ljava/lang/Object;Ljava/lang/reflect/Constructor;"
+                        + "[Ljava/lang/Object;)V", true);
+    }
+
+    private Class<?>[] superParamTypes() {
+        Class<?>[] types = new Class<?>[constructorArgs.length];
+        for (int i = 0; i < constructorArgs.length; i++) {
+            Object arg = constructorArgs[i];
+            types[i] = (arg != null) ? arg.getClass() : Object.class;
+        }
+        return types;
     }
 
     private Constructor<?> findConstructor(Class<?> clazz,

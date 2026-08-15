@@ -23,6 +23,7 @@ import io.github.lamspace.internal.LookupManager;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.invoke.LambdaMetafactory;
@@ -94,7 +95,8 @@ public final class AcceleratedProxy {
     private record CacheParams(Class<?> targetClass,
                                Class<?>[] interfaces,
                                MethodMapping mapping,
-                               Object[] constructorArgs) {
+                               Object[] constructorArgs,
+                               boolean ctorIntercept) {
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -102,7 +104,8 @@ public final class AcceleratedProxy {
             return targetClass == other.targetClass
                     && Arrays.equals(interfaces, other.interfaces)
                     && mapping.equals(other.mapping)
-                    && Arrays.equals(constructorArgs, other.constructorArgs);
+                    && Arrays.equals(constructorArgs, other.constructorArgs)
+                    && ctorIntercept == other.ctorIntercept;
         }
 
         @Override
@@ -113,6 +116,7 @@ public final class AcceleratedProxy {
                     ? Arrays.hashCode(interfaces) : 0);
             result = 31 * result + mapping.hashCode();
             result = 31 * result + Arrays.hashCode(constructorArgs);
+            result = 31 * result + Boolean.hashCode(ctorIntercept);
             return result;
         }
     }
@@ -245,7 +249,8 @@ public final class AcceleratedProxy {
             } else {
                 Class<?> target = params.targetClass();
                 ClassGenerator generator = new ClassGenerator(target,
-                        dummy, mapping, params.constructorArgs());
+                        dummy, mapping, params.ctorIntercept(),
+                        params.constructorArgs());
                 bytecode = generator.generate();
                 return LookupManager.getLookup(target)
                         .defineHiddenClass(bytecode, true).lookupClass();
@@ -375,7 +380,7 @@ public final class AcceleratedProxy {
 
         // 2. Cache lookup (keyed on mapping shape, not instances)
         CacheParams params = new CacheParams(target, null,
-                matchResult.mapping(), constructorArgs);
+                matchResult.mapping(), constructorArgs, false);
 
         try {
             Class<?> proxyClass = PROXY_CLASS_CACHE.get(target, params);
@@ -410,6 +415,127 @@ public final class AcceleratedProxy {
     }
 
     /**
+     * Creates a class proxy with a single {@link Interceptor} and a
+     * {@link ConstructorInterceptor} hook.
+     *
+     * @param target          the class to proxy
+     * @param interceptor     the method interceptor; must not be null
+     * @param ctorInterceptor the constructor interceptor; must not be null
+     * @param <T>             the proxy type
+     * @return a proxy instance of type {@code T}
+     */
+    public static <T> T proxy(Class<T> target,
+                              Interceptor interceptor,
+                              ConstructorInterceptor ctorInterceptor) {
+        if (interceptor == null) {
+            throw new IllegalArgumentException(
+                    "interceptor must not be null");
+        }
+        return proxy(target, new Object[0], ctorInterceptor,
+                Group.otherwise(interceptor));
+    }
+
+    /**
+     * Creates a class proxy with method-group-based interceptor assignment
+     * and a {@link ConstructorInterceptor} hook (no superclass constructor
+     * arguments).
+     *
+     * @param target          the class to proxy
+     * @param ctorInterceptor the constructor interceptor; must not be null
+     * @param groups          one or more Group bindings
+     * @param <T>             the proxy type
+     * @return a proxy instance of type {@code T}
+     */
+    public static <T> T proxy(Class<T> target,
+                              ConstructorInterceptor ctorInterceptor,
+                              Group... groups) {
+        return proxy(target, new Object[0], ctorInterceptor, groups);
+    }
+
+    /**
+     * Creates a class proxy with method-group-based interceptor assignment,
+     * constructor arguments, and a {@link ConstructorInterceptor} hook. The
+     * superclass constructor is selected from {@code constructorArgs} types;
+     * {@code ctorInterceptor.before} may rewrite the values.
+     *
+     * @param target          the class to proxy
+     * @param constructorArgs arguments to pass to the superclass constructor
+     * @param ctorInterceptor the constructor interceptor; must not be null
+     * @param groups          one or more Group bindings
+     * @param <T>             the proxy type
+     * @return a proxy instance of type {@code T}
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T proxy(Class<T> target, Object[] constructorArgs,
+                              ConstructorInterceptor ctorInterceptor,
+                              Group... groups) {
+        if (target == null) {
+            throw new IllegalArgumentException("target must not be null");
+        }
+        if (groups == null || groups.length == 0) {
+            throw new IllegalArgumentException(
+                    "groups must not be null or empty");
+        }
+        if (ctorInterceptor == null) {
+            throw new IllegalArgumentException(
+                    "ctorInterceptor must not be null");
+        }
+        if (target.isInterface()) {
+            throw new IllegalArgumentException(
+                    "constructor interception is only supported "
+                            + "for class proxies");
+        }
+        if (constructorArgs == null) {
+            constructorArgs = new Object[0];
+        }
+
+        MatchResult matchResult = matchMethods(target, groups);
+        CacheParams params = new CacheParams(target, null,
+                matchResult.mapping(), constructorArgs, true);
+
+        try {
+            Class<?> proxyClass = PROXY_CLASS_CACHE.get(target, params);
+
+            int interceptorCount = matchResult.interceptors().length;
+            Object[] initArgs = new Object[interceptorCount + 1
+                    + constructorArgs.length];
+            System.arraycopy(matchResult.interceptors(), 0, initArgs, 0,
+                    interceptorCount);
+            initArgs[interceptorCount] = ctorInterceptor;
+            System.arraycopy(constructorArgs, 0, initArgs,
+                    interceptorCount + 1, constructorArgs.length);
+
+            Class<?>[] ctorArgTypes = new Class<?>[initArgs.length];
+            for (int i = 0; i < interceptorCount; i++) {
+                ctorArgTypes[i] = Interceptor.class;
+            }
+            ctorArgTypes[interceptorCount] = ConstructorInterceptor.class;
+            for (int i = 0; i < constructorArgs.length; i++) {
+                Object arg = constructorArgs[i];
+                ctorArgTypes[interceptorCount + 1 + i] =
+                        (arg != null) ? arg.getClass() : Object.class;
+            }
+
+            Constructor<?> ctor = proxyClass.getConstructor(ctorArgTypes);
+            return (T) ctor.newInstance(initArgs);
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            sneakyThrow(cause);
+            throw new RuntimeException("Failed to create proxy for "
+                    + target.getName(), e);
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Failed to create proxy for " + target.getName(), e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <E extends Throwable> void sneakyThrow(Throwable t)
+            throws E {
+        throw (E) t;
+    }
+
+    /**
      * Creates a proxy implementing all given interfaces. Methods with the
      * same signature and return type are merged; ambiguous conflicts throw
      * {@link IllegalArgumentException} (see {@link InterfaceMethodResolver}).
@@ -437,7 +563,7 @@ public final class AcceleratedProxy {
         Class<?>[] copy = interfaces.clone();
         MatchResult matchResult = matchMethods(copy, groups);
         CacheParams params = new CacheParams(null, copy,
-                matchResult.mapping(), new Object[0]);
+                matchResult.mapping(), new Object[0], false);
         try {
             Class<?> proxyClass = PROXY_CLASS_CACHE.get(copy[0], params);
             int interceptorCount = matchResult.interceptors().length;
