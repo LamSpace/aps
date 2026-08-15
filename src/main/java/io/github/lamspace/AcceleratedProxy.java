@@ -19,6 +19,7 @@ package io.github.lamspace;
 import io.github.lamspace.generator.ClassGenerator;
 import io.github.lamspace.generator.InterfaceGenerator;
 import io.github.lamspace.generator.InterfaceMethodResolver;
+import io.github.lamspace.generator.StaticMethodGenerator;
 import io.github.lamspace.internal.LookupManager;
 
 import java.lang.annotation.Annotation;
@@ -33,9 +34,11 @@ import java.lang.invoke.MethodType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -499,6 +502,109 @@ public final class AcceleratedProxy {
             throw new RuntimeException(
                     "Failed to create proxy for " + target.getName(), e);
         }
+    }
+
+    /**
+     * Creates a static-method proxy class. Returns a generated {@code Class}
+     * whose {@code public static} methods shadow the target's public static
+     * methods, routing them through the given interceptor with a {@code null}
+     * proxy. Invoke a shadow via
+     * {@code Class#getMethod(String, Class...).invoke(null, args)} or a
+     * {@code MethodHandle}; static methods are compile-time bound, so
+     * {@code Target.staticMethod()} is not interceptable — only calls made on
+     * the returned class are.
+     *
+     * @param target      the class whose static methods to shadow; must not be
+     *                    null and must not be an interface
+     * @param interceptor the interceptor for every shadowed static method; must
+     *                    not be null
+     * @return a generated proxy class (fresh per call, not cached)
+     */
+    public static Class<?> proxyStatic(Class<?> target,
+                                       Interceptor interceptor) {
+        if (interceptor == null) {
+            throw new IllegalArgumentException(
+                    "interceptor must not be null");
+        }
+        return proxyStatic(target, Group.otherwise(interceptor));
+    }
+
+    /**
+     * Creates a static-method proxy class with method-group-based interceptor
+     * assignment. Static methods are collected from the target and its
+     * superclasses, then matched against the Groups first-match-wins; methods
+     * matching no Group pass through to the original.
+     *
+     * @param target the class whose static methods to shadow; must not be null
+     *               and must not be an interface
+     * @param groups one or more Group bindings; must not be null or empty
+     * @return a generated proxy class (fresh per call, not cached)
+     */
+    public static Class<?> proxyStatic(Class<?> target, Group... groups) {
+        if (target == null) {
+            throw new IllegalArgumentException("target must not be null");
+        }
+        if (groups == null || groups.length == 0) {
+            throw new IllegalArgumentException(
+                    "groups must not be null or empty");
+        }
+        if (target.isInterface()) {
+            throw new IllegalArgumentException(
+                    "static proxy requires a class, not an interface");
+        }
+
+        Method[] methods = collectStaticMethods(target);
+        MatchResult matchResult = matchMethods(methods, groups);
+
+        try {
+            StaticMethodGenerator generator = new StaticMethodGenerator(
+                    methods, matchResult.interceptors(),
+                    matchResult.mapping());
+            byte[] bytecode = generator.generate();
+            Class<?> proxyClass = MethodHandles.lookup()
+                    .defineHiddenClass(bytecode, true).lookupClass();
+
+            Method bind = proxyClass.getMethod("__bindStatics",
+                    Interceptor[].class);
+            bind.invoke(null, (Object) matchResult.interceptors());
+            return proxyClass;
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Failed to create static proxy for " + target.getName(),
+                    e);
+        }
+    }
+
+    /**
+     * Collects the shadowable static methods of {@code target} and its
+     * superclasses (up to but excluding {@code Object}): public, non-final,
+     * static methods, deduplicated subclass-first by {@code name + parameter
+     * types}, then stable-sorted to match {@link #matchMethods}.
+     */
+    private static Method[] collectStaticMethods(Class<?> target) {
+        List<Method> collected = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (Class<?> c = target; c != null && c != Object.class;
+             c = c.getSuperclass()) {
+            for (Method m : c.getDeclaredMethods()) {
+                int mods = m.getModifiers();
+                if (!Modifier.isStatic(mods) || !Modifier.isPublic(mods)
+                        || Modifier.isFinal(mods)) {
+                    continue;
+                }
+                String key = m.getName()
+                        + Arrays.toString(m.getParameterTypes());
+                if (seen.add(key)) {
+                    collected.add(m);
+                }
+            }
+        }
+        Method[] methods = collected.toArray(new Method[0]);
+        Arrays.sort(methods,
+                Comparator.comparing(Method::getName)
+                        .thenComparing(m -> Arrays.toString(
+                                m.getParameterTypes())));
+        return methods;
     }
 
     /**

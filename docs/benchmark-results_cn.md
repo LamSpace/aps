@@ -151,6 +151,19 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 
 **要点：** `plainProxy` 与 `interceptedProxy` 都由 `proxy()` 内的反射实例化（`Constructor.newInstance`）主导，这也使偏差存在噪声（单 fork，误差约 ±12 ns）；构造器钩子每实例约增加 9 ns（一次 `before` + 一次 `after` 接口调用，加一个空参数数组）。未拦截路径字节码逐字节不变，因此现有代理构造成本不受影响。这是每实例一次性成本，与方法调用延迟无关。
 
+## 静态方法代理（第三阶段）— 新增
+
+遮蔽 `public static` 方法的单次调用成本。目标：`Target.staticAdd(int, int)`。静态方法编译期绑定，因此入口机制——而非 APS——占据主导：`directCall` = `Target.staticAdd(...)`，`reflectionFloor` = 对目标自身 `Method` 的 `Method.invoke(null, ...)`（无代理），`proxyReflection` = 通过 `getMethod(...).invoke(...)` 调用返回类的遮蔽方法，`proxyMethodHandle` = 通过 `MethodHandles.lookup().findStatic(...)` 调用遮蔽方法。
+
+| 场景                 | ns/op  |
+|----------------------|--------|
+| 直接调用             | 0.394  |
+| 反射下限             | 7.273  |
+| 代理（反射）         | 15.194 |
+| 代理（MethodHandle） | 13.017 |
+
+**要点：** `proxyReflection` ≈ `reflectionFloor` + 约 7.9 ns（APS 的装箱 + 一次 `intercept` 调用 + 拦截器内的 `method.invoke` + 拆箱）；`proxyMethodHandle` 约 13 ns 同理（拦截器内的调原方法仍是反射）。APS 在调用方已选定的入口机制之上只增加一个小而恒定的开销——它不会让静态调用变得透明地快。
+
 ## 总结
 
 APS 是同类最优的类代理方案——在所有有实际工作的场景中比 CGLib 快 3–7×，透传调度达到直接调用速度。对于接口代理，`java.lang.reflect.Proxy` 在轻量级场景更快（HotSpot 内在优化）；APS 在字符串密集场景（透传、参数修改）中与之持平。

@@ -21,6 +21,7 @@ A high-performance dynamic proxy library for Java, designed as a drop-in replace
 - **Zero-overhead passthrough** — methods not matching any Group call the superclass directly with no interception cost
 - **Constructor arguments** — supports proxying classes without a no-arg constructor
 - **Constructor interception** — a `ConstructorInterceptor` hook runs before/after the superclass constructor, with argument rewriting and veto support
+- **Static method proxy** — `AcceleratedProxy.proxyStatic(target, ...)` returns a generated class shadowing the target's `public static` methods through the same `Interceptor` (invoke reflectively or via `MethodHandle`)
 
 ## ⚡ Quick Start
 
@@ -125,6 +126,22 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class, interceptor, ctorIntercept
 `before` runs before the superclass constructor (this is where you can rewrite
 arguments or veto by throwing); `after` runs after it, once the instance is
 fully initialized. Constructor interception is class proxies only.
+
+### Static Method Proxy
+
+```java
+Class<?> proxyClass = AcceleratedProxy.proxyStatic(Utils.class,
+        (proxy, method, args) -> {
+            System.out.println("calling " + method.getName());
+            return method.invoke(null, args);   // call the original static method
+        });
+
+// static methods are compile-time bound — invoke the shadow reflectively:
+int result = (Integer) proxyClass.getMethod("add", int.class, int.class)
+        .invoke(null, 2, 3);
+```
+
+*Static methods are bound at compile time, so `Utils.add(...)` still calls the original; only calls on the returned class (reflective or `MethodHandle`) route through the interceptor.*
 
 ## 📊 Performance
 

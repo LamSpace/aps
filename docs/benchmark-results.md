@@ -151,6 +151,19 @@ Instance-creation cost (per proxy construction, not per method call). Target: `T
 
 **Key takeaway:** `plainProxy` and `interceptedProxy` are both dominated by the reflection instantiation (`Constructor.newInstance`) inside `proxy()`, which also makes the delta noisy (single-fork, ±~12 ns error bars); the constructor hook adds ~9 ns per instance (one `before` + one `after` interface call plus an empty argument array). The non-intercepted path is byte-for-byte unchanged, so existing proxy construction costs are unaffected. This is a once-per-instance cost, independent of method-call latency.
 
+## Static Method Proxy (Phase 3) — New
+
+Per-call cost of a shadowed `public static` method. Target: `Target.staticAdd(int, int)`. Static methods are compile-time bound, so the entry mechanism — not APS — dominates: `directCall` = `Target.staticAdd(...)`, `reflectionFloor` = `Method.invoke(null, ...)` on the target's own `Method` (no proxy), `proxyReflection` = the returned class's shadow via `getMethod(...).invoke(...)`, `proxyMethodHandle` = the shadow via `MethodHandles.lookup().findStatic(...)`.
+
+| Scenario             | ns/op  |
+|----------------------|--------|
+| direct call          | 0.394  |
+| reflection floor     | 7.273  |
+| proxy (reflection)   | 15.194 |
+| proxy (MethodHandle) | 13.017 |
+
+**Key takeaway:** `proxyReflection` ≈ `reflectionFloor` + ~7.9 ns (APS's box + one `intercept` call + the interceptor's `method.invoke` + unbox); `proxyMethodHandle` sits at ~13 ns for the same reason (the interceptor's call-original is still reflective). APS adds a small, constant overhead on top of the invocation mechanism the caller already chose — it does not make static calls transparently fast.
+
 ## Summary
 
 APS is the best-performing class proxy — it beats CGLib by 3–7× in all scenarios with actual work, and runs at direct-call speed for passthrough dispatch. For interface proxies, `java.lang.reflect.Proxy` is faster in lightweight scenarios (HotSpot intrinsics); APS reaches parity in string-heavy scenarios (passthrough, arg-modify).

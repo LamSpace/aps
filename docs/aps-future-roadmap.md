@@ -39,7 +39,7 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 | 2    | P3     | **多接口代理**（已完成）       | 一个代理类实现多个接口                                                |
 | 3    | P3     | **注解驱动 API**（已完成）     | 如 `@Intercept` 标注方法，减少样板代码，声明式方法匹配                |
 | 4    | P3     | **构造器拦截**（已完成）       | 对象创建时的 hook，类似 CGLib 的 `Enhancer` 构造器回调                |
-| 5    | P3     | **静态方法代理**               | 需生成委托代码 — 静态方法不参与虚方法分派                             |
+| 5    | P3     | **静态方法代理**（已完成）      | 需生成委托代码 — 静态方法不参与虚方法分派                             |
 | 6    | P3     | **热加载/热替换**              | 运行时重新生成代理类，适合长期运行的框架场景                          |
 | 7    | P3     | **虚拟线程兼容性**             | 验证 APS 代理在虚拟线程上的行为，确认不 pin 载体线程                  |
 | 8    | P3     | **JPMS 强封装模块**            | 处理 `java.base` 等强封装模块中类的代理访问                           |
@@ -83,6 +83,14 @@ Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MetricsInterceptor
 - 新入口：`proxy(Class<T>, Interceptor, ConstructorInterceptor)`、`proxy(Class<T>, ConstructorInterceptor, Group...)`、`proxy(Class<T>, Object[], ConstructorInterceptor, Group...)`（仅类代理）
 - JVM 约束：`super()` 之前 `this` 不可用，故 `before` 不传 proxy；`Constructor` 对象经 `<clinit>` 一次性反射解析为静态字段
 - 未启用拦截时生成字节码逐字节不变，零开销
+
+### 静态方法代理（已完成）
+
+- 新入口 `AcceleratedProxy.proxyStatic(Class<?>, Group...)` 返回一个生成的代理 `Class`，其 `public static` 方法遮蔽目标类的静态方法并路由到 `Interceptor`（`proxy = null`）；另有单拦截器便捷重载
+- 覆盖本类声明 + 继承链的 `public static` 非 `final` 方法（子类优先去重），走 Group 匹配，未匹配方法直通 `INVOKESTATIC` 原实现
+- 拦截器内调用原方法：`method.invoke(null, args)`
+- 限制：`INVOKESTATIC` 编译期绑定，`Target.staticMethod()` 无法透明拦截，只能对返回的 `Class` 反射或 `MethodHandle` 调用
+- 生成类 `extends Object`，静态代理**不缓存**（静态字段是类级状态），不影响实例代理路径
 
 ### 静态方法代理挑战
 

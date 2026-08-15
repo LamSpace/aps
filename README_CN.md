@@ -21,6 +21,7 @@
 - **零开销透传** — 未匹配任何 Group 的方法直接调用父类，无任何拦截开销
 - **构造参数支持** — 支持代理无默认构造方法的类
 - **构造器拦截** — `ConstructorInterceptor` 钩子在父类构造器前后运行，支持参数改写与否决
+- **静态方法代理** — `AcceleratedProxy.proxyStatic(target, ...)` 返回一个生成类，用同一 `Interceptor` 遮蔽目标类的 `public static` 方法（反射或 `MethodHandle` 调用）
 
 ## ⚡ 快速开始
 
@@ -123,6 +124,22 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class, interceptor, ctorIntercept
 ```
 
 `before` 在父类构造器之前运行（可改写参数或抛异常否决）；`after` 在父类构造器之后、实例完全初始化后运行。构造器拦截仅支持类代理。
+
+### 静态方法代理
+
+```java
+Class<?> proxyClass = AcceleratedProxy.proxyStatic(Utils.class,
+        (proxy, method, args) -> {
+            System.out.println("正在调用 " + method.getName());
+            return method.invoke(null, args);   // 调用原静态方法
+        });
+
+// 静态方法编译期绑定 —— 需对返回的类反射调用遮蔽方法：
+int result = (Integer) proxyClass.getMethod("add", int.class, int.class)
+        .invoke(null, 2, 3);
+```
+
+*静态方法在编译期绑定，`Utils.add(...)` 仍调用原方法；只有对返回的类（反射或 `MethodHandle`）调用才会经过拦截器。*
 
 ## 📊 性能
 
