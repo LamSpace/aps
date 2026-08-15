@@ -147,9 +147,9 @@ Instance-creation cost (per proxy construction, not per method call). Target: `T
 
 | Scenario          | directNew | plainProxy | interceptedProxy | Delta (hook) |
 |-------------------|-----------|------------|------------------|--------------|
-| construct instance | 2.0 ns    | 188.1 ns   | 202.8 ns         | +14.7 ns     |
+| construct instance | 2.0 ns    | 193.6 ns   | 202.3 ns         | +8.8 ns      |
 
-**Key takeaway:** `plainProxy` and `interceptedProxy` are both dominated by the reflection instantiation (`Constructor.newInstance`) inside `proxy()`; the constructor hook adds ~15 ns per instance (one `before` + one `after` interface call plus an empty argument array). The non-intercepted path is byte-for-byte unchanged, so existing proxy construction costs are unaffected. This is a once-per-instance cost, independent of method-call latency.
+**Key takeaway:** `plainProxy` and `interceptedProxy` are both dominated by the reflection instantiation (`Constructor.newInstance`) inside `proxy()`, which also makes the delta noisy (single-fork, ±~12 ns error bars); the constructor hook adds ~9 ns per instance (one `before` + one `after` interface call plus an empty argument array). The non-intercepted path is byte-for-byte unchanged, so existing proxy construction costs are unaffected. This is a once-per-instance cost, independent of method-call latency.
 
 ## Summary
 

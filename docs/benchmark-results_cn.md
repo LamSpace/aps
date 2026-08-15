@@ -147,9 +147,9 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 
 | 场景         | directNew | plainProxy | interceptedProxy | 偏差（钩子） |
 |--------------|-----------|------------|------------------|--------------|
-| 构造实例     | 2.0 ns    | 188.1 ns   | 202.8 ns         | +14.7 ns     |
+| 构造实例     | 2.0 ns    | 193.6 ns   | 202.3 ns         | +8.8 ns      |
 
-**要点：** `plainProxy` 与 `interceptedProxy` 都由 `proxy()` 内的反射实例化（`Constructor.newInstance`）主导；构造器钩子每实例约增加 15 ns（一次 `before` + 一次 `after` 接口调用，加一个空参数数组）。未拦截路径字节码逐字节不变，因此现有代理构造成本不受影响。这是每实例一次性成本，与方法调用延迟无关。
+**要点：** `plainProxy` 与 `interceptedProxy` 都由 `proxy()` 内的反射实例化（`Constructor.newInstance`）主导，这也使偏差存在噪声（单 fork，误差约 ±12 ns）；构造器钩子每实例约增加 9 ns（一次 `before` + 一次 `after` 接口调用，加一个空参数数组）。未拦截路径字节码逐字节不变，因此现有代理构造成本不受影响。这是每实例一次性成本，与方法调用延迟无关。
 
 ## 总结
 
