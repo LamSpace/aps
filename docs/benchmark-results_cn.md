@@ -2,7 +2,7 @@
 
 [English](benchmark-results.md)
 
-日期: 2026-08-14（更新） | JDK: Java 25.0.3 (Oracle HotSpot) | JMH: 1.37  
+日期: 2026-08-15（更新） | JDK: Java 25.0.3 (Oracle HotSpot) | JMH: 1.37  
 JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED`
 
 所有分数单位 ns/op（越低越好）。每行最优结果 **加粗**标注。
@@ -130,6 +130,16 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 | 类代理（未改）   | 最高 ±32%（分配密集型方法）             |
 
 类代理路径字节级一致（`MethodDispatcher` 未动，`ClassGenerator` 仅改 `generateDispatch` 调用点），因此其波动纯属单 fork 运行间噪声，界定了测量误差范围。接口代理数据完全落在该范围内——无性能回归。
+
+## 注解驱动 API（第三阶段）— 新增
+
+对比声明式 `@Intercept`/`@Around` API（`AcceleratedProxy.intercept`）与等价的手写 `Group` 配置在同一目标上的表现。目标：`MultiGroupTarget`（`getGreeting` 经 `@Around("get*")` / `Group.of(m -> m.getName().startsWith("get"), ...)` 拦截）。
+
+| 场景                  | 注解驱动 | 手写 `Group` | 偏差 |
+|-----------------------|----------|--------------|------|
+| getter（getGreeting） | 3.351 ns | 3.342 ns     | +0.3% |
+
+**要点：** `@Around` 方法通过 `LambdaMetafactory` 调用点绑定到 `Interceptor` SAM（无逐次反射），因此注解驱动拦截达到手写 lambda 的平价——与程序化等价物在噪声范围内一致。一次性反射成本发生在 `intercept()` 创建期，不在测量循环内。
 
 ## 总结
 

@@ -2,7 +2,7 @@
 
 [中文版](benchmark-results_cn.md)
 
-Date: 2026-08-14 (updated) | JDK: Java 25.0.3 (Oracle HotSpot) | JMH: 1.37  
+Date: 2026-08-15 (updated) | JDK: Java 25.0.3 (Oracle HotSpot) | JMH: 1.37  
 JVM: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED`
 
 All scores in ns/op (lower is better). Best per row **bolded**.
@@ -130,6 +130,16 @@ A before/after JMH comparison (`ba7ba8e` → `master`) also verified the refacto
 | Class proxy (unchanged)   | up to ±32% (allocation-heavy methods)    |
 
 The class-proxy path is byte-identical (`MethodDispatcher` untouched, `ClassGenerator` changed only in its `generateDispatch` call site), so its spread is pure run-to-run noise and bounds the measurement floor. Interface-proxy numbers sit well within it — no regression.
+
+## Annotation-Driven API (Phase 3) — New
+
+Compares the declarative `@Intercept`/`@Around` API (`AcceleratedProxy.intercept`) against an equivalent hand-written `Group` config on the same target. Target: `MultiGroupTarget` (`getGreeting` intercepted via `@Around("get*")` / `Group.of(m -> m.getName().startsWith("get"), ...)`).
+
+| Scenario            | Annotation-driven | Programmatic `Group` | Delta |
+|---------------------|-------------------|----------------------|-------|
+| getter (getGreeting) | 3.351 ns          | 3.342 ns             | +0.3% |
+
+**Key takeaway:** The `@Around` method is bound to the `Interceptor` SAM via a `LambdaMetafactory` call site (no per-call reflection), so annotation-driven interception reaches hand-written-lambda parity — within noise of the programmatic equivalent. The one-time reflection cost runs at `intercept()` creation time, outside the measured loop.
 
 ## Summary
 
