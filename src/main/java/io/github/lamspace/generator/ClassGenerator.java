@@ -288,42 +288,25 @@ public class ClassGenerator {
             generateInterceptedConstructor(mv, generatedInternal,
                     targetInternal, ctorInterceptorSlot, superParamTypes);
         } else {
-            // super(superArgs...)
+            // super(superArgs...): load each value-typed arg as a reference,
+            // then unbox/cast to the superclass constructor's declared type
+            Constructor<?> ctor = findConstructor(targetClass, superParamTypes);
+            Class<?>[] declaredParams = ctor.getParameterTypes();
             mv.visitVarInsn(Opcodes.ALOAD, 0);
             int slot = ctorInterceptorSlot;
-            for (Class<?> argType : superParamTypes) {
-                if (argType == int.class || argType == Integer.class
-                        || argType == boolean.class
-                        || argType == Boolean.class
-                        || argType == byte.class || argType == Byte.class
-                        || argType == char.class
-                        || argType == Character.class
-                        || argType == short.class
-                        || argType == Short.class) {
-                    mv.visitVarInsn(Opcodes.ILOAD, slot);
-                    slot++;
-                } else if (argType == long.class
-                        || argType == Long.class) {
-                    mv.visitVarInsn(Opcodes.LLOAD, slot);
-                    slot += 2;
-                } else if (argType == float.class
-                        || argType == Float.class) {
-                    mv.visitVarInsn(Opcodes.FLOAD, slot);
-                    slot++;
-                } else if (argType == double.class
-                        || argType == Double.class) {
-                    mv.visitVarInsn(Opcodes.DLOAD, slot);
-                    slot += 2;
+            for (int i = 0; i < declaredParams.length; i++) {
+                mv.visitVarInsn(Opcodes.ALOAD, slot);
+                Class<?> pt = declaredParams[i];
+                if (pt.isPrimitive()) {
+                    BytecodeUtils.unboxPrimitive(mv, pt);
                 } else {
-                    mv.visitVarInsn(Opcodes.ALOAD, slot);
-                    slot++;
+                    mv.visitTypeInsn(Opcodes.CHECKCAST,
+                            Type.getInternalName(pt));
                 }
+                slot++;
             }
             mv.visitMethodInsn(Opcodes.INVOKESPECIAL, targetInternal,
-                    "<init>",
-                    Type.getConstructorDescriptor(
-                            findConstructor(targetClass, superParamTypes)),
-                    false);
+                    "<init>", Type.getConstructorDescriptor(ctor), false);
         }
 
         // this._interceptor$i = arg(i+1)
