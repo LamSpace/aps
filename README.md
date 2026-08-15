@@ -17,7 +17,7 @@ A high-performance dynamic proxy library for Java, designed as a drop-in replace
 - **One-line API** — `AcceleratedProxy.proxy(MyClass.class, interceptor)` with generic type inference, no casts needed
 - **Multi-Interceptor / Method Grouping** — bind different `Interceptor` instances to different method families via `Group.of()` with first-match-wins semantics and zero hot-path overhead
 - **Multi-interface proxy** — `AcceleratedProxy.proxy(new Class<?>[]{...}, interceptor)` implements several interfaces in one proxy object
-- **Annotation-driven API** — declarative `@Intercept`/`@Around` method matching that compiles down to the same `Group` pipeline
+- **Annotation-driven API** — declarative `@Intercept`/`@Around` method matching that routes through the same `Group` pipeline at runtime
 - **Zero-overhead passthrough** — methods not matching any Group call the superclass directly with no interception cost
 - **Constructor arguments** — supports proxying classes without a no-arg constructor
 

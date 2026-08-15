@@ -17,7 +17,7 @@
 - **一行代码** — `AcceleratedProxy.proxy(MyClass.class, interceptor)` 泛型自动推导，无需手动转型
 - **多拦截器 / 方法分组** — 通过 `Group.of()` 将不同方法族绑定到不同 `Interceptor`，先匹配先胜出，热路径零开销
 - **多接口代理** — `AcceleratedProxy.proxy(new Class<?>[]{...}, interceptor)` 在一个代理对象中实现多个接口
-- **注解驱动 API** — 声明式 `@Intercept`/`@Around` 方法匹配，编译期落到同一条 `Group` 管线
+- **注解驱动 API** — 声明式 `@Intercept`/`@Around` 方法匹配，运行时落到同一条 `Group` 管线
 - **零开销透传** — 未匹配任何 Group 的方法直接调用父类，无任何拦截开销
 - **构造参数支持** — 支持代理无默认构造方法的类
 

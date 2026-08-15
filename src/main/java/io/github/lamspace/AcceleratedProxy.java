@@ -639,9 +639,14 @@ public final class AcceleratedProxy {
                     implMethod,
                     samType)
                     .getTarget().invokeWithArguments(instance);
+        } catch (Error e) {
+            throw e;
         } catch (Throwable t) {
-            throw new IllegalArgumentException(
-                    "Failed to bind @Around method: " + m.getName(), t);
+            String message = "Failed to bind @Around method: " + m.getName();
+            if (t instanceof IllegalAccessException) {
+                message += " (non-public @Around method in a closed module may require --add-opens)";
+            }
+            throw new IllegalArgumentException(message, t);
         }
     }
 }

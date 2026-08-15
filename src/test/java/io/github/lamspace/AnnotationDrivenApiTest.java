@@ -373,4 +373,67 @@ class AnnotationDrivenApiTest {
         assertEquals("hello", proxy.getGreeting());
         assertEquals("getters", interceptor.winner.get());
     }
+
+    public interface GreeterIface {
+        String getGreeting();
+        String format(String prefix);
+    }
+
+    @Intercept
+    public static class IfaceInterceptor {
+        final AtomicReference<String> lastMethod = new AtomicReference<>();
+
+        @Around("get*")
+        public Object measure(Object proxy, Method method, Object[] args) {
+            lastMethod.set(method.getName());
+            return "hi " + method.getName();
+        }
+    }
+
+    @Test
+    void interfaceTargetRoutesMatchedMethodsAndThrowsForUnmatched() {
+        IfaceInterceptor interceptor = new IfaceInterceptor();
+        GreeterIface proxy = AcceleratedProxy.intercept(GreeterIface.class, interceptor);
+
+        assertEquals("hi getGreeting", proxy.getGreeting());
+        assertEquals("getGreeting", interceptor.lastMethod.get());
+
+        assertThrows(AbstractMethodError.class, () -> proxy.format("p"));
+    }
+
+    @Intercept
+    public static class EmptyRegexInterceptor {
+        @Around(regex = "")
+        public Object handle(Object proxy, Method method, Object[] args) {
+            return null;
+        }
+    }
+
+    @Test
+    void emptyRegexFailsFast() {
+        assertThrows(IllegalArgumentException.class,
+                () -> AcceleratedProxy.intercept(Greeter.class,
+                        new EmptyRegexInterceptor()));
+    }
+
+    @Intercept
+    public static class QuestionGlobInterceptor {
+        final AtomicInteger calls = new AtomicInteger();
+
+        @Around("ge?Greeting")
+        public Object handle(Object proxy, Method method, Object[] args)
+                throws Throwable {
+            calls.incrementAndGet();
+            return AcceleratedProxy.invokeSuper(proxy, method, args);
+        }
+    }
+
+    @Test
+    void questionMarkGlobMatchesSingleCharacter() {
+        QuestionGlobInterceptor interceptor = new QuestionGlobInterceptor();
+        Greeter proxy = AcceleratedProxy.intercept(Greeter.class, interceptor);
+
+        assertEquals("hello", proxy.getGreeting());
+        assertEquals(1, interceptor.calls.get());
+    }
 }

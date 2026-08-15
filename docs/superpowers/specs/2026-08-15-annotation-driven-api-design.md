@@ -190,15 +190,14 @@ New `src/test/java/io/github/lamspace/AnnotationDrivenApiTest.java`.
 | 7  | Adapter passes `(proxy, method, args)` correctly      | annotated method receives the right arguments; can call `invokeSuper`    |
 | 8  | Subtype return type (e.g. `String` return)            | widened to `Object` and returned correctly                               |
 | 9  | Interface target                                      | `intercept(Interface.class, instance)` works like `proxy(Interface, …)` |
-| 10 | Class target with constructor args                    | class proxy path is unaffected                                           |
-| 11 | Equivalence to programmatic `Group`                   | same `MethodMapping` and same call results                               |
-| 12 | Negative: null target / null interceptor              | throws                                                                    |
-| 13 | Negative: class not `@Intercept`                      | throws                                                                    |
-| 14 | Negative: no `@Around` method                         | throws                                                                    |
-| 15 | Negative: wrong parameter signature / `void` return   | throws                                                                    |
-| 16 | Negative: `static` `@Around` method                   | throws                                                                    |
-| 17 | Negative: empty or invalid regex                      | throws                                                                    |
-| 18 | Overlapping patterns (two `@Around` match one method) | first-match-wins; warning path is exercised                              |
+| 10 | Equivalence to programmatic `Group`                   | same `MethodMapping` and same call results                               |
+| 11 | Negative: null target / null interceptor              | throws                                                                    |
+| 12 | Negative: class not `@Intercept`                      | throws                                                                    |
+| 13 | Negative: no `@Around` method                         | throws                                                                    |
+| 14 | Negative: wrong parameter signature / `void` return   | throws                                                                    |
+| 15 | Negative: `static` `@Around` method                   | throws                                                                    |
+| 16 | Negative: empty or invalid regex                      | throws                                                                    |
+| 17 | Overlapping patterns (two `@Around` match one method) | first-match-wins; warning path is exercised                              |
 
 ## 5. Benchmark
 
