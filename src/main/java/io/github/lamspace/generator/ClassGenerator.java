@@ -286,7 +286,8 @@ public class ClassGenerator {
 
         if (ctorIntercept) {
             generateInterceptedConstructor(mv, generatedInternal,
-                    targetInternal, ctorInterceptorSlot, superParamTypes);
+                    targetInternal, ctorInterceptorSlot, superParamTypes,
+                    interceptorDesc);
         } else {
             // super(superArgs...): load each value-typed arg as a reference,
             // then unbox/cast to the superclass constructor's declared type
@@ -307,14 +308,7 @@ public class ClassGenerator {
             }
             mv.visitMethodInsn(Opcodes.INVOKESPECIAL, targetInternal,
                     "<init>", Type.getConstructorDescriptor(ctor), false);
-        }
-
-        // this._interceptor$i = arg(i+1)
-        for (int i = 0; i < interceptors.length; i++) {
-            mv.visitVarInsn(Opcodes.ALOAD, 0);
-            mv.visitVarInsn(Opcodes.ALOAD, 1 + i);
-            mv.visitFieldInsn(Opcodes.PUTFIELD, generatedInternal,
-                    "_interceptor$" + i, interceptorDesc);
+            storeInterceptorFields(mv, generatedInternal, interceptorDesc);
         }
 
         mv.visitInsn(Opcodes.RETURN);
@@ -326,7 +320,8 @@ public class ClassGenerator {
                                                String generatedInternal,
                                                String targetInternal,
                                                int ctorInterceptorSlot,
-                                               Class<?>[] superParamTypes) {
+                                               Class<?>[] superParamTypes,
+                                               String interceptorDesc) {
         Constructor<?> ctor = findConstructor(targetClass, superParamTypes);
         Class<?>[] declaredParams = ctor.getParameterTypes();
 
@@ -406,6 +401,10 @@ public class ClassGenerator {
         mv.visitMethodInsn(Opcodes.INVOKESPECIAL, targetInternal, "<init>",
                 Type.getConstructorDescriptor(ctor), false);
 
+        // 3b. bind interceptor fields so intercepted methods are callable
+        //     from within after()
+        storeInterceptorFields(mv, generatedInternal, interceptorDesc);
+
         // 4. ctorInterceptor.after(this, _ctor$, rewritten)
         mv.visitVarInsn(Opcodes.ALOAD, ctorInterceptorSlot);
         mv.visitVarInsn(Opcodes.ALOAD, 0);
@@ -416,6 +415,17 @@ public class ClassGenerator {
                 "io/github/lamspace/ConstructorInterceptor", "after",
                 "(Ljava/lang/Object;Ljava/lang/reflect/Constructor;"
                         + "[Ljava/lang/Object;)V", true);
+    }
+
+    private void storeInterceptorFields(MethodVisitor mv,
+                                        String generatedInternal,
+                                        String interceptorDesc) {
+        for (int i = 0; i < interceptors.length; i++) {
+            mv.visitVarInsn(Opcodes.ALOAD, 0);
+            mv.visitVarInsn(Opcodes.ALOAD, 1 + i);
+            mv.visitFieldInsn(Opcodes.PUTFIELD, generatedInternal,
+                    "_interceptor$" + i, interceptorDesc);
+        }
     }
 
     private Class<?>[] superParamTypes() {

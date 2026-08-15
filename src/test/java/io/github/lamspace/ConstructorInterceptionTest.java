@@ -73,6 +73,14 @@ class ConstructorInterceptionTest {
         }
     }
 
+    static class SelfRegistering {
+        final List<String> events = new ArrayList<>();
+
+        void register() {
+            events.add("registered");
+        }
+    }
+
     private static Group passthrough() {
         return Group.otherwise(
                 (o, m, a) -> AcceleratedProxy.invokeSuper(o, m, a));
@@ -135,6 +143,27 @@ class ConstructorInterceptionTest {
         Greeter proxy = AcceleratedProxy.proxy(Greeter.class, ci,
                 passthrough());
         assertSame(proxy, captured.get());
+    }
+
+    @Test
+    void afterCanCallInterceptedMethod() {
+        AtomicReference<Object> captured = new AtomicReference<>();
+        ConstructorInterceptor ci = new ConstructorInterceptor() {
+            @Override
+            public Object[] before(Constructor<?> ctor, Object[] args) {
+                return args;
+            }
+
+            @Override
+            public void after(Object proxy, Constructor<?> ctor, Object[] args) {
+                captured.set(proxy);
+                ((SelfRegistering) proxy).register();
+            }
+        };
+        SelfRegistering proxy = AcceleratedProxy.proxy(SelfRegistering.class,
+                ci, passthrough());
+        assertSame(proxy, captured.get());
+        assertEquals(List.of("registered"), proxy.events);
     }
 
     @Test
