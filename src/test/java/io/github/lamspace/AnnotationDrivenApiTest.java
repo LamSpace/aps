@@ -22,6 +22,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Method;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -50,5 +52,36 @@ class AnnotationDrivenApiTest {
                 Intercept.class.getAnnotation(Retention.class).value());
         assertEquals(ElementType.TYPE,
                 Intercept.class.getAnnotation(Target.class).value()[0]);
+    }
+
+    public static class Greeter {
+        public String getGreeting() { return "hello"; }
+        public void setGreeting(String g) { }
+        public String format(String prefix) { return prefix + ":ok"; }
+    }
+
+    @Intercept
+    public static class GetterInterceptor {
+        final AtomicReference<String> lastMethod = new AtomicReference<>();
+
+        @Around("get*")
+        public Object measure(Object proxy, Method method, Object[] args)
+                throws Throwable {
+            lastMethod.set(method.getName());
+            return AcceleratedProxy.invokeSuper(proxy, method, args);
+        }
+    }
+
+    @Test
+    void singleGlobRoutesMatchedMethodsAndPassthroughsOthers() {
+        GetterInterceptor interceptor = new GetterInterceptor();
+        Greeter proxy = AcceleratedProxy.intercept(Greeter.class, interceptor);
+
+        assertEquals("hello", proxy.getGreeting());
+        assertEquals("getGreeting", interceptor.lastMethod.get());
+
+        proxy.setGreeting("x");
+        assertEquals("p:ok", proxy.format("p"));
+        assertEquals("getGreeting", interceptor.lastMethod.get());
     }
 }

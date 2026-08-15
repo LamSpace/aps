@@ -24,6 +24,10 @@ import io.github.lamspace.internal.LookupManager;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.invoke.LambdaMetafactory;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -32,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 /**
  * Entry point for creating dynamic proxies.
@@ -444,6 +449,153 @@ public final class AcceleratedProxy {
         } catch (Exception e) {
             throw new RuntimeException(
                     "Failed to create proxy for interfaces", e);
+        }
+    }
+
+    /**
+     * Creates a proxy whose methods are matched to interceptors declaratively,
+     * from the {@code @Around}-annotated methods of the given {@code @Intercept}
+     * object.
+     *
+     * <p>Each {@code @Around} method must have signature
+     * {@code (Object, Method, Object[]) -> reference}. Methods not matching any
+     * {@code @Around} method passthrough (direct super call), consistent with
+     * the programmatic {@code Group} API.
+     *
+     * @param target      the class or interface to proxy
+     * @param interceptor an instance of a {@code @Intercept}-annotated class
+     * @param <T>         the proxy type
+     * @return a proxy instance of type {@code T}
+     * @throws IllegalArgumentException if {@code interceptor} is invalid
+     */
+    public static <T> T intercept(Class<T> target, Object interceptor) {
+        if (target == null) {
+            throw new IllegalArgumentException("target must not be null");
+        }
+        return proxy(target, resolveAnnotationGroups(interceptor));
+    }
+
+    /**
+     * Reflects over the {@code @Intercept} object and builds a {@code Group[]}
+     * from its {@code @Around} methods, in deterministic (name-sorted) order.
+     */
+    private static Group[] resolveAnnotationGroups(Object interceptor) {
+        if (interceptor == null) {
+            throw new IllegalArgumentException("interceptor must not be null");
+        }
+        Class<?> interceptorClass = interceptor.getClass();
+        if (!interceptorClass.isAnnotationPresent(Intercept.class)) {
+            throw new IllegalArgumentException(
+                    interceptorClass.getName() + " must be annotated with @Intercept");
+        }
+        Method[] methods = interceptorClass.getDeclaredMethods();
+        Arrays.sort(methods,
+                Comparator.comparing(Method::getName)
+                        .thenComparing(m -> Arrays.toString(m.getParameterTypes())));
+        List<Group> groups = new ArrayList<>();
+        for (Method m : methods) {
+            Around around = m.getAnnotation(Around.class);
+            if (around == null) {
+                continue;
+            }
+            validateAroundMethod(m);
+            groups.add(Group.of(toPredicate(around), toInterceptor(interceptor, m)));
+        }
+        if (groups.isEmpty()) {
+            throw new IllegalArgumentException(interceptorClass.getName()
+                    + " must declare at least one @Around method");
+        }
+        return groups.toArray(new Group[0]);
+    }
+
+    /**
+     * Validates the fixed {@code @Around} method contract.
+     */
+    private static void validateAroundMethod(Method m) {
+        if (Modifier.isStatic(m.getModifiers())) {
+            throw new IllegalArgumentException(
+                    "@Around method must not be static: " + m.getName());
+        }
+        Class<?>[] params = m.getParameterTypes();
+        if (params.length != 3
+                || params[0] != Object.class
+                || params[1] != Method.class
+                || params[2] != Object[].class) {
+            throw new IllegalArgumentException("@Around method must have signature "
+                    + "(Object, Method, Object[]): " + m.getName());
+        }
+        Class<?> ret = m.getReturnType();
+        if (ret == void.class || ret.isPrimitive()) {
+            throw new IllegalArgumentException("@Around method must return a "
+                    + "reference type (not void or primitive): " + m.getName());
+        }
+    }
+
+    /**
+     * Builds a {@link MethodPredicate} from the glob dimension of {@code around}.
+     */
+    private static MethodPredicate toPredicate(Around around) {
+        String[] globs = buildGlobs(around);
+        return m -> globs.length == 0 || matchesAnyGlob(globs, m.getName());
+    }
+
+    private static String[] buildGlobs(Around around) {
+        List<String> globs = new ArrayList<>();
+        if (!around.value().isEmpty()) {
+            globs.add(around.value());
+        }
+        globs.addAll(Arrays.asList(around.glob()));
+        return globs.toArray(new String[0]);
+    }
+
+    private static boolean matchesAnyGlob(String[] globs, String name) {
+        for (String glob : globs) {
+            if (globMatches(glob, name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean globMatches(String glob, String name) {
+        StringBuilder regex = new StringBuilder();
+        for (int i = 0; i < glob.length(); i++) {
+            char c = glob.charAt(i);
+            if (c == '*') {
+                regex.append(".*");
+            } else if (c == '?') {
+                regex.append('.');
+            } else {
+                regex.append(Pattern.quote(String.valueOf(c)));
+            }
+        }
+        return name.matches(regex.toString());
+    }
+
+    /**
+     * Binds the {@code @Around} instance method to an {@link Interceptor} via a
+     * {@code LambdaMetafactory} call site (no per-call reflection). The instance
+     * is captured through the factory type; {@code implMethod} stays a direct
+     * method handle so the metafactory can crack it.
+     */
+    private static Interceptor toInterceptor(Object instance, Method m) {
+        try {
+            MethodHandles.Lookup lookup = LookupManager.getLookup(instance.getClass());
+            MethodHandle implMethod = lookup.unreflect(m);
+            MethodType samType = MethodType.methodType(Object.class,
+                    Object.class, Method.class, Object[].class);
+            MethodType factoryType = MethodType.methodType(Interceptor.class,
+                    instance.getClass());
+            return (Interceptor) LambdaMetafactory.metafactory(
+                    lookup, "intercept",
+                    factoryType,
+                    samType,
+                    implMethod,
+                    samType)
+                    .getTarget().invokeWithArguments(instance);
+        } catch (Throwable t) {
+            throw new IllegalArgumentException(
+                    "Failed to bind @Around method: " + m.getName(), t);
         }
     }
 }
