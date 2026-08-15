@@ -23,6 +23,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -209,5 +210,124 @@ class AnnotationDrivenApiTest {
         assertThrows(IllegalArgumentException.class,
                 () -> AcceleratedProxy.intercept(Greeter.class,
                         new BadRegexInterceptor()));
+    }
+
+    @Intercept
+    public static class ArgsCapturingInterceptor {
+        final Object[] captured = new Object[3];
+        final AtomicBoolean sawDispatchTarget = new AtomicBoolean();
+
+        @Around("get*")
+        public Object capture(Object proxy, Method method, Object[] args)
+                throws Throwable {
+            captured[0] = proxy;
+            captured[1] = method;
+            captured[2] = args;
+            sawDispatchTarget.set(proxy instanceof DispatchTarget);
+            return AcceleratedProxy.invokeSuper(proxy, method, args);
+        }
+    }
+
+    @Test
+    void adapterPassesProxyMethodArgs() {
+        ArgsCapturingInterceptor interceptor = new ArgsCapturingInterceptor();
+        Greeter proxy = AcceleratedProxy.intercept(Greeter.class, interceptor);
+
+        assertEquals("hello", proxy.getGreeting());
+
+        assertSame(proxy, interceptor.captured[0]);
+        assertEquals("getGreeting", ((Method) interceptor.captured[1]).getName());
+        assertEquals(0, ((Object[]) interceptor.captured[2]).length);
+        assertTrue(interceptor.sawDispatchTarget.get());
+    }
+
+    @Intercept
+    public static class StringReturnInterceptor {
+        @Around("get*")
+        public String shorten(Object proxy, Method method, Object[] args)
+                throws Throwable {
+            return "[" + AcceleratedProxy.invokeSuper(proxy, method, args) + "]";
+        }
+    }
+
+    @Test
+    void subtypeReturnIsWidenedToObject() {
+        Greeter proxy = AcceleratedProxy.intercept(Greeter.class,
+                new StringReturnInterceptor());
+        assertEquals("[hello]", proxy.getGreeting());
+    }
+
+    @Test
+    void nullTargetFailsFast() {
+        assertThrows(IllegalArgumentException.class,
+                () -> AcceleratedProxy.intercept(null, new GetterInterceptor()));
+    }
+
+    @Test
+    void nullInterceptorFailsFast() {
+        assertThrows(IllegalArgumentException.class,
+                () -> AcceleratedProxy.intercept(Greeter.class, null));
+    }
+
+    public static class NotAnnotated {
+        @Around("get*")
+        public Object handle(Object proxy, Method method, Object[] args) {
+            return null;
+        }
+    }
+
+    @Test
+    void nonInterceptClassFailsFast() {
+        assertThrows(IllegalArgumentException.class,
+                () -> AcceleratedProxy.intercept(Greeter.class, new NotAnnotated()));
+    }
+
+    @Intercept
+    public static class NoAroundMethod { }
+
+    @Test
+    void noAroundMethodFailsFast() {
+        assertThrows(IllegalArgumentException.class,
+                () -> AcceleratedProxy.intercept(Greeter.class, new NoAroundMethod()));
+    }
+
+    @Intercept
+    public static class WrongParamCount {
+        @Around("get*")
+        public Object handle(Object proxy, Method method) {
+            return null;
+        }
+    }
+
+    @Test
+    void wrongParameterCountFailsFast() {
+        assertThrows(IllegalArgumentException.class,
+                () -> AcceleratedProxy.intercept(Greeter.class, new WrongParamCount()));
+    }
+
+    @Intercept
+    public static class VoidReturn {
+        @Around("get*")
+        public void handle(Object proxy, Method method, Object[] args) { }
+    }
+
+    @Test
+    void voidReturnFailsFast() {
+        assertThrows(IllegalArgumentException.class,
+                () -> AcceleratedProxy.intercept(Greeter.class, new VoidReturn()));
+    }
+
+    @Intercept
+    public static class StaticAround {
+        @Around("get*")
+        public static Object handle(Object proxy, Method method, Object[] args) {
+            return null;
+        }
+    }
+
+    @Test
+    void staticAroundFailsFast() {
+        assertThrows(IllegalArgumentException.class,
+                () -> AcceleratedProxy.intercept(Greeter.class, new StaticAround()));
     }
 }
