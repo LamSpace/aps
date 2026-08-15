@@ -165,12 +165,15 @@ New `src/test/java/io/github/lamspace/ConstructorInterceptionTest.java`
 **Conclusion: zero impact on the non-intercepted path, and interception cost is paid once per instance, not per method call.** The non-intercepted constructor bytecode is unchanged, so `proxy(target, interceptor)` and method-call latency cannot regress; the guard is procedural (run the existing JMH suite before/after and require identical class- and interface-proxy numbers).
 
 Add `src/test/java/io/github/lamspace/benchmark/ConstructorInterceptionBenchmark.java`
-measuring instances created per second and ns-per-instance for:
+measuring ns-per-instance for:
 
 1. direct `new Target(...)` (baseline),
 2. `proxy(target, interceptor)` (existing, no interception),
 3. `proxy(target, ctorInterceptor, ...)` with `before` + `after` both present,
-4. CGLib `Enhancer` constructor callback (already a test dependency) as a relative reference.
+4. ~~CGLib `Enhancer` constructor callback~~ — dropped: cglib 3.3.0's
+   `setInterceptDuringConstruction(true)` did not invoke the `MethodInterceptor`
+   during construction (no-arg and with-args `create()`), so a faithful
+   reference could not be reproduced. Documented in the benchmark class.
 
 Report the per-instance overhead and ratio vs. baseline in
 `docs/benchmark-results.md` (and `_cn`). Interpret the result as construction-time cost (boxing + one `before` + one `after` interface call per instance), not a steady-state per-call cost.
