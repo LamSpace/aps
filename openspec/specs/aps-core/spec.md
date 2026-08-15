@@ -1,9 +1,7 @@
 ## Purpose
 
 A high-performance dynamic proxy engine for Java that proxies concrete classes at runtime using hashCode-based dispatch with direct INVOKESPECIAL super calls, offering a drop-in replacement for CGLib with near-zero interception overhead.
-
 ## Requirements
-
 ### Requirement: Proxy class creation
 
 The system SHALL generate a runtime subclass of any non-final concrete class and route all non-final instance method calls through a user-provided single `Interceptor` handler.
@@ -118,11 +116,24 @@ The system SHALL cache generated proxy classes keyed by `{targetClass, filter}` 
 
 ### Requirement: No-default-constructor support
 
-The system SHALL support proxying classes that lack a no-argument constructor by accepting constructor arguments at proxy creation time.
+The system SHALL support proxying classes that lack a no-argument constructor by accepting constructor arguments at proxy creation time, unboxing boxed primitive arguments to the superclass constructor's declared parameter types.
 
 #### Scenario: Proxy class with constructor arguments
 
-- **WHEN** user calls `AcceleratedProxy.create(BeanWithArgs.class, callback, null, "arg1", 42)`
+- **WHEN** user calls `AcceleratedProxy.proxy(BeanWithArgs.class, new Object[]{"arg1", 42}, groups)` for a `BeanWithArgs(String, int)` constructor
 - **THEN** the system finds a matching constructor on the target class
-- **AND** generates a proxy constructor that delegates the arguments to super ()
+- **AND** generates a proxy constructor that unboxes the boxed `Integer` argument to `int` and delegates the arguments to `super(...)`
 - **AND** returns a properly initialized proxy instance
+
+#### Scenario: Proxy class with reference-only arguments
+
+- **WHEN** user calls `AcceleratedProxy.proxy(Bean.class, new Object[]{"name"}, groups)` for a `Bean(String)` constructor
+- **THEN** the system delegates the `String` argument to `super(...)`
+- **AND** returns a properly initialized proxy instance
+
+#### Scenario: Null constructor argument
+
+- **WHEN** user calls `AcceleratedProxy.proxy(Bean.class, new Object[]{null}, groups)` for a `Bean(String)` constructor
+- **THEN** the system delegates `null` to `super(...)`
+- **AND** returns a properly initialized proxy instance
+
