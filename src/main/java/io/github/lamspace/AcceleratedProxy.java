@@ -21,6 +21,7 @@ import io.github.lamspace.generator.InterfaceGenerator;
 import io.github.lamspace.generator.InterfaceMethodResolver;
 import io.github.lamspace.internal.LookupManager;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -37,6 +38,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * Entry point for creating dynamic proxies.
@@ -532,11 +534,36 @@ public final class AcceleratedProxy {
     }
 
     /**
-     * Builds a {@link MethodPredicate} from the glob dimension of {@code around}.
+     * Builds a {@link MethodPredicate} from all three dimensions of
+     * {@code around}, AND-combined across dimensions and OR within each.
      */
     private static MethodPredicate toPredicate(Around around) {
         String[] globs = buildGlobs(around);
-        return m -> globs.length == 0 || matchesAnyGlob(globs, m.getName());
+        String[] regexes = around.regex();
+        Class<? extends Annotation>[] annotations = around.annotatedWith();
+        for (String regex : regexes) {
+            if (regex.isEmpty()) {
+                throw new IllegalArgumentException("@Around regex must not be empty");
+            }
+            try {
+                Pattern.compile(regex);
+            } catch (PatternSyntaxException e) {
+                throw new IllegalArgumentException(
+                        "Invalid @Around regex: " + regex, e);
+            }
+        }
+        return m -> {
+            if (globs.length > 0 && !matchesAnyGlob(globs, m.getName())) {
+                return false;
+            }
+            if (regexes.length > 0 && !matchesAnyRegex(regexes, m.getName())) {
+                return false;
+            }
+            if (annotations.length > 0 && !hasAnyAnnotation(m, annotations)) {
+                return false;
+            }
+            return true;
+        };
     }
 
     private static String[] buildGlobs(Around around) {
@@ -570,6 +597,25 @@ public final class AcceleratedProxy {
             }
         }
         return name.matches(regex.toString());
+    }
+
+    private static boolean matchesAnyRegex(String[] regexes, String name) {
+        for (String regex : regexes) {
+            if (name.matches(regex)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasAnyAnnotation(Method m,
+            Class<? extends Annotation>[] annotations) {
+        for (Class<? extends Annotation> a : annotations) {
+            if (m.isAnnotationPresent(a)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
