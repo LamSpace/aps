@@ -157,8 +157,9 @@ No change to `MethodDispatcher`, `InterfaceDispatcher`, `DispatchGenerator`,
 
 ## 4. Testing
 
-New `src/test/java/io/github/lamspace/HotReloadTest.java` and
-`src/test/java/io/github/lamspace/RebindTest.java`; extend
+New `src/test/java/io/github/lamspace/HotReloadTest.java`,
+`src/test/java/io/github/lamspace/RebindClassProxyTest.java`, and
+`src/test/java/io/github/lamspace/RebindInterfaceProxyTest.java`; extend
 `src/test/java/io/github/lamspace/WeakCacheTest.java` for `removeIf`.
 
 | #  | Scenario                      | Coverage                                                                                                                           |
@@ -168,11 +169,11 @@ New `src/test/java/io/github/lamspace/HotReloadTest.java` and
 | 3  | `evictClassLoader` scoping    | removes entries for the given loader, leaves others untouched                                                                      |
 | 4  | Eviction idempotent           | evicting a class with no entry is a no-op                                                                                          |
 | 5  | Eviction null args            | `evict(null)` / `evictClassLoader(null)` → `IllegalArgumentException`                                                              |
-| 6  | Two-classloader isolation     | same-named target defined in two `ClassLoader`s → two distinct proxy classes, both functional                                      |
+| 6  | Two-classloader isolation     | deferred — child-loader targets need JPMS `privateLookupIn` (item 8); identity-keyed regeneration is covered by #1–#3              |
 | 7  | `WeakCache.removeIf`          | removes matching keys only; next `get` re-evaluates `valueFactory`; empty cache is a no-op; predicate never sees the null sentinel |
 | 8  | Single class-proxy rebind     | `rebind(proxy, interceptor)` → subsequent calls use the new interceptor, old not called                                            |
 | 9  | Single interface-proxy rebind | same as #8 on an interface proxy                                                                                                   |
-| 10 | Multi-interceptor rebind      | `rebind(proxy, Interceptor[])` with correct length replaces each index                                                             |
+| 10 | Multi-interceptor rebind      | `rebind(proxy, Interceptor[])` with correct length replaces each index (class and interface proxies)                              |
 | 11 | Length mismatch               | wrong-length array → `IllegalArgumentException`                                                                                    |
 | 12 | Null / non-proxy              | null array, null proxy → `IllegalArgumentException`; non-APS object → `IllegalArgumentException`                                   |
 | 13 | `invokeSuper` after rebind    | super-method dispatch still works with the new interceptor                                                                         |
@@ -181,6 +182,7 @@ New `src/test/java/io/github/lamspace/HotReloadTest.java` and
 | 16 | Convenience overload          | `rebind(proxy, interceptor)` ≡ `rebind(proxy, new Interceptor[]{interceptor})`                                                     |
 | 17 | Repeated rebind               | rebinding twice in a row replaces cleanly, no stale field                                                                          |
 | 18 | Regression: instance path     | `proxy()` class + interface + constructor-interception tests still pass unchanged                                                  |
+| 19 | Passthrough-only (0-interceptor) rebind | a proxy whose methods all passthrough rejects a non-empty array; an empty array is a no-op                               |
 
 ## 5. Benchmark
 

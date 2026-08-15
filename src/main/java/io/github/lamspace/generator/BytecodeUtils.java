@@ -69,7 +69,7 @@ final class BytecodeUtils {
         mv.visitJumpInsn(Opcodes.IFNONNULL, notNull);
         mv.visitTypeInsn(Opcodes.NEW, "java/lang/IllegalArgumentException");
         mv.visitInsn(Opcodes.DUP);
-        mv.visitLdcInsn("interceptors must not be null");
+        mv.visitLdcInsn("interceptor array must not be null");
         mv.visitMethodInsn(Opcodes.INVOKESPECIAL,
                 "java/lang/IllegalArgumentException",
                 "<init>", "(Ljava/lang/String;)V", false);

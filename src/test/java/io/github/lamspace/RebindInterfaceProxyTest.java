@@ -26,6 +26,11 @@ class RebindInterfaceProxyTest {
         String echo(String s);
     }
 
+    public interface Multi {
+        String a();
+        String b();
+    }
+
     private static Interceptor constant(String value) {
         return (o, m, a) -> value;
     }
@@ -57,5 +62,19 @@ class RebindInterfaceProxyTest {
                 () -> AcceleratedProxy.rebind(p, (Interceptor) null));
         assertThrows(IllegalArgumentException.class,
                 () -> AcceleratedProxy.rebind(p, (Interceptor[]) null));
+    }
+
+    @Test
+    void rebindMultiInterceptorPreservesIndices() {
+        Multi p = AcceleratedProxy.proxy(Multi.class,
+                Group.of(m -> m.getName().equals("a"), constant("A1")),
+                Group.otherwise(constant("B1")));
+        assertEquals("A1", p.a());
+        assertEquals("B1", p.b());
+
+        AcceleratedProxy.rebind(p,
+                new Interceptor[]{constant("A2"), constant("B2")});
+        assertEquals("A2", p.a());
+        assertEquals("B2", p.b());
     }
 }

@@ -127,4 +127,17 @@ class RebindClassProxyTest {
         AcceleratedProxy.rebind(p, constant("2"));
         assertEquals("2", p.hello("x"));
     }
+
+    @Test
+    void rebindPassthroughOnlyProxyRejectsNonEmptyArray() {
+        // No method matches any Group -> 0 distinct interceptors, all passthrough.
+        Greeter p = AcceleratedProxy.proxy(Greeter.class,
+                Group.of(m -> false, constant("unused")));
+        assertEquals("Hello, x", p.hello("x"));   // passthrough to super
+
+        assertThrows(IllegalArgumentException.class,
+                () -> AcceleratedProxy.rebind(p, constant("x")));   // length 1, expected 0
+        assertDoesNotThrow(() -> AcceleratedProxy.rebind(p, new Interceptor[]{}));
+        assertEquals("Hello, x", p.hello("x"));   // still passthrough
+    }
 }

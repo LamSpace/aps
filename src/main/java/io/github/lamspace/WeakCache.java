@@ -163,11 +163,12 @@ final class WeakCache<K, P, V> {
     }
 
     /**
-     * Removes every entry whose key satisfies the given predicate. The null-key
-     * sentinel is never passed to the predicate. This is a best-effort, weakly
-     * consistent sweep — safe to call concurrently with {@link #get}.
+     * Removes every entry whose key satisfies the given predicate. Cleared weak
+     * keys and the null-key sentinel are never passed to the predicate. This is
+     * a best-effort, weakly consistent sweep — safe to call concurrently with
+     * {@link #get}.
      *
-     * @param predicate tests each (non-null) key for removal
+     * @param predicate tests each live, non-null key for removal
      */
     void removeIf(Predicate<? super K> predicate) {
         Objects.requireNonNull(predicate);
@@ -178,6 +179,9 @@ final class WeakCache<K, P, V> {
             }
             @SuppressWarnings("unchecked")
             K key = (K) ((CacheKey<?>) cacheKey).get();
+            if (key == null) {
+                continue;
+            }
             if (predicate.test(key)) {
                 ((CacheKey<?>) cacheKey).expungeFrom(map, reverseMap);
             }
