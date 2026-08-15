@@ -20,6 +20,7 @@ A high-performance dynamic proxy library for Java, designed as a drop-in replace
 - **Annotation-driven API** — declarative `@Intercept`/`@Around` method matching that routes through the same `Group` pipeline at runtime
 - **Zero-overhead passthrough** — methods not matching any Group call the superclass directly with no interception cost
 - **Constructor arguments** — supports proxying classes without a no-arg constructor
+- **Constructor interception** — a `ConstructorInterceptor` hook runs before/after the superclass constructor, with argument rewriting and veto support
 
 ## ⚡ Quick Start
 
@@ -104,6 +105,26 @@ class MetricsInterceptor {
 Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MetricsInterceptor());
 String s = proxy.getGreeting(); // routed through measure()
 ```
+
+### Constructor Interception
+
+```java
+ConstructorInterceptor ctorInterceptor = new ConstructorInterceptor() {
+    public Object[] before(Constructor<?> ctor, Object[] args) {
+        System.out.println("before " + ctor.getName());
+        return args; // may rewrite the constructor arguments
+    }
+    public void after(Object proxy, Constructor<?> ctor, Object[] args) {
+        System.out.println("after " + ctor.getName());
+    }
+};
+
+Greeter proxy = AcceleratedProxy.proxy(Greeter.class, interceptor, ctorInterceptor);
+```
+
+`before` runs before the superclass constructor (this is where you can rewrite
+arguments or veto by throwing); `after` runs after it, once the instance is
+fully initialized. Constructor interception is class proxies only.
 
 ## 📊 Performance
 

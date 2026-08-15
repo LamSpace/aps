@@ -20,6 +20,7 @@
 - **注解驱动 API** — 声明式 `@Intercept`/`@Around` 方法匹配，运行时落到同一条 `Group` 管线
 - **零开销透传** — 未匹配任何 Group 的方法直接调用父类，无任何拦截开销
 - **构造参数支持** — 支持代理无默认构造方法的类
+- **构造器拦截** — `ConstructorInterceptor` 钩子在父类构造器前后运行，支持参数改写与否决
 
 ## ⚡ 快速开始
 
@@ -104,6 +105,24 @@ class MetricsInterceptor {
 Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MetricsInterceptor());
 String s = proxy.getGreeting(); // 经由 measure() 路由
 ```
+
+### 构造器拦截
+
+```java
+ConstructorInterceptor ctorInterceptor = new ConstructorInterceptor() {
+    public Object[] before(Constructor<?> ctor, Object[] args) {
+        System.out.println("before " + ctor.getName());
+        return args; // 可改写构造参数
+    }
+    public void after(Object proxy, Constructor<?> ctor, Object[] args) {
+        System.out.println("after " + ctor.getName());
+    }
+};
+
+Greeter proxy = AcceleratedProxy.proxy(Greeter.class, interceptor, ctorInterceptor);
+```
+
+`before` 在父类构造器之前运行（可改写参数或抛异常否决）；`after` 在父类构造器之后、实例完全初始化后运行。构造器拦截仅支持类代理。
 
 ## 📊 性能
 

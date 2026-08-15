@@ -141,6 +141,16 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 
 **要点：** `@Around` 方法通过 `LambdaMetafactory` 调用点绑定到 `Interceptor` SAM（无逐次反射），因此注解驱动拦截达到手写 lambda 的平价——与程序化等价物在噪声范围内一致。一次性反射成本发生在 `intercept()` 创建期，不在测量循环内。
 
+## 构造器拦截（第三阶段）— 新增
+
+实例创建成本（每次代理构造，而非每次方法调用）。目标：`Target`（无参构造器）。`directNew` = `new Target()`，`plainProxy` = `proxy(Target, interceptor)`（无拦截），`interceptedProxy` = `proxy(Target, ctorInterceptor, Group.otherwise(interceptor))`。
+
+| 场景         | directNew | plainProxy | interceptedProxy | 偏差（钩子） |
+|--------------|-----------|------------|------------------|--------------|
+| 构造实例     | 2.0 ns    | 188.1 ns   | 202.8 ns         | +14.7 ns     |
+
+**要点：** `plainProxy` 与 `interceptedProxy` 都由 `proxy()` 内的反射实例化（`Constructor.newInstance`）主导；构造器钩子每实例约增加 15 ns（一次 `before` + 一次 `after` 接口调用，加一个空参数数组）。未拦截路径字节码逐字节不变，因此现有代理构造成本不受影响。这是每实例一次性成本，与方法调用延迟无关。
+
 ## 总结
 
 APS 是同类最优的类代理方案——在所有有实际工作的场景中比 CGLib 快 3–7×，透传调度达到直接调用速度。对于接口代理，`java.lang.reflect.Proxy` 在轻量级场景更快（HotSpot 内在优化）；APS 在字符串密集场景（透传、参数修改）中与之持平。

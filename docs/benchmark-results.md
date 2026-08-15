@@ -141,6 +141,16 @@ Compares the declarative `@Intercept`/`@Around` API (`AcceleratedProxy.intercept
 
 **Key takeaway:** The `@Around` method is bound to the `Interceptor` SAM via a `LambdaMetafactory` call site (no per-call reflection), so annotation-driven interception reaches hand-written-lambda parity — within noise of the programmatic equivalent. The one-time reflection cost runs at `intercept()` creation time, outside the measured loop.
 
+## Constructor Interception (Phase 3) — New
+
+Instance-creation cost (per proxy construction, not per method call). Target: `Target` with a no-arg constructor. `directNew` = `new Target()`, `plainProxy` = `proxy(Target, interceptor)` (no interception), `interceptedProxy` = `proxy(Target, ctorInterceptor, Group.otherwise(interceptor))`.
+
+| Scenario          | directNew | plainProxy | interceptedProxy | Delta (hook) |
+|-------------------|-----------|------------|------------------|--------------|
+| construct instance | 2.0 ns    | 188.1 ns   | 202.8 ns         | +14.7 ns     |
+
+**Key takeaway:** `plainProxy` and `interceptedProxy` are both dominated by the reflection instantiation (`Constructor.newInstance`) inside `proxy()`; the constructor hook adds ~15 ns per instance (one `before` + one `after` interface call plus an empty argument array). The non-intercepted path is byte-for-byte unchanged, so existing proxy construction costs are unaffected. This is a once-per-instance cost, independent of method-call latency.
+
 ## Summary
 
 APS is the best-performing class proxy — it beats CGLib by 3–7× in all scenarios with actual work, and runs at direct-call speed for passthrough dispatch. For interface proxies, `java.lang.reflect.Proxy` is faster in lightweight scenarios (HotSpot intrinsics); APS reaches parity in string-heavy scenarios (passthrough, arg-modify).

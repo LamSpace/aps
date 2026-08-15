@@ -38,7 +38,7 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 | 1    | P3     | **接口默认方法调用**（已完成） | 在拦截器中调用接口 `default` 方法，`INVOKESPECIAL` 直调默认实现       |
 | 2    | P3     | **多接口代理**（已完成）       | 一个代理类实现多个接口                                                |
 | 3    | P3     | **注解驱动 API**（已完成）     | 如 `@Intercept` 标注方法，减少样板代码，声明式方法匹配                |
-| 4    | P3     | **构造器拦截**                 | 对象创建时的 hook，类似 CGLib 的 `Enhancer` 构造器回调                |
+| 4    | P3     | **构造器拦截**（已完成）       | 对象创建时的 hook，类似 CGLib 的 `Enhancer` 构造器回调                |
 | 5    | P3     | **静态方法代理**               | 需生成委托代码 — 静态方法不参与虚方法分派                             |
 | 6    | P3     | **热加载/热替换**              | 运行时重新生成代理类，适合长期运行的框架场景                          |
 | 7    | P3     | **虚拟线程兼容性**             | 验证 APS 代理在虚拟线程上的行为，确认不 pin 载体线程                  |
@@ -77,11 +77,12 @@ class MetricsInterceptor {
 Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MetricsInterceptor());
 ```
 
-### 构造器拦截挑战
+### 构造器拦截（已完成）
 
-- `defineHiddenClass` 生成的类构造器必须调用 `super()`
-- 但可以在 super 调用前后插入字节码
-- 需要新的 `ConstructorInterceptor` 接口
+- 新 `ConstructorInterceptor` 接口：`before(Constructor<?>, Object[])` 在父类构造器前运行，可改写参数、可抛异常否决；`after(Object, Constructor<?>, Object[])` 在父类构造器后运行，纯观察（默认空实现）
+- 新入口：`proxy(Class<T>, Interceptor, ConstructorInterceptor)`、`proxy(Class<T>, ConstructorInterceptor, Group...)`、`proxy(Class<T>, Object[], ConstructorInterceptor, Group...)`（仅类代理）
+- JVM 约束：`super()` 之前 `this` 不可用，故 `before` 不传 proxy；`Constructor` 对象经 `<clinit>` 一次性反射解析为静态字段
+- 未启用拦截时生成字节码逐字节不变，零开销
 
 ### 静态方法代理挑战
 
