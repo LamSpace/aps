@@ -17,6 +17,7 @@ A high-performance dynamic proxy library for Java, designed as a drop-in replace
 - **One-line API** — `AcceleratedProxy.proxy(MyClass.class, interceptor)` with generic type inference, no casts needed
 - **Multi-Interceptor / Method Grouping** — bind different `Interceptor` instances to different method families via `Group.of()` with first-match-wins semantics and zero hot-path overhead
 - **Multi-interface proxy** — `AcceleratedProxy.proxy(new Class<?>[]{...}, interceptor)` implements several interfaces in one proxy object
+- **Annotation-driven API** — declarative `@Intercept`/`@Around` method matching that compiles down to the same `Group` pipeline
 - **Zero-overhead passthrough** — methods not matching any Group call the superclass directly with no interception cost
 - **Constructor arguments** — supports proxying classes without a no-arg constructor
 
@@ -87,6 +88,21 @@ Object p = AcceleratedProxy.proxy(new Class<?>[]{Greeter.class, Auditable.class}
         });
 Greeter g = (Greeter) p;   // one object, multiple interface views
 Auditable a = (Auditable) p;
+```
+
+### Annotation-Driven API
+
+```java
+@Intercept
+class MetricsInterceptor {
+    @Around("get*")
+    Object measure(Object proxy, Method method, Object[] args) throws Throwable {
+        return AcceleratedProxy.invokeSuper(proxy, method, args);
+    }
+}
+
+Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MetricsInterceptor());
+String s = proxy.getGreeting(); // routed through measure()
 ```
 
 ## 📊 Performance
@@ -292,6 +308,7 @@ See [docs/migration-guide.md](docs/migration-guide.md) for step-by-step migratio
 - [Migration Guide](docs/migration-guide.md)
 - [APS vs CGLib/Java Proxy (设计 spec)](docs/superpowers/specs/2026-08-02-aps-unified-proxy-design.md)
 - [Multi-Interceptor Design Spec](docs/superpowers/specs/2026-08-09-multi-interceptor-method-grouping-design.md)
+- [Annotation-Driven API Design Spec](docs/superpowers/specs/2026-08-15-annotation-driven-api-design.md)
 - [Future Roadmap](docs/aps-future-roadmap.md)
 
 ## 📄 License

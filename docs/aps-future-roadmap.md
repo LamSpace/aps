@@ -37,7 +37,7 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 |------|--------|--------------------------------|-----------------------------------------------------------------------|
 | 1    | P3     | **接口默认方法调用**（已完成） | 在拦截器中调用接口 `default` 方法，`INVOKESPECIAL` 直调默认实现       |
 | 2    | P3     | **多接口代理**（已完成）       | 一个代理类实现多个接口                                                |
-| 3    | P3     | **注解驱动 API**               | 如 `@Intercept` 标注方法，减少样板代码，声明式方法匹配                |
+| 3    | P3     | **注解驱动 API**（已完成）     | 如 `@Intercept` 标注方法，减少样板代码，声明式方法匹配                |
 | 4    | P3     | **构造器拦截**                 | 对象创建时的 hook，类似 CGLib 的 `Enhancer` 构造器回调                |
 | 5    | P3     | **静态方法代理**               | 需生成委托代码 — 静态方法不参与虚方法分派                             |
 | 6    | P3     | **热加载/热替换**              | 运行时重新生成代理类，适合长期运行的框架场景                          |
@@ -57,21 +57,24 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 - 内部接口路径统一为 `Class<?>[]`，单接口即长度 1 的特例（字节级一致，不影响基准）
 - 冲突规则：相同签名 + 相同返回类型合并；不同返回类型抛 `IllegalArgumentException`；两个 `default` 抛 `IllegalArgumentException`；一个 `default` + 一个抽象合并并调用该 default
 
-### 注解驱动 API
+### 注解驱动 API（已完成）
 
-- 声明式方法匹配替代编程式 `if-else`，减少样板代码
-- 适用于大型项目中跨多个代理类复用同一拦截模式的场景
-- 命名考虑：`intercept()` vs `proxy()` — 统一使用 `proxy()` 更简洁，`intercept()` 明确表达"注解驱动拦截"语义
+- `@Intercept`（类级）+ `@Around`（方法级）注解声明式匹配方法，替代编程式 `Group.of(m -> ...)`
+- 三个匹配维度 AND 组合、维度内 OR：`value`/`glob`（方法名 glob）、`regex`（方法名正则）、`annotatedWith`（按方法注解）
+- `@Around` 方法契约：实例方法，签名固定 `(Object, Method, Object[])`，返回引用类型
+- 入口 `AcceleratedProxy.intercept(target, interceptor)`，未匹配方法透传，与程序化行为一致
+- 注解驱动与等价手写 `Group` 生成相同代理类（同一缓存项），稳态开销 ≈ 手写 lambda（`LambdaMetafactory` 调用点）
 
 ```java
-
 @Intercept
 class MetricsInterceptor {
-    @Around("get*")
-    Object measure(Object proxy, Method method, Object[] args) {
+    @Around(value = "get*", annotatedWith = Tx.class)
+    Object measure(Object proxy, Method method, Object[] args) throws Throwable {
         return AcceleratedProxy.invokeSuper(proxy, method, args);
     }
 }
+
+Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MetricsInterceptor());
 ```
 
 ### 构造器拦截挑战
