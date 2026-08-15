@@ -40,6 +40,8 @@ class StaticMethodProxyTest {
         public static long big(long v) { return v * 2; }
         public static double div(double v) { return v / 2; }
         public static boolean flag(boolean b) { return !b; }
+        public static int sum(int[] xs) { int t = 0; for (int x : xs) t += x; return t; }
+        public static String[] names() { return new String[]{"a", "b"}; }
         public static int overloaded() { return 1; }
         public static int overloaded(int x) { return x + 1; }
         public static int overloaded(String s) { return s.length(); }
@@ -125,6 +127,16 @@ class StaticMethodProxyTest {
     }
 
     @Test
+    void arrayParameterAndReturn() throws Exception {
+        Class<?> proxyClass = AcceleratedProxy.proxyStatic(Statics.class,
+                Group.otherwise(callOriginal()));
+        assertEquals(6, (Integer) proxyClass.getMethod("sum", int[].class)
+                .invoke(null, new int[]{1, 2, 3}));
+        assertArrayEquals(new String[]{"a", "b"},
+                (String[]) proxyClass.getMethod("names").invoke(null));
+    }
+
+    @Test
     void overloadedStaticsDispatchByParams() throws Exception {
         Class<?> proxyClass = AcceleratedProxy.proxyStatic(Statics.class,
                 Group.otherwise(callOriginal()));
@@ -203,6 +215,15 @@ class StaticMethodProxyTest {
         assertInstanceOf(UndeclaredThrowableException.class, ce.getCause());
         assertInstanceOf(Exception.class,
                 ((UndeclaredThrowableException) ce.getCause()).getCause());
+    }
+
+    @Test
+    void errorPropagatesAsIs() throws Exception {
+        Class<?> proxyClass = AcceleratedProxy.proxyStatic(Statics.class,
+                Group.otherwise((o, m, a) -> { throw new AssertionError("boom"); }));
+        InvocationTargetException e = assertThrows(InvocationTargetException.class,
+                () -> proxyClass.getMethod("add", int.class, int.class).invoke(null, 1, 2));
+        assertInstanceOf(AssertionError.class, e.getCause());
     }
 
     @Test

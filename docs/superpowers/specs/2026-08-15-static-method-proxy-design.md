@@ -94,7 +94,7 @@ class io.github.lamspace.StaticProxy$$AcceleratedProxy$$<n> extends Object {
   `public` static methods, so no `LookupManager` / in-target-package access is
   needed.
 - `<clinit>` resolves each `Method` once via
-  `declaringClass.getMethod(name, paramTypes)` on the method's *declaring*
+  `declaringClass.getDeclaredMethod(name, paramTypes)` on the method's *declaring*
   class (so inherited static methods resolve to the declaring superclass),
   reusing the existing LDC/`pushClassConstant` emission pattern.
 
@@ -290,3 +290,7 @@ invocation mechanism the caller already chose" — the caller's entry mechanism
 - Combining static and instance proxying in a single generated class.
 - Static method proxy for the annotation-driven `intercept()` API.
 - Hot-load/hot-replace of static proxies (separate roadmap item 6).
+- Faithful shadowing when a subclass declares a `public static final` method
+  hiding an inherited non-`final` `public static` method: the `final` method is
+  skipped and the shadow routes to the inherited (non-`final`) method, which
+  does not mirror JVM hiding semantics for that one corner case.

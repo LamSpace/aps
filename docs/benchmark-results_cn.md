@@ -153,16 +153,17 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 
 ## 静态方法代理（第三阶段）— 新增
 
-遮蔽 `public static` 方法的单次调用成本。目标：`Target.staticAdd(int, int)`。静态方法编译期绑定，因此入口机制——而非 APS——占据主导：`directCall` = `Target.staticAdd(...)`，`reflectionFloor` = 对目标自身 `Method` 的 `Method.invoke(null, ...)`（无代理），`proxyReflection` = 通过 `getMethod(...).invoke(...)` 调用返回类的遮蔽方法，`proxyMethodHandle` = 通过 `MethodHandles.lookup().findStatic(...)` 调用遮蔽方法。
+遮蔽 `public static` 方法的单次调用成本。目标：`Target.staticAdd(int, int)`。静态方法编译期绑定，因此入口机制——而非 APS——占据主导：`directCall` = `Target.staticAdd(...)`，`reflectionFloor` = 对目标自身 `Method` 的 `Method.invoke(null, ...)`（无代理），`proxyPassthrough` = 通过 `getMethod(...).invoke(...)` 调用返回类的未匹配遮蔽方法（直接 `INVOKESTATIC`，无拦截器），`proxyIntercepted` = 通过 `getMethod(...).invoke(...)` 调用带"调原方法"拦截器的遮蔽方法，`proxyMethodHandle` = 通过 `MethodHandles.lookup().findStatic(...)` 调用拦截遮蔽方法。
 
-| 场景                 | ns/op  |
-|----------------------|--------|
-| 直接调用             | 0.394  |
-| 反射下限             | 7.273  |
-| 代理（反射）         | 15.194 |
-| 代理（MethodHandle） | 13.017 |
+| 场景                | ns/op  |
+|---------------------|--------|
+| 直接调用            | 0.390  |
+| 反射下限            | 7.494  |
+| 代理（透传）        | 7.352  |
+| 代理（拦截）        | 15.288 |
+| 代理（MethodHandle）| 12.979 |
 
-**要点：** `proxyReflection` ≈ `reflectionFloor` + 约 7.9 ns（APS 的装箱 + 一次 `intercept` 调用 + 拦截器内的 `method.invoke` + 拆箱）；`proxyMethodHandle` 约 13 ns 同理（拦截器内的调原方法仍是反射）。APS 在调用方已选定的入口机制之上只增加一个小而恒定的开销——它不会让静态调用变得透明地快。
+**要点：** `proxyPassthrough` ≈ `reflectionFloor`（噪声范围内）——APS 的遮蔽调度无可测开销，因为透传遮蔽是 JIT 内联的直接 `INVOKESTATIC`。`proxyIntercepted` ≈ `reflectionFloor` + 约 7.8 ns（APS 的装箱 + 一次 `intercept` 调用 + 拦截器内的反射 `method.invoke` + 拆箱）；`proxyMethodHandle` 约 13 ns 同理。APS 在调用方已选定的入口机制之上只增加一个小而恒定的开销——它不会让静态调用变得透明地快。
 
 ## 总结
 

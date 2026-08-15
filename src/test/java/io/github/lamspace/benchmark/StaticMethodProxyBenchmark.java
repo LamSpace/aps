@@ -28,9 +28,15 @@ import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Measures the marginal cost of APS static-method proxying on top of the
- * caller's chosen invocation mechanism (reflection or MethodHandle). Static
- * methods are compile-time bound, so the entry mechanism — not APS — dominates.
+ * Measures the cost of APS static-method proxying on top of the caller's
+ * chosen invocation mechanism (reflection or MethodHandle). Static methods
+ * are compile-time bound, so the entry mechanism — not APS — dominates.
+ *
+ * <p>{@code proxyPassthrough} isolates APS's shadow-dispatch overhead (a
+ * non-matching shadow that direct-{@code INVOKESTATIC}s the original, with no
+ * interceptor); {@code proxyIntercepted}/{@code proxyMethodHandle} measure the
+ * full intercepted round trip (box + one {@code intercept} call + the
+ * interceptor's reflective {@code method.invoke} + unbox).
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
@@ -50,18 +56,25 @@ public class StaticMethodProxyBenchmark {
             (obj, method, args) -> method.invoke(null, args);
 
     private Method reflectionMethod;
-    private Method proxyMethod;
-    private MethodHandle proxyHandle;
+    private Method passthroughMethod;
+    private Method interceptedMethod;
+    private MethodHandle interceptedHandle;
 
     @Setup
     public void setup() throws Exception {
         reflectionMethod = Target.class.getMethod("staticAdd",
                 int.class, int.class);
-        Class<?> proxyClass = AcceleratedProxy.proxyStatic(Target.class,
-                Group.otherwise(CALL_ORIGINAL));
-        proxyMethod = proxyClass.getMethod("staticAdd",
+
+        Class<?> passthroughClass = AcceleratedProxy.proxyStatic(Target.class,
+                Group.of(m -> false, (o, m, a) -> null));
+        passthroughMethod = passthroughClass.getMethod("staticAdd",
                 int.class, int.class);
-        proxyHandle = MethodHandles.lookup().findStatic(proxyClass,
+
+        Class<?> interceptedClass = AcceleratedProxy.proxyStatic(Target.class,
+                Group.otherwise(CALL_ORIGINAL));
+        interceptedMethod = interceptedClass.getMethod("staticAdd",
+                int.class, int.class);
+        interceptedHandle = MethodHandles.lookup().findStatic(interceptedClass,
                 "staticAdd",
                 MethodType.methodType(int.class, int.class, int.class));
     }
@@ -77,13 +90,18 @@ public class StaticMethodProxyBenchmark {
     }
 
     @Benchmark
-    public int proxyReflection() throws Exception {
-        return (Integer) proxyMethod.invoke(null, 2, 3);
+    public int proxyPassthrough() throws Exception {
+        return (Integer) passthroughMethod.invoke(null, 2, 3);
+    }
+
+    @Benchmark
+    public int proxyIntercepted() throws Exception {
+        return (Integer) interceptedMethod.invoke(null, 2, 3);
     }
 
     @Benchmark
     public int proxyMethodHandle() throws Throwable {
-        return (Integer) proxyHandle.invoke(2, 3);
+        return (Integer) interceptedHandle.invoke(2, 3);
     }
 
     public static void main(String[] args) throws Exception {

@@ -153,16 +153,17 @@ Instance-creation cost (per proxy construction, not per method call). Target: `T
 
 ## Static Method Proxy (Phase 3) — New
 
-Per-call cost of a shadowed `public static` method. Target: `Target.staticAdd(int, int)`. Static methods are compile-time bound, so the entry mechanism — not APS — dominates: `directCall` = `Target.staticAdd(...)`, `reflectionFloor` = `Method.invoke(null, ...)` on the target's own `Method` (no proxy), `proxyReflection` = the returned class's shadow via `getMethod(...).invoke(...)`, `proxyMethodHandle` = the shadow via `MethodHandles.lookup().findStatic(...)`.
+Per-call cost of a shadowed `public static` method. Target: `Target.staticAdd(int, int)`. Static methods are compile-time bound, so the entry mechanism — not APS — dominates: `directCall` = `Target.staticAdd(...)`, `reflectionFloor` = `Method.invoke(null, ...)` on the target's own `Method` (no proxy), `proxyPassthrough` = the returned class's non-matching shadow via `getMethod(...).invoke(...)` (direct `INVOKESTATIC`, no interceptor), `proxyIntercepted` = the shadow with a call-original interceptor via `getMethod(...).invoke(...)`, `proxyMethodHandle` = the intercepted shadow via `MethodHandles.lookup().findStatic(...)`.
 
-| Scenario             | ns/op  |
-|----------------------|--------|
-| direct call          | 0.394  |
-| reflection floor     | 7.273  |
-| proxy (reflection)   | 15.194 |
-| proxy (MethodHandle) | 13.017 |
+| Scenario            | ns/op  |
+|---------------------|--------|
+| direct call         | 0.390  |
+| reflection floor    | 7.494  |
+| proxy passthrough   | 7.352  |
+| proxy intercepted   | 15.288 |
+| proxy MethodHandle  | 12.979 |
 
-**Key takeaway:** `proxyReflection` ≈ `reflectionFloor` + ~7.9 ns (APS's box + one `intercept` call + the interceptor's `method.invoke` + unbox); `proxyMethodHandle` sits at ~13 ns for the same reason (the interceptor's call-original is still reflective). APS adds a small, constant overhead on top of the invocation mechanism the caller already chose — it does not make static calls transparently fast.
+**Key takeaway:** `proxyPassthrough` ≈ `reflectionFloor` (within noise) — APS's shadow dispatch adds no measurable cost, because the passthrough shadow is a direct `INVOKESTATIC` the JIT inlines. `proxyIntercepted` ≈ `reflectionFloor` + ~7.8 ns (APS's box + one `intercept` call + the interceptor's reflective `method.invoke` + unbox); `proxyMethodHandle` sits at ~13 ns for the same reason. APS adds a small, constant overhead on top of the invocation mechanism the caller already chose — it does not make static calls transparently fast.
 
 ## Summary
 
