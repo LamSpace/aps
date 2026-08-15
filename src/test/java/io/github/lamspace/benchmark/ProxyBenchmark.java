@@ -17,13 +17,16 @@
 package io.github.lamspace.benchmark;
 
 import io.github.lamspace.AcceleratedProxy;
+import io.github.lamspace.Around;
 import io.github.lamspace.Group;
+import io.github.lamspace.Intercept;
 import io.github.lamspace.Interceptor;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import org.openjdk.jmh.annotations.*;
 
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -987,5 +990,44 @@ public class ProxyBenchmark {
     @Benchmark
     public String mi_multi_audit(MultiInterfaceState s) {
         return s.multiB.audit();
+    }
+
+    // ================================================================
+    // Target: Annotation-driven vs programmatic Group (Phase 3)
+    // ================================================================
+
+    @Intercept
+    static class MetricsInterceptor {
+        @Around("get*")
+        public Object measure(Object proxy, Method method, Object[] args)
+                throws Throwable {
+            return AcceleratedProxy.invokeSuper(proxy, method, args);
+        }
+    }
+
+    @State(Scope.Thread)
+    public static class AnnotationDrivenState {
+        MultiGroupTarget annotationDriven;
+        MultiGroupTarget programmatic;
+
+        @Setup
+        public void setup() {
+            annotationDriven = AcceleratedProxy.intercept(
+                    MultiGroupTarget.class, new MetricsInterceptor());
+            programmatic = AcceleratedProxy.proxy(MultiGroupTarget.class,
+                    Group.of(m -> m.getName().startsWith("get"),
+                            (obj, method, args) ->
+                                    AcceleratedProxy.invokeSuper(obj, method, args)));
+        }
+    }
+
+    @Benchmark
+    public String ann_getGreeting(AnnotationDrivenState s) {
+        return s.annotationDriven.getGreeting();
+    }
+
+    @Benchmark
+    public String ann_prog_getGreeting(AnnotationDrivenState s) {
+        return s.programmatic.getGreeting();
     }
 }
