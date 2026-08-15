@@ -58,12 +58,12 @@ enhancer.setCallbackFilter(method ->
     method.getName().startsWith("get") ? 0 : 1);
 ```
 
-**APS (`ClassFilter`):**
+**APS (`Group.of`):**
 
 ```java
-MyService proxy = AcceleratedProxy.proxy(MyService.class, interceptor,
-        method -> method.getName().startsWith("get"));
-// Methods not matching the filter skip interception entirely — zero overhead
+MyService proxy = AcceleratedProxy.proxy(MyService.class,
+        Group.of(m -> m.getName().startsWith("get"), interceptor));
+// Methods not matching any Group skip interception entirely — zero overhead
 ```
 
 ### Constructor arguments
@@ -77,7 +77,8 @@ enhancer.create(new Class[] { String.class }, new Object[] { "arg" });
 **APS:**
 
 ```java
-AcceleratedProxy.proxy(MyService.class, interceptor, null, "arg");
+AcceleratedProxy.proxy(MyService.class, new Object[]{"arg"},
+        Group.otherwise(interceptor));
 ```
 
 ---
@@ -159,7 +160,7 @@ Methods with the same signature and return type across interfaces are merged; am
 | Class loading                  | Hidden class                         | Custom ClassLoader         | Native Proxy                  |
 | GC-safe                        | Yes                                  | No (ClassLoader leak risk) | Yes                           |
 | Lambda-friendly API            | Yes                                  | Yes                        | Yes                           |
-| Method filtering               | Yes (ClassFilter)                    | Yes (CallbackFilter)       | No                            |
+| Method filtering               | Yes (Group.of)                       | Yes (CallbackFilter)       | No                            |
 | No-default-constructor support | Yes                                  | Yes                        | N/A                           |
 | Primitive boxing               | Automatic                            | Automatic                  | Automatic                     |
 | Exception propagation          | As-is (no wrapping)                  | Checked → InvocationTarget | Checked → UndeclaredThrowable |
