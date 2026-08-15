@@ -1019,15 +1019,7 @@ public class ConstructorInterceptionBenchmark {
     }
 
     public static class Target {
-        private final int a;
-        private final int b;
-
-        public Target(int a, int b) {
-            this.a = a;
-            this.b = b;
-        }
-
-        public int sum() {
+        public int sum(int a, int b) {
             return a + b;
         }
     }
@@ -1045,7 +1037,7 @@ public class ConstructorInterceptionBenchmark {
 
     @Benchmark
     public Object directNew() {
-        return new Target(1, 2);
+        return new Target();
     }
 
     @Benchmark
@@ -1055,8 +1047,8 @@ public class ConstructorInterceptionBenchmark {
 
     @Benchmark
     public Object interceptedProxy() {
-        return AcceleratedProxy.proxy(Target.class, new Object[]{1, 2},
-                NOOP_CTOR, Group.otherwise(NOOP));
+        return AcceleratedProxy.proxy(Target.class, NOOP_CTOR,
+                Group.otherwise(NOOP));
     }
 }
 ```
@@ -1068,13 +1060,13 @@ Expected: BUILD SUCCESS.
 
 - [ ] **Step 3: Run the benchmark**
 
-Run (same invocation as the existing `ProxyBenchmark`, documented in `docs/benchmark-results.md`):
+Run (same invocation as the existing `ProxyBenchmark`, documented in `docs/benchmark-results.md`; the trailing filter limits the run to this benchmark class):
 
 ```bash
 mvn -s /home/lam/repo/settings.xml -q dependency:build-classpath -Dmdep.outputFile=cp.txt
 java --enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED \
   -cp target/test-classes:target/classes:$(cat cp.txt) \
-  io.github.lamspace.benchmark.ConstructorInterceptionBenchmark
+  io.github.lamspace.benchmark.ConstructorInterceptionBenchmark 'ConstructorInterceptionBenchmark'
 ```
 
 Expected: JMH prints three rows — `directNew`, `plainProxy`, `interceptedProxy` — each in ns/op. Record the three numbers for Task 6.
