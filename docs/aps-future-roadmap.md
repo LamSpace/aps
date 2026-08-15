@@ -41,7 +41,7 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 | 4    | P3     | **构造器拦截**（已完成）       | 对象创建时的 hook，类似 CGLib 的 `Enhancer` 构造器回调                |
 | 5    | P3     | **静态方法代理**（已完成）     | 需生成委托代码 — 静态方法不参与虚方法分派                             |
 | 6    | P3     | **热加载/热替换**（部分完成）  | 类热重载（`evict`/`evictClassLoader`）+ 拦截器热替换（`rebind`）；跨 ClassLoader 热部署待 item 8 |
-| 7    | P3     | **虚拟线程兼容性**             | 验证 APS 代理在虚拟线程上的行为，确认不 pin 载体线程                  |
+| 7    | P3     | **虚拟线程兼容性**（已完成）   | 验证 APS 代理在虚拟线程上的行为，确认不 pin 载体线程                  |
 | 8    | P3     | **JPMS 强封装模块**            | 处理 `java.base` 等强封装模块中类的代理访问                           |
 | 9    | P3     | **Maven Central 发布**         | 让其他项目能通过 Maven/Gradle 依赖引入，GroupId: `io.github.lamspace` |
 
@@ -112,11 +112,13 @@ Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MetricsInterceptor
 - 拦截器字段由 `final` 改为 plain，`rebind` 末尾 `VarHandle.fullFence()`；单写者 + 调用方负责 happens-before
 - `ConstructorInterceptor` 不可热替换（仅构造期使用，不落实例字段）
 
-### 虚拟线程兼容性
+### 虚拟线程兼容性（已完成）
 
-- 热路径为 hashCode 开关 + 直接 `INVOKESPECIAL` 父类调用，无 `synchronized`、无阻塞 I/O，理论上不 pin 载体线程
-- 需新增虚拟线程下的并发测试，验证大量代理调用不触发 pinning（可用 `-Djdk.tracePinnedThreads` 或 JFR 观测）
-- 确认生成的隐藏类与 `MethodHandles` 调用在虚拟线程调度下行为一致
+- 目标 JDK 25：自 JDK 24 起 JEP 491 已消除 `synchronized` 的载体线程 pinning，仅 native 方法 / FFM downcall 仍会 pin
+- 实例代理热路径（hashCode 开关 + `INVOKESPECIAL` 直调）为纯字节码，无 native、无锁、无阻塞 I/O，稳态调用零 pin（JFR `jdk.VirtualThreadPinned` 事件计数 == 0 验证）
+- `defineHiddenClass` 类定义是 native 调用，仅创建时瞬时 pin、随后缓存，不影响稳态；虚拟线程内创建代理已验证可用
+- 静态方法代理拦截器内的 `method.invoke(null, args)` 反射冷调用（约前 15 次）走 native accessor 会 pin，inflate 成生成 accessor 后消失——已知限制，非热路径
+- 验证：`VirtualThreadCompatibilityTest`（虚拟线程并发正确性 + JFR 零 pin 断言 + 虚拟线程内建代理）；手动诊断可用 `-Djdk.tracePinnedThreads=full`
 
 ### JPMS 强封装模块
 
