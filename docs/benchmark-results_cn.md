@@ -165,6 +165,16 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 
 **要点：** `proxyPassthrough` ≈ `reflectionFloor`（噪声范围内）——APS 的遮蔽调度无可测开销，因为透传遮蔽是 JIT 内联的直接 `INVOKESTATIC`。`proxyIntercepted` ≈ `reflectionFloor` + 约 7.8 ns（APS 的装箱 + 一次 `intercept` 调用 + 拦截器内的反射 `method.invoke` + 拆箱）；`proxyMethodHandle` 约 13 ns 同理。APS 在调用方已选定的入口机制之上只增加一个小而恒定的开销——它不会让静态调用变得透明地快。
 
+## 热加载 / 热替换（第三阶段）— 新增
+
+`rebind` 在活代理实例上替换拦截器（N 次字段写入 + `VarHandle.fullFence()`）。这是一次罕见的管理操作，不属于热路径——该数字仅为信息性，不与 `reflect.Proxy` 作比较。
+
+| 场景     | ns/op  |
+|----------|--------|
+| `rebind` | 6.665  |
+
+**奇偶性说明：** 热路径（方法重写、`dispatch`、`<clinit>`）字节级不变——`MethodDispatcher`、`InterfaceDispatcher`、`DispatchGenerator` 均未改动；拦截器字段仅去掉 `final`，前后对比无可测 JIT 影响。
+
 ## 总结
 
 APS 是同类最优的类代理方案——在所有有实际工作的场景中比 CGLib 快 3–7×，透传调度达到直接调用速度。对于接口代理，`java.lang.reflect.Proxy` 在轻量级场景更快（HotSpot 内在优化）；APS 在字符串密集场景（透传、参数修改）中与之持平。

@@ -167,4 +167,17 @@ Methods with the same signature and return type across interfaces are merged; am
 | Final class/method proxy       | No (JVM limit)                       | No (JVM limit)             | N/A                           |
 | Static method proxy            | Roadmap                              | No                         | No                            |
 | Constructor interception       | Roadmap                              | Yes                        | No                            |
+| Hot reload / rebind            | Yes (`evict`, `rebind`)              | No                         | No                            |
 | Maven Central                  | Roadmap                              | Yes                        | Built-in (JDK)                |
+
+---
+
+## Hot reload / hot swap
+
+`evict(Class)`, `evictClassLoader(ClassLoader)`, and `rebind(proxy, ...)` are
+purely additive. CGLib has no post-construction callback swap — the equivalent
+is a fresh proxy per reloaded class — and `java.lang.reflect.Proxy` instances
+are immutable after creation, so neither has a direct counterpart for `rebind`.
+Note that `evict`/`evictClassLoader` only manage the *cache*; a target loaded by
+a child `ClassLoader` (with APS in a shared parent) needs the JPMS
+`--add-opens` strategy before it can be proxied at all.

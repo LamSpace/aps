@@ -22,6 +22,7 @@
 - **构造参数支持** — 支持代理无默认构造方法的类
 - **构造器拦截** — `ConstructorInterceptor` 钩子在父类构造器前后运行，支持参数改写与否决
 - **静态方法代理** — `AcceleratedProxy.proxyStatic(target, ...)` 返回一个生成类，用同一 `Interceptor` 遮蔽目标类的 `public static` 方法（反射或 `MethodHandle` 调用）
+- **热加载/热替换** — `evict(Class)` / `evictClassLoader(ClassLoader)` 为热部署目标确定性丢弃缓存的代理类，`rebind(proxy, interceptor)` 在活实例上原地替换拦截器
 
 ## ⚡ 快速开始
 
@@ -140,6 +141,17 @@ int result = (Integer) proxyClass.getMethod("add", int.class, int.class)
 ```
 
 *静态方法在编译期绑定，`Utils.add(...)` 仍调用原方法；只有对返回的类（反射或 `MethodHandle`）调用才会经过拦截器。*
+
+### 热加载 / 热替换
+
+```java
+// 在活代理上原地替换拦截器，无需重建实例
+Greeter proxy = AcceleratedProxy.proxy(Greeter.class, oldInterceptor);
+AcceleratedProxy.rebind(proxy, newInterceptor);
+
+// 为热部署的 ClassLoader 确定性丢弃缓存的代理类
+AcceleratedProxy.evictClassLoader(pluginClassLoader);
+```
 
 ## 📊 性能
 

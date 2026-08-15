@@ -22,6 +22,7 @@ A high-performance dynamic proxy library for Java, designed as a drop-in replace
 - **Constructor arguments** — supports proxying classes without a no-arg constructor
 - **Constructor interception** — a `ConstructorInterceptor` hook runs before/after the superclass constructor, with argument rewriting and veto support
 - **Static method proxy** — `AcceleratedProxy.proxyStatic(target, ...)` returns a generated class shadowing the target's `public static` methods through the same `Interceptor` (invoke reflectively or via `MethodHandle`)
+- **Hot reload / hot swap** — `evict(Class)` / `evictClassLoader(ClassLoader)` drop cached proxy classes for a hot-deployed target, and `rebind(proxy, interceptor)` swaps an interceptor on a live instance
 
 ## ⚡ Quick Start
 
@@ -142,6 +143,17 @@ int result = (Integer) proxyClass.getMethod("add", int.class, int.class)
 ```
 
 *Static methods are bound at compile time, so `Utils.add(...)` still calls the original; only calls on the returned class (reflective or `MethodHandle`) route through the interceptor.*
+
+### Hot Reload / Hot Swap
+
+```java
+// Swap an interceptor on a live proxy without recreating it
+Greeter proxy = AcceleratedProxy.proxy(Greeter.class, oldInterceptor);
+AcceleratedProxy.rebind(proxy, newInterceptor);
+
+// Deterministically drop cached proxy classes for a hot-deployed classloader
+AcceleratedProxy.evictClassLoader(pluginClassLoader);
+```
 
 ## 📊 Performance
 

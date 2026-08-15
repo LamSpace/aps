@@ -165,6 +165,16 @@ Per-call cost of a shadowed `public static` method. Target: `Target.staticAdd(in
 
 **Key takeaway:** `proxyPassthrough` ≈ `reflectionFloor` (within noise) — APS's shadow dispatch adds no measurable cost, because the passthrough shadow is a direct `INVOKESTATIC` the JIT inlines. `proxyIntercepted` ≈ `reflectionFloor` + ~7.8 ns (APS's box + one `intercept` call + the interceptor's reflective `method.invoke` + unbox); `proxyMethodHandle` sits at ~13 ns for the same reason. APS adds a small, constant overhead on top of the invocation mechanism the caller already chose — it does not make static calls transparently fast.
 
+## Hot Reload / Hot Swap (Phase 3) — New
+
+`rebind` replaces the interceptors on a live proxy instance (N field stores + `VarHandle.fullFence()`). This is a rare management operation, not the hot path — the number is informational, not a comparison against `reflect.Proxy`.
+
+| Scenario | ns/op  |
+|----------|--------|
+| `rebind` | 6.665  |
+
+**Parity note:** the hot path (method overrides, `dispatch`, `<clinit>`) is byte-identical — `MethodDispatcher`, `InterfaceDispatcher`, and `DispatchGenerator` are untouched; the interceptor fields only drop `final`, with no measurable JIT impact in a before/after comparison.
+
 ## Summary
 
 APS is the best-performing class proxy — it beats CGLib by 3–7× in all scenarios with actual work, and runs at direct-call speed for passthrough dispatch. For interface proxies, `java.lang.reflect.Proxy` is faster in lightweight scenarios (HotSpot intrinsics); APS reaches parity in string-heavy scenarios (passthrough, arg-modify).

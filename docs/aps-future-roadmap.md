@@ -39,8 +39,8 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 | 2    | P3     | **多接口代理**（已完成）       | 一个代理类实现多个接口                                                |
 | 3    | P3     | **注解驱动 API**（已完成）     | 如 `@Intercept` 标注方法，减少样板代码，声明式方法匹配                |
 | 4    | P3     | **构造器拦截**（已完成）       | 对象创建时的 hook，类似 CGLib 的 `Enhancer` 构造器回调                |
-| 5    | P3     | **静态方法代理**（已完成）      | 需生成委托代码 — 静态方法不参与虚方法分派                             |
-| 6    | P3     | **热加载/热替换**              | 运行时重新生成代理类，适合长期运行的框架场景                          |
+| 5    | P3     | **静态方法代理**（已完成）     | 需生成委托代码 — 静态方法不参与虚方法分派                             |
+| 6    | P3     | **热加载/热替换**（已完成）    | 类热重载（`evict`/`evictClassLoader`）+ 拦截器热替换（`rebind`）         |
 | 7    | P3     | **虚拟线程兼容性**             | 验证 APS 代理在虚拟线程上的行为，确认不 pin 载体线程                  |
 | 8    | P3     | **JPMS 强封装模块**            | 处理 `java.base` 等强封装模块中类的代理访问                           |
 | 9    | P3     | **Maven Central 发布**         | 让其他项目能通过 Maven/Gradle 依赖引入，GroupId: `io.github.lamspace` |
@@ -66,6 +66,7 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 - 注解驱动与等价手写 `Group` 生成相同代理类（同一缓存项），稳态开销 ≈ 手写 lambda（`LambdaMetafactory` 调用点）
 
 ```java
+
 @Intercept
 class MetricsInterceptor {
     @Around(value = "get*", annotatedWith = Tx.class)
@@ -90,7 +91,7 @@ Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MetricsInterceptor
 - 覆盖本类声明 + 继承链的 `public static` 非 `final` 方法（子类优先去重），走 Group 匹配，未匹配方法直通 `INVOKESTATIC` 原实现
 - 拦截器内调用原方法：`method.invoke(null, args)`
 - 限制：`INVOKESTATIC` 编译期绑定，`Target.staticMethod()` 无法透明拦截，只能对返回的 `Class` 反射或 `MethodHandle` 调用
-- 生成类 `extends Object`，静态代理**不缓存**（静态字段是类级状态），不影响实例代理路径
+- 生成类 `extends Object`，静态代理 **不缓存**（静态字段是类级状态），不影响实例代理路径
 
 ### 静态方法代理挑战
 
@@ -98,11 +99,18 @@ Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MetricsInterceptor
 - 需要在生成的子类中创建同名静态方法委托
 - 使用场景有限（测试 mock、日志注入）
 
-### 热加载挑战
+### 类热重载（已完成）
 
-- 隐藏类一旦定义不可修改
-- 需要生成新的类名并重新装载
-- 旧实例继续使用旧类，新实例使用新类
+- 框架用新 `ClassLoader` 重载目标类时，`proxy()` 对新 `Class` 对象透明生成新代理类；旧实例继续用旧类、新实例用新类（缓存键按 `Class` 身份，类名按 `COUNTER` 唯一）
+- 显式生命周期控制：`AcceleratedProxy.evict(Class)` / `evictClassLoader(ClassLoader)` 确定性驱逐缓存项，下次 `proxy()` 重新生成
+- 缓存键不对称：接口代理以「第一个接口」为键，`evict` 针对该键
+- 限制：目标类在子 `ClassLoader`（APS 位于共享父加载器）时无法代理，需 JPMS `--add-opens` 策略（item 8）
+
+### 拦截器热替换（已完成）
+
+- `AcceleratedProxy.rebind(proxy, interceptor)` / `rebind(proxy, Interceptor[])` 原地替换已创建代理实例上的拦截器，不重建实例、不换类
+- 拦截器字段由 `final` 改为 plain，`rebind` 末尾 `VarHandle.fullFence()`；单写者 + 调用方负责 happens-before
+- `ConstructorInterceptor` 不可热替换（仅构造期使用，不落实例字段）
 
 ### 虚拟线程兼容性
 
