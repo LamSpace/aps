@@ -32,6 +32,13 @@ import java.util.concurrent.TimeUnit;
 @Fork(1)
 public class ConstructorInterceptionBenchmark {
 
+    // A CGLib comparison is intentionally omitted: the pinned cglib 3.3.0
+    // Enhancer.setInterceptDuringConstruction(true) did not invoke the
+    // MethodInterceptor during construction in either no-arg or with-args
+    // create() calls, so a faithful constructor-callback reference could not
+    // be reproduced. The direct/plain/intercepted three-way comparison is the
+    // authoritative measure of the hook's per-instance cost.
+
     public static void main(String[] args) throws Exception {
         org.openjdk.jmh.Main.main(args);
     }

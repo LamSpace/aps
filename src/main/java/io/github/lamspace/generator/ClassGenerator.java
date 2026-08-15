@@ -159,9 +159,14 @@ public class ClassGenerator {
                     "Ljava/lang/reflect/Constructor;", null, null);
         }
 
+        // -- Resolve the superclass constructor once; shared by the generated
+        //    constructor and the <clinit> Constructor lookup --
+        Constructor<?> superCtor =
+                findConstructor(targetClass, constructorArgs);
+
         // -- Constructor: stores interceptors, delegates to super() --
         generateConstructor(cw, generatedInternal, targetInternal,
-                interceptorDesc);
+                interceptorDesc, superCtor);
 
         // -- Method overrides (populates ClinitRegistry + static fields) --
         ClinitRegistry registry = new ClinitRegistry();
@@ -189,14 +194,15 @@ public class ClassGenerator {
                 targetInternal, infos, true);
 
         // -- <clinit> initializer --
-        generateClinit(cw, generatedInternal, entries);
+        generateClinit(cw, generatedInternal, entries, superCtor);
 
         cw.visitEnd();
         return cw.toByteArray();
     }
 
     private void generateClinit(ClassWriter cw, String generatedInternal,
-                                List<ClinitRegistry.Entry> entries) {
+                                List<ClinitRegistry.Entry> entries,
+                                Constructor<?> superCtor) {
         if (entries.isEmpty() && !ctorIntercept) {
             return;
         }
@@ -206,9 +212,7 @@ public class ClassGenerator {
         mv.visitCode();
 
         if (ctorIntercept) {
-            Class<?>[] paramTypes =
-                    findConstructor(targetClass, superParamTypes())
-                            .getParameterTypes();
+            Class<?>[] paramTypes = superCtor.getParameterTypes();
             mv.visitLdcInsn(Type.getType(
                     "L" + Type.getInternalName(targetClass) + ";"));
             BytecodeUtils.pushInt(mv, paramTypes.length);
@@ -262,7 +266,8 @@ public class ClassGenerator {
     private void generateConstructor(ClassWriter cw,
                                      String generatedInternal,
                                      String targetInternal,
-                                     String interceptorDesc) {
+                                     String interceptorDesc,
+                                     Constructor<?> superCtor) {
         int ctorInterceptorSlot = 1 + interceptors.length;
         Class<?>[] superParamTypes = superParamTypes();
 
@@ -287,12 +292,11 @@ public class ClassGenerator {
         if (ctorIntercept) {
             generateInterceptedConstructor(mv, generatedInternal,
                     targetInternal, ctorInterceptorSlot, superParamTypes,
-                    interceptorDesc);
+                    interceptorDesc, superCtor);
         } else {
             // super(superArgs...): load each value-typed arg as a reference,
             // then unbox/cast to the superclass constructor's declared type
-            Constructor<?> ctor = findConstructor(targetClass, superParamTypes);
-            Class<?>[] declaredParams = ctor.getParameterTypes();
+            Class<?>[] declaredParams = superCtor.getParameterTypes();
             mv.visitVarInsn(Opcodes.ALOAD, 0);
             int slot = ctorInterceptorSlot;
             for (int i = 0; i < declaredParams.length; i++) {
@@ -307,7 +311,7 @@ public class ClassGenerator {
                 slot++;
             }
             mv.visitMethodInsn(Opcodes.INVOKESPECIAL, targetInternal,
-                    "<init>", Type.getConstructorDescriptor(ctor), false);
+                    "<init>", Type.getConstructorDescriptor(superCtor), false);
             storeInterceptorFields(mv, generatedInternal, interceptorDesc);
         }
 
@@ -321,9 +325,9 @@ public class ClassGenerator {
                                                String targetInternal,
                                                int ctorInterceptorSlot,
                                                Class<?>[] superParamTypes,
-                                               String interceptorDesc) {
-        Constructor<?> ctor = findConstructor(targetClass, superParamTypes);
-        Class<?>[] declaredParams = ctor.getParameterTypes();
+                                               String interceptorDesc,
+                                               Constructor<?> superCtor) {
+        Class<?>[] declaredParams = superCtor.getParameterTypes();
 
         int firstArgSlot = ctorInterceptorSlot + 1;
         int argsSlot = firstArgSlot + constructorArgs.length;
@@ -399,7 +403,7 @@ public class ClassGenerator {
             }
         }
         mv.visitMethodInsn(Opcodes.INVOKESPECIAL, targetInternal, "<init>",
-                Type.getConstructorDescriptor(ctor), false);
+                Type.getConstructorDescriptor(superCtor), false);
 
         // 3b. bind interceptor fields so intercepted methods are callable
         //     from within after()
@@ -437,21 +441,21 @@ public class ClassGenerator {
         return types;
     }
 
-    private Constructor<?> findConstructor(Class<?> clazz,
-                                           Class<?>[] paramTypes) {
+    private Constructor<?> findConstructor(Class<?> clazz, Object[] args) {
         outer:
         for (Constructor<?> ctor : clazz.getDeclaredConstructors()) {
             Class<?>[] existing = ctor.getParameterTypes();
-            if (existing.length == paramTypes.length) {
+            if (existing.length == args.length) {
                 for (int i = 0; i < existing.length; i++) {
-                    if (constructorArgs[i] == null) {
+                    Object arg = args[i];
+                    if (arg == null) {
                         if (existing[i].isPrimitive()) {
                             continue outer;
                         }
                         continue;
                     }
                     if (!wrap(existing[i]).isAssignableFrom(
-                            wrap(paramTypes[i]))) {
+                            wrap(arg.getClass()))) {
                         continue outer;
                     }
                 }

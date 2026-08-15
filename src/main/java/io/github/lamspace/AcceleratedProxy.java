@@ -104,7 +104,8 @@ public final class AcceleratedProxy {
             return targetClass == other.targetClass
                     && Arrays.equals(interfaces, other.interfaces)
                     && mapping.equals(other.mapping)
-                    && Arrays.equals(constructorArgs, other.constructorArgs)
+                    && Arrays.equals(argTypes(constructorArgs),
+                    argTypes(other.constructorArgs))
                     && ctorIntercept == other.ctorIntercept;
         }
 
@@ -115,9 +116,22 @@ public final class AcceleratedProxy {
             result = 31 * result + (interfaces != null
                     ? Arrays.hashCode(interfaces) : 0);
             result = 31 * result + mapping.hashCode();
-            result = 31 * result + Arrays.hashCode(constructorArgs);
+            result = 31 * result + Arrays.hashCode(argTypes(constructorArgs));
             result = 31 * result + Boolean.hashCode(ctorIntercept);
             return result;
+        }
+
+        /**
+         * Maps constructor arguments to their runtime types, with {@code null}
+         * for null arguments (so two null args key the same, distinct from a
+         * non-null {@code Object}).
+         */
+        private static Class<?>[] argTypes(Object[] args) {
+            Class<?>[] types = new Class<?>[args.length];
+            for (int i = 0; i < args.length; i++) {
+                types[i] = (args[i] == null) ? null : args[i].getClass();
+            }
+            return types;
         }
     }
 
@@ -384,30 +398,8 @@ public final class AcceleratedProxy {
 
         try {
             Class<?> proxyClass = PROXY_CLASS_CACHE.get(target, params);
-
-            // 3. Build constructor argument array:
-            //    [interceptors..., constructorArgs...]
-            int interceptorCount = matchResult.interceptors().length;
-            Object[] initArgs = new Object[interceptorCount
-                    + constructorArgs.length];
-            System.arraycopy(matchResult.interceptors(), 0, initArgs, 0,
-                    interceptorCount);
-            System.arraycopy(constructorArgs, 0, initArgs,
-                    interceptorCount, constructorArgs.length);
-
-            // 4. Build constructor parameter types
-            Class<?>[] ctorArgTypes = new Class<?>[initArgs.length];
-            for (int i = 0; i < interceptorCount; i++) {
-                ctorArgTypes[i] = Interceptor.class;
-            }
-            for (int i = 0; i < constructorArgs.length; i++) {
-                Object arg = constructorArgs[i];
-                ctorArgTypes[interceptorCount + i] =
-                        (arg != null) ? arg.getClass() : Object.class;
-            }
-
-            Constructor<?> ctor = proxyClass.getConstructor(ctorArgTypes);
-            return (T) ctor.newInstance(initArgs);
+            return (T) instantiateProxy(proxyClass,
+                    matchResult.interceptors(), null, constructorArgs);
         } catch (Exception e) {
             throw new RuntimeException(
                     "Failed to create proxy for " + target.getName(), e);
@@ -495,29 +487,9 @@ public final class AcceleratedProxy {
 
         try {
             Class<?> proxyClass = PROXY_CLASS_CACHE.get(target, params);
-
-            int interceptorCount = matchResult.interceptors().length;
-            Object[] initArgs = new Object[interceptorCount + 1
-                    + constructorArgs.length];
-            System.arraycopy(matchResult.interceptors(), 0, initArgs, 0,
-                    interceptorCount);
-            initArgs[interceptorCount] = ctorInterceptor;
-            System.arraycopy(constructorArgs, 0, initArgs,
-                    interceptorCount + 1, constructorArgs.length);
-
-            Class<?>[] ctorArgTypes = new Class<?>[initArgs.length];
-            for (int i = 0; i < interceptorCount; i++) {
-                ctorArgTypes[i] = Interceptor.class;
-            }
-            ctorArgTypes[interceptorCount] = ConstructorInterceptor.class;
-            for (int i = 0; i < constructorArgs.length; i++) {
-                Object arg = constructorArgs[i];
-                ctorArgTypes[interceptorCount + 1 + i] =
-                        (arg != null) ? arg.getClass() : Object.class;
-            }
-
-            Constructor<?> ctor = proxyClass.getConstructor(ctorArgTypes);
-            return (T) ctor.newInstance(initArgs);
+            return (T) instantiateProxy(proxyClass,
+                    matchResult.interceptors(), ctorInterceptor,
+                    constructorArgs);
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
             sneakyThrow(cause);
@@ -527,6 +499,46 @@ public final class AcceleratedProxy {
             throw new RuntimeException(
                     "Failed to create proxy for " + target.getName(), e);
         }
+    }
+
+    /**
+     * Builds the generated proxy constructor's argument array
+     * {@code [interceptors..., ctorInterceptor?, constructorArgs...]} and its
+     * parameter types, then reflectively instantiates the proxy class. A
+     * {@code null} {@code ctorInterceptor} omits the interception slot.
+     */
+    private static Object instantiateProxy(Class<?> proxyClass,
+                                           Interceptor[] interceptors,
+                                           ConstructorInterceptor ctorInterceptor,
+                                           Object[] constructorArgs)
+            throws Exception {
+        int interceptorCount = interceptors.length;
+        int ctorOffset = (ctorInterceptor == null) ? 0 : 1;
+
+        Object[] initArgs = new Object[interceptorCount + ctorOffset
+                + constructorArgs.length];
+        System.arraycopy(interceptors, 0, initArgs, 0, interceptorCount);
+        if (ctorInterceptor != null) {
+            initArgs[interceptorCount] = ctorInterceptor;
+        }
+        System.arraycopy(constructorArgs, 0, initArgs,
+                interceptorCount + ctorOffset, constructorArgs.length);
+
+        Class<?>[] ctorArgTypes = new Class<?>[initArgs.length];
+        for (int i = 0; i < interceptorCount; i++) {
+            ctorArgTypes[i] = Interceptor.class;
+        }
+        if (ctorInterceptor != null) {
+            ctorArgTypes[interceptorCount] = ConstructorInterceptor.class;
+        }
+        for (int i = 0; i < constructorArgs.length; i++) {
+            Object arg = constructorArgs[i];
+            ctorArgTypes[interceptorCount + ctorOffset + i] =
+                    (arg != null) ? arg.getClass() : Object.class;
+        }
+
+        Constructor<?> ctor = proxyClass.getConstructor(ctorArgTypes);
+        return ctor.newInstance(initArgs);
     }
 
     @SuppressWarnings("unchecked")

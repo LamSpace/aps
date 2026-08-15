@@ -81,6 +81,44 @@ class ConstructorInterceptionTest {
         }
     }
 
+    static class Nullable {
+        final String name;
+
+        Nullable(String name) {
+            this.name = name;
+        }
+    }
+
+    static class Overloaded {
+        final int value;
+
+        Overloaded(int v) {
+            this.value = v;
+        }
+
+        Overloaded(int a, int b) {
+            this.value = a + b;
+        }
+
+        Overloaded(String s) {
+            this.value = s.length();
+        }
+    }
+
+    static class AllPrims {
+        final float f;
+        final byte by;
+        final char c;
+        final short s;
+
+        AllPrims(float f, byte by, char c, short s) {
+            this.f = f;
+            this.by = by;
+            this.c = c;
+            this.s = s;
+        }
+    }
+
     private static Group passthrough() {
         return Group.otherwise(
                 (o, m, a) -> AcceleratedProxy.invokeSuper(o, m, a));
@@ -202,6 +240,57 @@ class ConstructorInterceptionTest {
         assertEquals(1, proxy.i);
         assertEquals(2L, proxy.l);
         assertEquals("orig", proxy.s);
+    }
+
+    @Test
+    void beforeRewritesToNull() {
+        ConstructorInterceptor ci = new ConstructorInterceptor() {
+            @Override
+            public Object[] before(Constructor<?> ctor, Object[] args) {
+                return new Object[]{null};
+            }
+        };
+        Nullable proxy = AcceleratedProxy.proxy(Nullable.class,
+                new Object[]{"orig"}, ci, passthrough());
+        assertNull(proxy.name);
+    }
+
+    @Test
+    void overloadedConstructorSelection() {
+        Class<?>[][] ctorParams = new Class<?>[1][];
+        ConstructorInterceptor ci = new ConstructorInterceptor() {
+            @Override
+            public Object[] before(Constructor<?> ctor, Object[] args) {
+                ctorParams[0] = ctor.getParameterTypes();
+                return args;
+            }
+        };
+        Overloaded two = AcceleratedProxy.proxy(Overloaded.class,
+                new Object[]{1, 2}, ci, passthrough());
+        assertArrayEquals(new Class<?>[]{int.class, int.class}, ctorParams[0]);
+        assertEquals(3, two.value);
+
+        Overloaded str = AcceleratedProxy.proxy(Overloaded.class,
+                new Object[]{"abcd"}, ci, passthrough());
+        assertArrayEquals(new Class<?>[]{String.class}, ctorParams[0]);
+        assertEquals(4, str.value);
+    }
+
+    @Test
+    void interceptedUnboxesAllPrimitives() {
+        ConstructorInterceptor ci = new ConstructorInterceptor() {
+            @Override
+            public Object[] before(Constructor<?> ctor, Object[] args) {
+                return new Object[]{2.5f, (byte) 7, 'z', (short) 9};
+            }
+        };
+        AllPrims proxy = AcceleratedProxy.proxy(AllPrims.class,
+                new Object[]{1.0f, (byte) 1, 'a', (short) 2}, ci,
+                passthrough());
+        assertEquals(2.5f, proxy.f);
+        assertEquals((byte) 7, proxy.by);
+        assertEquals('z', proxy.c);
+        assertEquals((short) 9, proxy.s);
     }
 
     // ---- Task 3: veto ----

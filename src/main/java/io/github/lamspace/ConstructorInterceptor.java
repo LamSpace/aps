@@ -38,6 +38,7 @@ import java.lang.reflect.Constructor;
  *       });
  * }</pre>
  */
+@FunctionalInterface
 public interface ConstructorInterceptor {
 
     /**
