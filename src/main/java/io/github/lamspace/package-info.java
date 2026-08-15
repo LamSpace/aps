@@ -29,6 +29,9 @@
  *
  * @see io.github.lamspace.AcceleratedProxy
  * @see io.github.lamspace.Interceptor
- * @see io.github.lamspace.ClassFilter
+ * @see io.github.lamspace.Group
+ * @see io.github.lamspace.MethodPredicate
+ * @see io.github.lamspace.Intercept
+ * @see io.github.lamspace.Around
  */
 package io.github.lamspace;

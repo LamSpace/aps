@@ -20,7 +20,7 @@ import java.lang.reflect.Method;
 
 /**
  * Decides whether a method matches a Group's criteria.
- * Replaces {@link ClassFilter} in the multi-interceptor API.
+ * Replaces {@code ClassFilter} in the multi-interceptor API.
  *
  * @see Group#of(MethodPredicate, Interceptor)
  */
