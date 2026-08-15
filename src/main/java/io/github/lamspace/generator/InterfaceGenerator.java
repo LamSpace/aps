@@ -82,11 +82,12 @@ public class InterfaceGenerator {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 
         // Implements all interfaces + DispatchTarget
-        String[] implemented = new String[interfaces.length + 1];
+        String[] implemented = new String[interfaces.length + 2];
         for (int i = 0; i < interfaces.length; i++) {
             implemented[i] = Type.getInternalName(interfaces[i]);
         }
         implemented[interfaces.length] = "io/github/lamspace/DispatchTarget";
+        implemented[interfaces.length + 1] = "io/github/lamspace/internal/Rebindable";
 
         cw.visit(Opcodes.V24, Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER,
                 generatedInternal, null, "java/lang/Object", implemented);
@@ -94,12 +95,15 @@ public class InterfaceGenerator {
         // -- Interceptor fields (one per distinct interceptor) --
         String interceptorDesc = Type.getDescriptor(Interceptor.class);
         for (int i = 0; i < interceptors.length; i++) {
-            cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL,
+            cw.visitField(Opcodes.ACC_PRIVATE,
                     "_interceptor$" + i, interceptorDesc, null, null);
         }
 
         // -- Constructor: stores interceptors, calls super() --
         generateConstructor(cw, generatedInternal, interceptorDesc);
+
+        // -- rebind(Interceptor[]): swap interceptors on a live instance --
+        generateRebindMethod(cw, generatedInternal, interceptorDesc);
 
         // -- Method implementations + static Method fields --
         ClinitRegistry registry = new ClinitRegistry();
@@ -163,6 +167,17 @@ public class InterfaceGenerator {
         }
         mv.visitInsn(Opcodes.RETURN);
         mv.visitMaxs(2, 1 + interceptors.length);
+        mv.visitEnd();
+    }
+
+    private void generateRebindMethod(ClassWriter cw, String generatedInternal,
+                                      String interceptorDesc) {
+        MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "rebind",
+                "([Lio/github/lamspace/Interceptor;)V", null, null);
+        mv.visitCode();
+        BytecodeUtils.generateRebind(mv, generatedInternal,
+                interceptors.length, interceptorDesc);
+        mv.visitMaxs(0, 0);
         mv.visitEnd();
     }
 

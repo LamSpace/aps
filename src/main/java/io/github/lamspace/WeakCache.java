@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
@@ -159,6 +160,28 @@ final class WeakCache<K, P, V> {
     public int size() {
         expungeStaleEntries();
         return reverseMap.size();
+    }
+
+    /**
+     * Removes every entry whose key satisfies the given predicate. The null-key
+     * sentinel is never passed to the predicate. This is a best-effort, weakly
+     * consistent sweep — safe to call concurrently with {@link #get}.
+     *
+     * @param predicate tests each (non-null) key for removal
+     */
+    void removeIf(Predicate<? super K> predicate) {
+        Objects.requireNonNull(predicate);
+        expungeStaleEntries();
+        for (Object cacheKey : map.keySet()) {
+            if (cacheKey == CacheKey.NULL_KEY) {
+                continue;
+            }
+            @SuppressWarnings("unchecked")
+            K key = (K) ((CacheKey<?>) cacheKey).get();
+            if (predicate.test(key)) {
+                ((CacheKey<?>) cacheKey).expungeFrom(map, reverseMap);
+            }
+        }
     }
 
     @SuppressWarnings(value = {"unchecked"})

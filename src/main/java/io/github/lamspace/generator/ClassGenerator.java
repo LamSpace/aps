@@ -141,14 +141,15 @@ public class ClassGenerator {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 
         // Extends targetClass, implements DispatchTarget
-        String[] interfaces = {"io/github/lamspace/DispatchTarget"};
+        String[] interfaces = {"io/github/lamspace/DispatchTarget",
+                "io/github/lamspace/internal/Rebindable"};
         cw.visit(Opcodes.V24, Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER,
                 generatedInternal, null, targetInternal, interfaces);
 
         // -- Interceptor fields (one per distinct interceptor) --
         String interceptorDesc = Type.getDescriptor(Interceptor.class);
         for (int i = 0; i < interceptors.length; i++) {
-            cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL,
+            cw.visitField(Opcodes.ACC_PRIVATE,
                     "_interceptor$" + i, interceptorDesc, null, null);
         }
 
@@ -167,6 +168,9 @@ public class ClassGenerator {
         // -- Constructor: stores interceptors, delegates to super() --
         generateConstructor(cw, generatedInternal, targetInternal,
                 interceptorDesc, superCtor);
+
+        // -- rebind(Interceptor[]): swap interceptors on a live instance --
+        generateRebindMethod(cw, generatedInternal, interceptorDesc);
 
         // -- Method overrides (populates ClinitRegistry + static fields) --
         ClinitRegistry registry = new ClinitRegistry();
@@ -430,6 +434,17 @@ public class ClassGenerator {
             mv.visitFieldInsn(Opcodes.PUTFIELD, generatedInternal,
                     "_interceptor$" + i, interceptorDesc);
         }
+    }
+
+    private void generateRebindMethod(ClassWriter cw, String generatedInternal,
+                                      String interceptorDesc) {
+        MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "rebind",
+                "([Lio/github/lamspace/Interceptor;)V", null, null);
+        mv.visitCode();
+        BytecodeUtils.generateRebind(mv, generatedInternal,
+                interceptors.length, interceptorDesc);
+        mv.visitMaxs(0, 0);
+        mv.visitEnd();
     }
 
     private Class<?>[] superParamTypes() {

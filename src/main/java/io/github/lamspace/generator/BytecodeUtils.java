@@ -16,6 +16,7 @@
 
 package io.github.lamspace.generator;
 
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -47,6 +48,59 @@ final class BytecodeUtils {
         } else {
             mv.visitLdcInsn(value);
         }
+    }
+
+    /**
+     * Emits the body of a {@code public void rebind(Interceptor[])} method:
+     * validates the array (non-null, length == {@code interceptorCount}),
+     * assigns each {@code _interceptor$i} field, then a
+     * {@code VarHandle.fullFence()} so the stores are ordered and flushed.
+     * Slot 0 is {@code this}, slot 1 the array.
+     *
+     * @param mv                the method visitor (method already opened, in code)
+     * @param generatedInternal internal name of the generated class
+     * @param interceptorCount  number of distinct interceptors (field count)
+     * @param interceptorDesc   the {@code Interceptor} type descriptor
+     */
+    static void generateRebind(MethodVisitor mv, String generatedInternal,
+                               int interceptorCount, String interceptorDesc) {
+        Label notNull = new Label();
+        mv.visitVarInsn(Opcodes.ALOAD, 1);
+        mv.visitJumpInsn(Opcodes.IFNONNULL, notNull);
+        mv.visitTypeInsn(Opcodes.NEW, "java/lang/IllegalArgumentException");
+        mv.visitInsn(Opcodes.DUP);
+        mv.visitLdcInsn("interceptors must not be null");
+        mv.visitMethodInsn(Opcodes.INVOKESPECIAL,
+                "java/lang/IllegalArgumentException",
+                "<init>", "(Ljava/lang/String;)V", false);
+        mv.visitInsn(Opcodes.ATHROW);
+        mv.visitLabel(notNull);
+
+        Label lengthOk = new Label();
+        mv.visitVarInsn(Opcodes.ALOAD, 1);
+        mv.visitInsn(Opcodes.ARRAYLENGTH);
+        pushInt(mv, interceptorCount);
+        mv.visitJumpInsn(Opcodes.IF_ICMPEQ, lengthOk);
+        mv.visitTypeInsn(Opcodes.NEW, "java/lang/IllegalArgumentException");
+        mv.visitInsn(Opcodes.DUP);
+        mv.visitLdcInsn("interceptor count mismatch: expected " + interceptorCount);
+        mv.visitMethodInsn(Opcodes.INVOKESPECIAL,
+                "java/lang/IllegalArgumentException",
+                "<init>", "(Ljava/lang/String;)V", false);
+        mv.visitInsn(Opcodes.ATHROW);
+        mv.visitLabel(lengthOk);
+
+        for (int i = 0; i < interceptorCount; i++) {
+            mv.visitVarInsn(Opcodes.ALOAD, 0);
+            mv.visitVarInsn(Opcodes.ALOAD, 1);
+            pushInt(mv, i);
+            mv.visitInsn(Opcodes.AALOAD);
+            mv.visitFieldInsn(Opcodes.PUTFIELD, generatedInternal,
+                    "_interceptor$" + i, interceptorDesc);
+        }
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/invoke/VarHandle",
+                "fullFence", "()V", false);
+        mv.visitInsn(Opcodes.RETURN);
     }
 
     /**

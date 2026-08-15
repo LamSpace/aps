@@ -18,6 +18,9 @@ package io.github.lamspace;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class WeakCacheTest {
@@ -120,5 +123,59 @@ class WeakCacheTest {
         );
 
         assertThrows(NullPointerException.class, () -> cache.get("k", null));
+    }
+
+    @Test
+    void removeIfRemovesMatchingKeysOnly() {
+        WeakCache<String, Integer, String> cache = new WeakCache<>(
+                (key, param) -> param,
+                (key, param) -> key + ":" + param
+        );
+        String va = cache.get("a", 1);
+        String vb = cache.get("b", 1);
+
+        cache.removeIf(k -> "a".equals(k));
+
+        assertFalse(cache.containsValue(va));
+        assertTrue(cache.containsValue(vb));
+        assertEquals(1, cache.size());
+    }
+
+    @Test
+    void removeIfCausesReevaluationOnNextGet() {
+        AtomicInteger calls = new AtomicInteger();
+        WeakCache<String, Integer, String> cache = new WeakCache<>(
+                (key, param) -> param,
+                (key, param) -> { calls.incrementAndGet(); return key + ":" + param; }
+        );
+        cache.get("a", 1);
+        cache.get("a", 1);
+        assertEquals(1, calls.get());
+
+        cache.removeIf(k -> "a".equals(k));
+        cache.get("a", 1);
+        assertEquals(2, calls.get());
+    }
+
+    @Test
+    void removeIfOnEmptyCacheIsNoOp() {
+        WeakCache<String, Integer, String> cache = new WeakCache<>(
+                (key, param) -> param,
+                (key, param) -> key + ":" + param
+        );
+        assertDoesNotThrow(() -> cache.removeIf(k -> true));
+        assertEquals(0, cache.size());
+    }
+
+    @Test
+    void removeIfSkipsNullSentinel() {
+        WeakCache<String, Integer, String> cache = new WeakCache<>(
+                (key, param) -> param,
+                (key, param) -> "null:" + param
+        );
+        cache.get(null, 1);
+        AtomicBoolean sawNull = new AtomicBoolean(false);
+        cache.removeIf(k -> { if (k == null) sawNull.set(true); return false; });
+        assertFalse(sawNull.get());
     }
 }

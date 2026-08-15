@@ -21,6 +21,7 @@ import io.github.lamspace.generator.InterfaceGenerator;
 import io.github.lamspace.generator.InterfaceMethodResolver;
 import io.github.lamspace.generator.StaticMethodGenerator;
 import io.github.lamspace.internal.LookupManager;
+import io.github.lamspace.internal.Rebindable;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -293,6 +294,47 @@ public final class AcceleratedProxy {
     public static Object invokeSuper(Object proxy, Method method,
                                      Object[] args) throws Throwable {
         return ((DispatchTarget) proxy).dispatch(method, args);
+    }
+
+    /**
+     * Replaces the interceptor on an existing proxy instance with {@code
+     * interceptor}, without recreating the instance. The proxy must be an
+     * APS-generated single-interceptor proxy.
+     *
+     * @param proxy       the APS proxy instance
+     * @param interceptor the new interceptor; must not be null
+     * @throws IllegalArgumentException if {@code interceptor} is null or
+     *                                  {@code proxy} is not an APS proxy
+     */
+    public static void rebind(Object proxy, Interceptor interceptor) {
+        if (interceptor == null) {
+            throw new IllegalArgumentException("interceptor must not be null");
+        }
+        rebind(proxy, new Interceptor[]{interceptor});
+    }
+
+    /**
+     * Replaces the interceptors on an existing proxy instance with {@code
+     * interceptors}, without recreating the instance. The array length must
+     * equal the proxy's distinct interceptor count (the number of deduped
+     * interceptors it was created with).
+     *
+     * <p>This is a single-writer management operation. The stores are followed
+     * by a full fence, but a caller that rebinds on one thread and invokes
+     * methods on another must establish its own happens-before edge (a lock,
+     * thread start, latch, or volatile flag).
+     *
+     * @param proxy        the APS proxy instance
+     * @param interceptors the new interceptors, index-aligned with the
+     *                     generated class's interceptor fields
+     * @throws IllegalArgumentException if {@code proxy} is not an APS proxy or
+     *                                  {@code interceptors} is null/ill-sized
+     */
+    public static void rebind(Object proxy, Interceptor[] interceptors) {
+        if (!(proxy instanceof Rebindable rebindable)) {
+            throw new IllegalArgumentException("not an APS-generated proxy");
+        }
+        rebindable.rebind(interceptors);
     }
 
     /**
@@ -573,6 +615,41 @@ public final class AcceleratedProxy {
                     "Failed to create static proxy for " + target.getName(),
                     e);
         }
+    }
+
+    /**
+     * Evicts all cached proxy classes whose cache-key class is {@code target},
+     * forcing the next {@code proxy(...)} call for it to regenerate a fresh
+     * class. Existing proxy instances are unaffected — they hold direct
+     * references to their own hidden class and target class.
+     *
+     * <p>Cache-key asymmetry: class proxies key on the target; interface
+     * proxies key on the first interface. So for an interface proxy, pass the
+     * first interface.
+     *
+     * @param target the cache-key class to evict; must not be null
+     */
+    public static void evict(Class<?> target) {
+        if (target == null) {
+            throw new IllegalArgumentException("target must not be null");
+        }
+        PROXY_CLASS_CACHE.removeIf(k -> k == target);
+    }
+
+    /**
+     * Evicts all cached proxy classes whose cache-key class was loaded by the
+     * given {@link ClassLoader}. Intended for long-running frameworks that
+     * hot-deploy classes under a dedicated loader and want deterministic
+     * cleanup when that loader is retired.
+     *
+     * @param cl the class loader whose proxy classes to evict; must not be
+     *           null
+     */
+    public static void evictClassLoader(ClassLoader cl) {
+        if (cl == null) {
+            throw new IllegalArgumentException("classLoader must not be null");
+        }
+        PROXY_CLASS_CACHE.removeIf(k -> k != null && k.getClassLoader() == cl);
     }
 
     /**
