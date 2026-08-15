@@ -330,4 +330,47 @@ class AnnotationDrivenApiTest {
         assertThrows(IllegalArgumentException.class,
                 () -> AcceleratedProxy.intercept(Greeter.class, new StaticAround()));
     }
+
+    @Test
+    void annotationDrivenSharesClassWithEquivalentProgrammatic() {
+        GetterInterceptor interceptor = new GetterInterceptor();
+
+        Greeter annotationDriven = AcceleratedProxy.intercept(Greeter.class, interceptor);
+        Greeter programmatic = AcceleratedProxy.proxy(Greeter.class,
+                Group.of(m -> m.getName().startsWith("get"),
+                        (obj, method, args) ->
+                                AcceleratedProxy.invokeSuper(obj, method, args)));
+
+        assertSame(annotationDriven.getClass(), programmatic.getClass());
+        assertEquals("hello", annotationDriven.getGreeting());
+        assertEquals("hello", programmatic.getGreeting());
+    }
+
+    @Intercept
+    public static class OverlappingInterceptor {
+        final AtomicReference<String> winner = new AtomicReference<>();
+
+        @Around("getGreeting")   // declared first, but sorts after "getters"
+        public Object specific(Object proxy, Method method, Object[] args)
+                throws Throwable {
+            winner.set("specific");
+            return AcceleratedProxy.invokeSuper(proxy, method, args);
+        }
+
+        @Around("get*")          // declared second, but sorts first
+        public Object getters(Object proxy, Method method, Object[] args)
+                throws Throwable {
+            winner.set("getters");
+            return AcceleratedProxy.invokeSuper(proxy, method, args);
+        }
+    }
+
+    @Test
+    void overlappingPatternsUseDeterministicNameSortedFirstMatch() {
+        OverlappingInterceptor interceptor = new OverlappingInterceptor();
+        Greeter proxy = AcceleratedProxy.intercept(Greeter.class, interceptor);
+
+        assertEquals("hello", proxy.getGreeting());
+        assertEquals("getters", interceptor.winner.get());
+    }
 }
