@@ -105,7 +105,7 @@ Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MetricsInterceptor
 - 缓存键按 `Class` 身份、类名按 `COUNTER` 唯一：对新的 `Class` 对象（或驱逐后重建）再次 `proxy()` 会生成新代理类，旧实例继续用旧类、新实例用新类
 - 显式生命周期控制：`AcceleratedProxy.evict(Class)` / `evictClassLoader(ClassLoader)` 确定性驱逐缓存项，下次 `proxy()` 重新生成
 - 缓存键不对称：接口代理以「第一个接口」为键，`evict` 针对该键
-- 限制：目标类在子 `ClassLoader`（APS 位于共享父加载器）时无法代理，需 JPMS `--add-opens` 策略（item 8）
+- 限制：目标类在子 `ClassLoader`（APS 位于共享父加载器）时无法代理；跨 ClassLoader 热部署为独立待办（不属 item 8）
 
 ### 拦截器热替换（已完成）
 

@@ -91,7 +91,7 @@ The system SHALL propagate unchecked exceptions thrown by the callback directly 
 - **WHEN** callback throws a checked Exception not declared by the intercepted method
 - **THEN** the caller receives an UndeclaredThrowableException wrapping the original exception
 
-### Requirement: Access control with graceful degradation
+### Requirement: Access control for strongly encapsulated modules
 
 The system SHALL attempt to obtain full private access to the target class via `MethodHandles.privateLookupIn`. If the target module is not open, the system SHALL fail fast by throwing `IllegalArgumentException` with an actionable `--add-opens` hint, instead of falling back to a public lookup. Primitive and array types (rejected by `privateLookupIn`) SHALL fall back to a public lookup.
 
