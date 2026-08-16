@@ -26,7 +26,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
- * Cache mapping paris of {@code (key, sub-key) -> value}. Keys and values are weak, but sub-keys are strongly
+ * Cache mapping pairs of {@code (key, sub-key) -> value}. Keys and values are weak, but sub-keys are strongly
  * referenced. Keys are passed directly to {@link #get(Object, Object)} method which also takes a {@code parameter}.
  * Sub-keys are calculated from keys and parameters using the {@code subKeyFactory} function passed to the constructor.
  * Values are calculated from keys and parameters using the {@code valueFactory} function passed to the constructor.
@@ -40,7 +40,7 @@ import java.util.function.Supplier;
  * @param <K> type of keys
  * @param <P> type of parameters
  * @param <V> type of values
- * @author copied from {@link java.lang.reflect.WeakCache} cause that one is not available from outside packages.
+ * @author copied from {@link java.lang.reflect.WeakCache} because that one is not available from outside packages.
  * @version 1.0.0
  * @see java.lang.reflect.WeakCache
  * @since 1.0.0
@@ -153,7 +153,7 @@ final class WeakCache<K, P, V> {
     }
 
     /**
-     * Returns the current number of cached entries that can decrease over tine when keys/values are GC-ed.
+     * Returns the current number of cached entries that can decrease over time when keys/values are GC-ed.
      *
      * @return current number of cached entries.
      */

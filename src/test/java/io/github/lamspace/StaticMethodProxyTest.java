@@ -34,31 +34,77 @@ import static org.junit.jupiter.api.Assertions.*;
 class StaticMethodProxyTest {
 
     public static class Statics {
-        public static int add(int a, int b) { return a + b; }
-        public static String greet(String name) { return "Hello, " + name; }
-        public static void sideEffect(List<String> log) { log.add("ran"); }
-        public static long big(long v) { return v * 2; }
-        public static double div(double v) { return v / 2; }
-        public static boolean flag(boolean b) { return !b; }
-        public static int sum(int[] xs) { int t = 0; for (int x : xs) t += x; return t; }
-        public static String[] names() { return new String[]{"a", "b"}; }
-        public static int overloaded() { return 1; }
-        public static int overloaded(int x) { return x + 1; }
-        public static int overloaded(String s) { return s.length(); }
-        public static final int finalled() { return 99; }
-        private static int priv() { return 7; }
+        public static int add(int a, int b) {
+            return a + b;
+        }
+
+        public static String greet(String name) {
+            return "Hello, " + name;
+        }
+
+        public static void sideEffect(List<String> log) {
+            log.add("ran");
+        }
+
+        public static long big(long v) {
+            return v * 2;
+        }
+
+        public static double div(double v) {
+            return v / 2;
+        }
+
+        public static boolean flag(boolean b) {
+            return !b;
+        }
+
+        public static int sum(int[] xs) {
+            int t = 0;
+            for (int x : xs) t += x;
+            return t;
+        }
+
+        public static String[] names() {
+            return new String[]{"a", "b"};
+        }
+
+        public static int overloaded() {
+            return 1;
+        }
+
+        public static int overloaded(int x) {
+            return x + 1;
+        }
+
+        public static int overloaded(String s) {
+            return s.length();
+        }
+
+        public static final int finalled() {
+            return 99;
+        }
+
+        private static int priv() {
+            return 7;
+        }
     }
 
     public static class Parent {
-        public static int inherited() { return 10; }
+        public static int inherited() {
+            return 10;
+        }
     }
 
     public static class Child extends Parent {
-        public static int own() { return 20; }
+        public static int own() {
+            return 20;
+        }
     }
 
     public static class RedeclaredChild extends Parent {
-        public static int inherited() { return 30; }
+        public static int inherited() {
+            return 30;
+        }
     }
 
     private static Interceptor callOriginal() {
@@ -177,8 +223,14 @@ class StaticMethodProxyTest {
         AtomicReference<String> seen = new AtomicReference<>();
         Class<?> proxyClass = AcceleratedProxy.proxyStatic(Statics.class,
                 Group.of(m -> m.getName().equals("add"),
-                        (o, m, a) -> { seen.set("add"); return m.invoke(null, a); }),
-                Group.otherwise((o, m, a) -> { seen.set("other"); return m.invoke(null, a); }));
+                        (o, m, a) -> {
+                            seen.set("add");
+                            return m.invoke(null, a);
+                        }),
+                Group.otherwise((o, m, a) -> {
+                    seen.set("other");
+                    return m.invoke(null, a);
+                }));
         proxyClass.getMethod("add", int.class, int.class).invoke(null, 1, 2);
         assertEquals("add", seen.get());
         proxyClass.getMethod("greet", String.class).invoke(null, "x");
@@ -203,13 +255,17 @@ class StaticMethodProxyTest {
     @Test
     void runtimeAndCheckedExceptionsPropagate() throws Exception {
         Class<?> rt = AcceleratedProxy.proxyStatic(Statics.class,
-                Group.otherwise((o, m, a) -> { throw new IllegalStateException("boom"); }));
+                Group.otherwise((o, m, a) -> {
+                    throw new IllegalStateException("boom");
+                }));
         InvocationTargetException e = assertThrows(InvocationTargetException.class,
                 () -> rt.getMethod("add", int.class, int.class).invoke(null, 1, 2));
         assertInstanceOf(IllegalStateException.class, e.getCause());
 
         Class<?> ch = AcceleratedProxy.proxyStatic(Statics.class,
-                Group.otherwise((o, m, a) -> { throw new Exception("checked"); }));
+                Group.otherwise((o, m, a) -> {
+                    throw new Exception("checked");
+                }));
         InvocationTargetException ce = assertThrows(InvocationTargetException.class,
                 () -> ch.getMethod("add", int.class, int.class).invoke(null, 1, 2));
         assertInstanceOf(UndeclaredThrowableException.class, ce.getCause());
@@ -220,7 +276,9 @@ class StaticMethodProxyTest {
     @Test
     void errorPropagatesAsIs() throws Exception {
         Class<?> proxyClass = AcceleratedProxy.proxyStatic(Statics.class,
-                Group.otherwise((o, m, a) -> { throw new AssertionError("boom"); }));
+                Group.otherwise((o, m, a) -> {
+                    throw new AssertionError("boom");
+                }));
         InvocationTargetException e = assertThrows(InvocationTargetException.class,
                 () -> proxyClass.getMethod("add", int.class, int.class).invoke(null, 1, 2));
         assertInstanceOf(AssertionError.class, e.getCause());

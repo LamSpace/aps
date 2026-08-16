@@ -46,8 +46,14 @@ public final class MethodMapping {
         return max + 1;
     }
 
+    /**
+     * Returns a copy of the method → interceptor index array, where
+     * {@code -1} denotes passthrough.
+     *
+     * @return a defensive copy of the index array
+     */
     public int[] indices() {
-        return indices;
+        return indices.clone();
     }
 
     @Override

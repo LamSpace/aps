@@ -980,7 +980,7 @@ public final class AcceleratedProxy {
     }
 
     private static boolean hasAnyAnnotation(Method m,
-            Class<? extends Annotation>[] annotations) {
+                                            Class<? extends Annotation>[] annotations) {
         for (Class<? extends Annotation> a : annotations) {
             if (m.isAnnotationPresent(a)) {
                 return true;
@@ -1004,11 +1004,11 @@ public final class AcceleratedProxy {
             MethodType factoryType = MethodType.methodType(Interceptor.class,
                     instance.getClass());
             return (Interceptor) LambdaMetafactory.metafactory(
-                    lookup, "intercept",
-                    factoryType,
-                    samType,
-                    implMethod,
-                    samType)
+                            lookup, "intercept",
+                            factoryType,
+                            samType,
+                            implMethod,
+                            samType)
                     .getTarget().invokeWithArguments(instance);
         } catch (Error e) {
             throw e;

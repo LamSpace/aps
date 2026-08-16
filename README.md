@@ -4,30 +4,50 @@
 [![Java](https://img.shields.io/badge/java-25%2B-orange)](https://jdk.java.net/)
 [![JMH](https://img.shields.io/badge/benchmark-JMH%201.37-red)](https://github.com/openjdk/jmh)
 
-[中文版](README_CN.md) | [Benchmark Results](docs/benchmark-results.md)
+[中文版](README_CN.md) | [用户指导](docs/guide/README.md) | [基准测试报告](docs/benchmark-results.md)
 
-A high-performance dynamic proxy library for Java, designed as a drop-in replacement for CGLib, using hashCode-based dispatch with direct `INVOKESPECIAL` super calls for near-zero interception overhead.
+A high-performance dynamic proxy library for Java. APS generates proxy classes at runtime with ASM and dispatches every intercepted call through a **hashCode-driven switch with a direct `INVOKESPECIAL` super call** — no reflection, no
+`MethodHandle`, JIT-inlinable. Interface proxies run at `java.lang.reflect.Proxy`
+parity; default methods are ~6.5× faster.
 
-## ✨ Features
+## ✨ Why APS
 
-- **Zero-overhead super dispatch** — hashCode-driven `dispatch()` switch calls `super.method(args)` directly; no MethodHandle, no reflection, JIT-inlinable
-- **Unified API** — single `AcceleratedProxy.proxy(target, interceptor)` entry point for both classes and interfaces
-- **Interface proxy support** — generates runtime interface implementations without reflection
-- **No ClassLoader leaks** — uses `Lookup.defineHiddenClass()` so proxy classes are GC-eligible when no longer referenced
-- **One-line API** — `AcceleratedProxy.proxy(MyClass.class, interceptor)` with generic type inference, no casts needed
-- **Multi-Interceptor / Method Grouping** — bind different `Interceptor` instances to different method families via `Group.of()` with first-match-wins semantics and zero hot-path overhead
-- **Multi-interface proxy** — `AcceleratedProxy.proxy(new Class<?>[]{...}, interceptor)` implements several interfaces in one proxy object
-- **Annotation-driven API** — declarative `@Intercept`/`@Around` method matching that routes through the same `Group` pipeline at runtime
-- **Zero-overhead passthrough** — methods not matching any Group call the superclass directly with no interception cost
-- **Constructor arguments** — supports proxying classes without a no-arg constructor
-- **Constructor interception** — a `ConstructorInterceptor` hook runs before/after the superclass constructor, with argument rewriting and veto support
-- **Static method proxy** — `AcceleratedProxy.proxyStatic(target, ...)` returns a generated class shadowing the target's `public static` methods through the same `Interceptor` (invoke reflectively or via `MethodHandle`)
-- **Non-public interface proxy** — package-private interfaces are proxied by defining the generated class in the interface's own package (the all-public path is unchanged)
-- **Hot reload / hot swap** — `evict(Class)` / `evictClassLoader(ClassLoader)` drop cached proxy classes for a hot-deployed target, and `rebind(proxy, interceptor)` swaps an interceptor on a live instance
+- **Direct `super` dispatch** — `invokeSuper` compiles to a direct
+  `super.method(args)`; no reflection, no `MethodHandle`, JIT-inlinable.
+- **Beats CGLib by ~3–5×** on class proxies; interface proxies at
+  `java.lang.reflect.Proxy` parity and ~6× faster on default methods.
+- **One API for classes and interfaces** — `AcceleratedProxy.proxy(...)` with generic type inference, no casts.
+- **GC-safe** — proxy classes use `Lookup.defineHiddenClass()`, so there is no
+  `ClassLoader` leak.
+
+## 📋 Features
+
+**Core**
+
+- Unified `AcceleratedProxy.proxy(target, interceptor)` entry point for classes *and* interfaces
+- Functional `Interceptor` API — a single-method interface, use a lambda
+- `invokeSuper(proxy, method, args)` for zero-overhead super dispatch
+- `WeakCache`-backed proxy-class caching keyed on the method-to-interceptor mapping
+
+**Selective interception**
+
+- `Group.of(predicate, interceptor)` + `Group.otherwise(...)` — first-match-wins with zero hot-path overhead
+- Methods matching no group pass through with **zero** interception cost
+
+**Proxy capabilities**
+
+- **Interface proxy** — runtime interface implementations without reflection
+- **Multi-interface proxy** — one object, several interfaces, with conflict detection
+- **Non-public interface proxy** — package-private interfaces, defined in the interface's own package
+- **Constructor arguments** — proxy classes without a no-arg constructor
+- **Constructor interception** — `ConstructorInterceptor` hooks before/after the superclass constructor, with argument rewriting and veto
+- **Static method proxy** — `proxyStatic` returns a class shadowing `public static` methods
+- **Annotation-driven API** — `@Intercept` / `@Around` declarative matching at lambda speed
+- **Hot reload / hot swap** — `evict` / `evictClassLoader` for hot-deployed classes, `rebind` to swap interceptors on a live instance
 
 ## ⚡ Quick Start
 
-### Class Proxy
+### Class proxy
 
 ```java
 Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
@@ -38,65 +58,35 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
 });
 
 String greeting = proxy.hello("World");
-// prints: before hello
-// prints: after hello
-// greeting = "Hello, World"
+// before hello
+// after hello
+// greeting == "Hello, World"
 ```
 
-### Interface Proxy
+### Interface proxy
 
 ```java
 Calculator calc = AcceleratedProxy.proxy(Calculator.class, (obj, method, args) -> {
     System.out.println("calling " + method.getName());
-    // implement custom logic, or return a canned response
-    return 42;
+    return (int) args[0] + (int) args[1];
 });
 
-int result = calc.add(10, 20);
-// prints: calling add
-// result = 42
+int result = calc.add(10, 20);   // 30
 ```
 
-### Multi-Interceptor (Method Grouping)
+### Method grouping
 
 ```java
 Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
-        Group.of(m -> m.getName().startsWith("get"), (obj, method, args) -> {
-            System.out.println("[GET] " + method.getName());
-            return AcceleratedProxy.invokeSuper(obj, method, args);
-        }),
-        Group.of(m -> m.getName().startsWith("set"), (obj, method, args) -> {
-            System.out.println("[SET] " + method.getName());
-            return AcceleratedProxy.invokeSuper(obj, method, args);
-        }),
-        Group.otherwise((obj, method, args) ->
-                AcceleratedProxy.invokeSuper(obj, method, args))
-);
-
-String s = proxy.getGreeting(); // [GET] getGreeting → "hello"
-proxy.
-
-setGreeting("hi");        // [SET] setGreeting
-proxy.
-
-toString();                // passthrough: no interception
+        Group.of(m -> m.getName().startsWith("get"), getterInterceptor),
+        Group.of(m -> m.getName().startsWith("set"), setterInterceptor),
+        Group.otherwise(fallbackInterceptor));
 ```
 
-### Multi-Interface Proxy
+### Annotation-driven
 
 ```java
-Object p = AcceleratedProxy.proxy(new Class<?>[]{Greeter.class, Auditable.class},
-        (obj, method, args) -> {
-            System.out.println("calling " + method.getName());
-            return null;
-        });
-Greeter g = (Greeter) p;   // one object, multiple interface views
-Auditable a = (Auditable) p;
-```
 
-### Annotation-Driven API
-
-```java
 @Intercept
 class MetricsInterceptor {
     @Around("get*")
@@ -106,232 +96,40 @@ class MetricsInterceptor {
 }
 
 Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MetricsInterceptor());
-String s = proxy.getGreeting(); // routed through measure()
-```
-
-### Constructor Interception
-
-```java
-ConstructorInterceptor ctorInterceptor = new ConstructorInterceptor() {
-    public Object[] before(Constructor<?> ctor, Object[] args) {
-        System.out.println("before " + ctor.getName());
-        return args; // may rewrite the constructor arguments
-    }
-    public void after(Object proxy, Constructor<?> ctor, Object[] args) {
-        System.out.println("after " + ctor.getName());
-    }
-};
-
-Greeter proxy = AcceleratedProxy.proxy(Greeter.class, interceptor, ctorInterceptor);
-```
-
-`before` runs before the superclass constructor (this is where you can rewrite
-arguments or veto by throwing); `after` runs after it, once the instance is
-fully initialized. Constructor interception is class proxies only.
-
-### Static Method Proxy
-
-```java
-Class<?> proxyClass = AcceleratedProxy.proxyStatic(Utils.class,
-        (proxy, method, args) -> {
-            System.out.println("calling " + method.getName());
-            return method.invoke(null, args);   // call the original static method
-        });
-
-// static methods are compile-time bound — invoke the shadow reflectively:
-int result = (Integer) proxyClass.getMethod("add", int.class, int.class)
-        .invoke(null, 2, 3);
-```
-
-*Static methods are bound at compile time, so `Utils.add(...)` still calls the original; only calls on the returned class (reflective or `MethodHandle`) route through the interceptor.*
-
-### Non-Public Interface Proxy
-
-```java
-// package-private interface in your package
-interface SecretService {
-    String greet(String name);
-    default String shout(String s) { return s.toUpperCase(); }
-}
-
-SecretService proxy = AcceleratedProxy.proxy(SecretService.class, (obj, method, args) ->
-        AcceleratedProxy.invokeSuper(obj, method, args));
-
-proxy.greet("world");   // routed through the interceptor
-proxy.shout("hi");      // default method — invokeSuper calls the default impl
-```
-
-### Hot Reload / Hot Swap
-
-```java
-// Swap an interceptor on a live proxy without recreating it
-Greeter proxy = AcceleratedProxy.proxy(Greeter.class, oldInterceptor);
-AcceleratedProxy.rebind(proxy, newInterceptor);
-
-// Deterministically drop cached proxy classes for a hot-deployed classloader
-AcceleratedProxy.evictClassLoader(pluginClassLoader);
 ```
 
 ## 📊 Performance
 
-JMH benchmarks on Java 25. Best result per row **bolded**.  
-*Java Proxy cannot proxy classes; included for reference only (proxies the interface, delegates via reflection).*
+JMH benchmarks on Java 25 (all scores in ns/op, lower is better). Full tables, methodology, and run instructions: [docs/benchmark-results.md](docs/benchmark-results.md).
 
-### Class Proxy Highlights
+- **Class proxies beat CGLib by ~3–5×** on scenarios with actual work; unmatched
+  methods run at direct-call speed.
+- **Interface proxies** run at parity with `java.lang.reflect.Proxy` and are **~6× faster** on default methods.
+- **Multi-interceptor (`Group`)** has byte-identical hot paths to the single-interceptor API — **zero** degradation.
+- **Annotation-driven** interception reaches hand-written-lambda parity.
 
-| Scenario          | Direct    | APS      | CGLib    |
-|-------------------|-----------|----------|----------|
-| int return        | **0.66**  | 1.83     | 12.36    |
-| String return     | **4.68**  | 4.71     | 19.89    |
-| void return       | **0.65**  | 3.94     | 3.72     |
-| 0-arg passthrough | **0.66**  | 2.11     | 3.96     |
-| 4-arg passthrough | **56.34** | 61.32    | 71.38    |
-| No-op             | —         | 1.32     | **1.05** |
-| Passthrough       | —         | **4.76** | 14.01    |
-| Arg modify        | —         | **5.33** | 18.69    |
+## 🏗️ How it works
 
-### Interface Proxy Highlights
+1. `AcceleratedProxy.proxy(...)` matches each proxyable method to an interceptor via a `Group` chain.
+2. A generator emits bytecode: one `_interceptor$N` field per distinct interceptor, one override per method, and a `dispatch(Method, Object[])` method.
+3. On each call, the override boxes the arguments and calls `Interceptor.intercept(...)`. If the interceptor calls `invokeSuper`, `dispatch()` branches on `method.hashCode()` and jumps straight to `INVOKESPECIAL super.method(...)`.
 
-| Scenario      | APS      | Java Proxy |
-|---------------|----------|------------|
-| int return    | 2.58     | **1.03**   |
-| String return | 6.23     | **5.20**   |
-| void return   | 3.11     | **1.03**   |
-| No-op         | 1.30     | **1.03**   |
-| Passthrough   | **4.61** | 4.65       |
-| Arg modify    | 5.41     | **5.41**   |
-
-*ns/op, lower is better. Full results: [docs/benchmark-results.md](docs/benchmark-results.md)*
-
-### Phase 2: Multi-Interceptor (Zero Overhead)
-
-| Scenario            | Group API | Legacy API | Verdict          |
-|---------------------|-----------|------------|------------------|
-| getter (class)      | 3.05 ns   | 3.08 ns    | ±1.1% (same)     |
-| passthrough (class) | 4.99 ns   | 5.07 ns    | identical to dir |
-| getter (interface)  | 2.18 ns   | 2.19 ns    | ±0.7% (same)     |
-
-*Group-based multi-interceptor hot path is bytecode-identical to single-interceptor — zero degradation.*
-
-## 🏗️ How It Works
-
-### 1. Proxy Class Generation
-
-The following flowchart illustrates how APS generates a dynamic proxy class at runtime — from the `AcceleratedProxy.proxy()` call to returning a ready-to-use proxy instance.
-
-```mermaid
-flowchart TD
-    A["&#9322; AcceleratedProxy.proxy(target, groups...)"]
-    A --> A1["&#9323; Group chain matching: first-match-wins"]
-    A1 --> B{"target.isInterface()?"}
-    B -->|" &#10003; Interface "| C["&#9324; InterfaceGenerator(target, interceptors[], mapping)"]
-    B -->|" &#10007; Class "| D["&#9324; ClassGenerator(target, interceptors[], mapping, constructorArgs)"]
-    C --> E["&#9324; InterfaceGenerator.generate()"]
-    D --> F["&#9324; ClassGenerator.generate()"]
-    E --> G["Init ASM ClassWriter"]
-    G --> H["Define class: extends Object<br/>implements Target, DispatchTarget"]
-    H --> I["Generate _interceptor$N fields<br/>(one per distinct Interceptor)"]
-    I --> J["Generate constructor &lt;init&gt;<br/>store Interceptor reference"]
-    J --> K["Iterate interface methods"]
-    K --> L{"Group chain matching<br/>first-match-wins"}
-    L -->|" ✓ Match "| M["Assign method to<br/>Interceptor _iN"]
-    L -->|" ✗ No match "| N["Generate method body<br/>throw AbstractMethodError"]
-    M --> O["Register Method info in ClinitRegistry"]
-    N --> P{"More methods?"}
-    O --> P
-    P -->|" Yes "| K
-    P -->|" No "| Q["&#9325; Drain ClinitRegistry &rarr; MethodInfo list"]
-    Q --> R["&#9326; Generate dispatch(Method, Object[]) method<br/>hashCode-driven if-else chain"]
-    R --> S["&#9327; Generate &lt;clinit&gt; static initializer<br/>load java.lang.reflect.Method via reflection"]
-    S --> T["&#9328; ClassWriter.toByteArray() &rarr; byte[]"]
-    F --> G2["Init ASM ClassWriter"]
-    G2 --> H2["Define class: extends TargetClass<br/>implements DispatchTarget"]
-    H2 --> I2["Generate _interceptor$N fields<br/>(one per distinct Interceptor)"]
-    I2 --> J2["Find matching super constructor"]
-    J2 --> K2["Generate constructor &lt;init&gt;<br/>super(constructorArgs) + store Interceptor"]
-    K2 --> L2["Iterate non-final / non-static<br/>declared methods"]
-    L2 --> M2{"Group chain matching<br/>first-match-wins"}
-    M2 -->|" ✓ Match "| N2["Assign method to Interceptor _iN<br/>generate override body"]
-    M2 -->|" ✗ No match "| O2["Generate override body<br/>direct super.method() zero overhead"]
-    N2 --> P2["Register in ClinitRegistry"]
-    O2 --> Q2{"More methods?"}
-    P2 --> Q2
-    Q2 -->|" Yes "| L2
-    Q2 -->|" No "| R2["&#9325; Drain ClinitRegistry &rarr; MethodInfo list"]
-    R2 --> S2["&#9326; Generate dispatch(Method, Object[]) method<br/>hashCode-driven if-else &rarr; INVOKESPECIAL super"]
-    S2 --> T2["&#9327; Generate &lt;clinit&gt; static initializer"]
-    T2 --> T
-    T --> U{"target.isInterface()?"}
-    U -->|" Interface "| V["&#9329; Use APS own Lookup<br/>defineHiddenClass(bytecode, true)"]
-    U -->|" Class "| W["&#9329; LookupManager acquires<br/>target package access Lookup<br/>defineHiddenClass(bytecode, true)"]
-    V --> X["&#9330; Reflectively get constructor"]
-    W --> X
-    X --> Y["&#9331; Constructor.newInstance<br/>Interface: (interceptor)<br/>Class: (interceptor, constructorArgs...)"]
-    Y --> Z["Return proxy instance"]
-```
-
-### 2. Method Invocation
-
-When a method is called on the proxy instance, the following flow executes — from the generated bytecode through user interceptor logic to the final return value.
-
-```mermaid
-flowchart TD
-    A["&#9322; Method call on proxy<br/>proxy.someMethod(arg1, arg2)"]
-    A --> B["&#9323; Enter generated override body"]
-    B --> C["&#9324; Box arguments<br/>primitive &rarr; wrapper type<br/>Object[] args = new Object[]{arg1, arg2, ...}"]
-    C --> D["&#9325; Call Interceptor.intercept(proxy, method, args)<br/>this._interceptor$N.intercept(this, _method, args)"]
-    D --> E["User-defined Interceptor logic"]
-    E --> F{"Need to invoke super?"}
-    F -->|" Yes "| G["&#9326; AcceleratedProxy.invokeSuper(proxy, method, args)"]
-    F -->|" No "| H["Return custom result"]
-    G --> I["&#9327; ((DispatchTarget) proxy).dispatch(method, args)"]
-    I --> J["&#9328; Compute method.hashCode()"]
-    J --> K["&#9329; hashCode-driven if-else chain<br/>compare: hash == METHOD_N_HASH ?"]
-    K --> L["&#9330; Branch hit &rarr; unbox args<br/>extract from Object[] and unbox to primitives"]
-    L --> M["&#9331; INVOKESPECIAL super.method(args...)<br/>direct bytecode-level super call<br/>zero reflection, zero MethodHandle"]
-    M --> N["Box return value (if needed)<br/>primitive &rarr; wrapper type"]
-    N --> H
-    H --> O["Unbox return & type check<br/>wrapper &rarr; primitive (if needed)<br/>CHECKCAST reference type"]
-    O --> P{"Exception thrown?"}
-    P -->|" RuntimeException "| Q["Rethrow directly"]
-    P -->|" Error "| R["Rethrow directly"]
-    P -->|" Checked Exception "| S["Wrap in UndeclaredThrowableException<br/>and throw"]
-    P -->|" No exception "| T["Return result to caller"]
-    Q --> U["Caller catches exception"]
-    R --> U
-    S --> U
-```
-
-> **Key insight:** The `dispatch()` method uses a compile-time-computed `Method.hashCode()` (deterministic: `declaringClass.hashCode() XOR methodName.hashCode()`) to build an if-else chain. Each branch directly emits `INVOKESPECIAL super.method(args...)` — there is **zero reflection** and **zero MethodHandle** overhead at dispatch time. The JIT compiler can inline these direct super calls, achieving near-native performance.
+The key insight: dispatch uses a deterministic `Method.hashCode()` to build an if-else chain whose branches are **direct `super` calls** — no reflection, no
+`MethodHandle`, fully JIT-inlinable. See the [user guide](docs/guide/README.md)
+for the full picture.
 
 ## 📋 Requirements
 
 - Java 25+
-- ASM 9.7.1 (declared as compile dependency)
+- ASM 9.7.1 (compile dependency)
 
 ## 🧩 JPMS / Strong Encapsulation
 
-APS class proxies are defined in the target class's package via
-`MethodHandles.privateLookupIn`. When the target class lives in a
-strongly encapsulated module — any package that is not `open`, including
-`java.base` packages such as `java.util` — `privateLookupIn` is denied and
-`proxy()` fails fast with an actionable error:
-
-```text
-Cannot access java.util.ArrayList in module java.base (package java.util):
-the package is not open to the unnamed module. Add --add-opens
-java.base/java.util=ALL-UNNAMED to the JVM arguments, ...
-```
-
-To proxy such a class, add the suggested `--add-opens` JVM argument, or
-declare `opens <package>;` in the target module's `module-info.java`.
-
-Interface proxies use a public lookup and support `public` interfaces only
-(same as `java.lang.reflect.Proxy`).
+Class proxies are defined in the target's package via `MethodHandles.privateLookupIn`. If the target lives in a strongly encapsulated module (any non-`open` package, including `java.base` packages such as `java.util`), `proxy()` fails fast with an actionable `--add-opens` hint. Interface proxies use a public lookup and support
+`public` interfaces only (same as `java.lang.reflect.Proxy`). See
+[JPMS](docs/guide/11-jpms.md).
 
 ## 📦 Installation
-
-### Build from source
 
 ```bash
 git clone https://github.com/lamspace/aps.git
@@ -339,7 +137,7 @@ cd aps
 mvn install -DskipTests
 ```
 
-### Maven (coming soon)
+Maven Central publishing is in progress; until then, depend on the artifact from your local repository:
 
 ```xml
 
@@ -350,53 +148,27 @@ mvn install -DskipTests
 </dependency>
 ```
 
-Maven Central publishing is on the [roadmap](docs/aps-future-roadmap.md).
+## 🆚 APS vs the alternatives
 
-## 🆚 APS vs CGLib
-
-| Feature                        | APS                               | CGLib                      |
-|--------------------------------|-----------------------------------|----------------------------|
-| Dispatch mechanism             | hashCode switch + `INVOKESPECIAL` | Generated bytecode         |
-| Super call overhead            | Zero (direct `super.method()`)    | MethodProxy + FastClass    |
-| Class loading                  | `defineHiddenClass()` (GC-safe)   | Custom ClassLoader         |
-| API style                      | Functional (`Interceptor` lambda) | Callback + MethodProxy     |
-| Interface proxy                | Yes (`AcceleratedProxy.proxy()`)  | No (requires Objenesis)    |
-| Primitive boxing               | Automatic                         | Automatic                  |
-| Exception propagation          | Checked → `UndeclaredThrowable`   | Checked → InvocationTarget |
-| No-default-constructor support | Yes                               | Yes                        |
-| Final class/method proxy       | No (JVM limit)                    | No (JVM limit)             |
-| Maven Central                  | Roadmap                           | Yes                        |
-
-## 🆚 APS vs Java Proxy
-
-| Feature                     | APS                                 | `java.lang.reflect.Proxy`                |
-|-----------------------------|-------------------------------------|------------------------------------------|
-| Proxy target                | Classes **and** interfaces          | Interfaces only                          |
-| Multiple interfaces         | Yes (`Class<?>[]`)                 | Yes (`Class<?>[]`)                       |
-| Dispatch mechanism          | hashCode switch + `INVOKESPECIAL`   | Generated bytecode + `InvocationHandler` |
-| Super call overhead         | Zero (direct `super.method()`)      | N/A (interfaces only)                    |
-| Class loading               | `defineHiddenClass()` (GC-safe)     | `defineClass` + proxy cache              |
-| API style                   | Functional (`Interceptor` lambda)   | `InvocationHandler` (single-method)      |
-| Selective interception      | `Group.of()` per method family      | All-or-nothing                           |
-| Exception propagation       | Checked → `UndeclaredThrowable`     | Checked → `InvocationTarget`             |
-| Constructor args (classes)  | Yes                                 | N/A (interfaces only)                    |
-| Class proxy performance     | ~4.76 ns passthrough (direct speed) | N/A (cannot proxy classes)               |
-| Interface proxy performance | No reflection; parity in string-heavy cases | Faster in lightweight scenarios (JIT intrinsics) |
-| Dependencies                | Third-party (APS + ASM)             | Built into JDK                           |
-
-## 🔄 Migration from CGLib
-
-See [docs/migration-guide.md](docs/migration-guide.md) for step-by-step migration guides from both CGLib and `java.lang.reflect.Proxy`.
+| Feature                  | APS                    | CGLib                       | `java.lang.reflect.Proxy` |
+|--------------------------|------------------------|-----------------------------|---------------------------|
+| Proxies concrete classes | ✅                     | ✅                          | ❌                        |
+| Super-call mechanism     | direct `INVOKESPECIAL` | `MethodProxy` + `FastClass` | N/A                       |
+| GC-safe (hidden class)   | ✅                     | ❌                          | ✅                        |
+| Selective interception   | ✅ `Group.of`          | ✅ `CallbackFilter`         | ❌                        |
+| Multi-interface proxy    | ✅                     | ❌                          | ✅                        |
+| Constructor interception | ✅                     | ✅                          | ❌                        |
+| Static method proxy      | ✅                     | ❌                          | ❌                        |
+| Hot reload / rebind      | ✅                     | ❌                          | ❌                        |
+| Annotation-driven API    | ✅                     | ❌                          | ❌                        |
+| Functional API           | ✅ lambda              | ✅                          | ✅                        |
+| Maven Central            | Coming soon            | ✅                          | Built-in                  |
 
 ## 📖 Documentation
 
-- [Benchmark Results (EN)](docs/benchmark-results.md)
-- [Benchmark Results (中文)](docs/benchmark-results_cn.md)
+- [User Guide](docs/guide/README.md) — 13 chapters with runnable examples
+- [Benchmark Results (EN)](docs/benchmark-results.md) / [中文](docs/benchmark-results_cn.md)
 - [Migration Guide](docs/migration-guide.md)
-- [APS vs CGLib/Java Proxy (设计 spec)](docs/superpowers/specs/2026-08-02-aps-unified-proxy-design.md)
-- [Multi-Interceptor Design Spec](docs/superpowers/specs/2026-08-09-multi-interceptor-method-grouping-design.md)
-- [Annotation-Driven API Design Spec](docs/superpowers/specs/2026-08-15-annotation-driven-api-design.md)
-- [Future Roadmap](docs/aps-future-roadmap.md)
 
 ## 📄 License
 

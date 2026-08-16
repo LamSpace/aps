@@ -26,7 +26,6 @@ import org.objectweb.asm.Type;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -120,21 +119,14 @@ public class InterfaceGenerator {
         List<ClinitRegistry.Entry> entries = registry.drain();
 
         // -- dispatch(Method, Object[]): one branch per Method variant, each
-        //    carrying the merged method's default owner so every hash routes
+        //    carrying the merged method's default owner so every variant routes
         //    to the same handler --
-        List<Method> allVariants = new ArrayList<>();
-        for (InterfaceMethodResolver.ResolvedMethod rm : resolved) {
-            allVariants.addAll(rm.variants());
-        }
-        Map<Method, Integer> hashMap =
-                DispatchGenerator.resolveHashes(allVariants);
         List<MethodInfo> infos = new ArrayList<>();
         for (int i = 0; i < resolved.size(); i++) {
             InterfaceMethodResolver.ResolvedMethod rm = resolved.get(i);
             String fieldName = entries.get(i).methodFieldName();
             for (Method variant : rm.variants()) {
-                infos.add(new MethodInfo(variant, fieldName,
-                        hashMap.get(variant), rm.defaultOwner()));
+                infos.add(new MethodInfo(variant, fieldName, rm.defaultOwner()));
             }
         }
         DispatchGenerator.generateDispatch(cw, generatedInternal,

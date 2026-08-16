@@ -27,11 +27,9 @@ class ClinitRegistryTest {
         ClinitRegistry registry = new ClinitRegistry();
 
         registry.register(String.class,
-                String.class.getDeclaredMethods()[0], "gen/String",
-                "_method$0", 0);
+                String.class.getDeclaredMethods()[0], "_method$0");
         registry.register(Integer.class,
-                Integer.class.getDeclaredMethods()[0], "gen/Integer",
-                "_method$1", 1);
+                Integer.class.getDeclaredMethods()[0], "_method$1");
 
         var entries = registry.drain();
         assertEquals(2, entries.size());
@@ -44,8 +42,7 @@ class ClinitRegistryTest {
         ClinitRegistry registry = new ClinitRegistry();
 
         registry.register(String.class,
-                String.class.getDeclaredMethods()[0], "gen/String",
-                "_method$0", 0);
+                String.class.getDeclaredMethods()[0], "_method$0");
 
         registry.drain();
         assertTrue(registry.drain().isEmpty(),
@@ -58,11 +55,9 @@ class ClinitRegistryTest {
         ClinitRegistry r2 = new ClinitRegistry();
 
         r1.register(String.class,
-                String.class.getDeclaredMethods()[0], "gen/String",
-                "_method_r1", 0);
+                String.class.getDeclaredMethods()[0], "_method_r1");
         r2.register(Integer.class,
-                Integer.class.getDeclaredMethods()[0], "gen/Integer",
-                "_method_r2", 0);
+                Integer.class.getDeclaredMethods()[0], "_method_r2");
 
         var e1 = r1.drain();
         var e2 = r2.drain();

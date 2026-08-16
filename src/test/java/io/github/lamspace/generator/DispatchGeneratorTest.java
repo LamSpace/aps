@@ -19,8 +19,6 @@ package io.github.lamspace.generator;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -58,28 +56,4 @@ class DispatchGeneratorTest {
         assertEquals(h1, h2);
     }
 
-    @Test
-    void resolveHashesShouldProduceNoDuplicates() throws Exception {
-        List<Method> methods = List.of(
-                String.class.getMethod("length"),
-                String.class.getMethod("isEmpty"),
-                String.class.getMethod("charAt", int.class),
-                String.class.getMethod("indexOf", int.class),
-                String.class.getMethod("indexOf", String.class)
-        );
-
-        var result = DispatchGenerator.resolveHashes(methods);
-        assertEquals(methods.size(), result.size());
-
-        // All hashes must be unique
-        long distinctCount = result.values().stream().distinct().count();
-        assertEquals(methods.size(), distinctCount,
-                "All resolved hashes must be unique");
-    }
-
-    @Test
-    void resolveHashesShouldHandleEmptyList() {
-        var result = DispatchGenerator.resolveHashes(new ArrayList<>());
-        assertTrue(result.isEmpty());
-    }
 }

@@ -28,6 +28,7 @@ class RebindInterfaceProxyTest {
 
     public interface Multi {
         String a();
+
         String b();
     }
 

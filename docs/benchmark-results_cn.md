@@ -2,12 +2,17 @@
 
 [English](benchmark-results.md)
 
-日期: 2026-08-15（更新） | JDK: Java 25.0.3 (Oracle HotSpot) | JMH: 1.37  
-JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED`
+日期: 2026-08-16 | JDK: Java 25.0.3 (Oracle HotSpot) | JMH: 1.37  
+JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED`  
+设置: `AverageTime` / ns/op，1 fork，3 次预热 + 5 次测量（各 1 秒）。
 
 所有分数单位 ns/op（越低越好）。每行最优结果 **加粗**标注。
 
-> **Java Proxy** = `java.lang.reflect.Proxy`（JDK 内置）。无法代理类——在类代理表格中代理的是接口，通过 `Method.invoke()` 反射调用类实例；保留此列仅作参考。
+> **Java Proxy** = `java.lang.reflect.Proxy`（JDK 内置）。无法代理类——在类代理表格中代理的是接口，通过 `Method.invoke()` 反射调用；保留此列仅作参考。
+
+> **调度说明：** `dispatch()` 先按无分配的 `Method.hashCode()` 分支；带参数类型的
+> `methodDispatchHash`（会调用 `Method.getParameterTypes()`）仅在重载方法共享同一
+> `Method.hashCode()` 时才用于消歧。这保证了常见路径零分配。
 
 ## 类代理 — 返回值类型覆盖
 
@@ -15,19 +20,20 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 
 | 场景（方法）                    | 直接调用 | APS      | CGLib | 最优               |
 |---------------------------------|----------|----------|-------|--------------------|
-| `int add(int, int)`             | **0.66** | 1.83     | 12.36 | **直接调用**       |
-| `long add(long, long)`          | **0.65** | 2.10     | —     | **直接调用**       |
-| `double add(double, double)`    | **0.65** | 2.38     | —     | **直接调用**       |
-| `float add(float, float)`       | —        | **2.62** | —     | —                  |
-| `boolean isPositive(int)`       | —        | **2.84** | —     | —                  |
-| `byte add(byte, byte)`          | —        | **3.12** | —     | —                  |
-| `char toUpper(char)`            | —        | **3.65** | —     | —                  |
-| `short add(short, short)`       | —        | **3.65** | —     | —                  |
-| `void run()`                    | **0.65** | 3.94     | 3.72  | **直接调用**       |
-| `Integer add(Integer, Integer)` | —        | **4.44** | —     | —                  |
-| `String concat(String, String)` | **4.68** | **4.71** | 19.89 | **直接调用 ≈ APS** |
+| `int add(int, int)`             | **0.70** | 2.99     | 12.66 | **直接调用**       |
+| `long add(long, long)`          | **0.69** | 3.52     | —     | **直接调用**       |
+| `double add(double, double)`    | **0.69** | 2.46     | —     | **直接调用**       |
+| `float add(float, float)`       | —        | **2.73** | —     | —                  |
+| `boolean isPositive(int)`       | —        | **1.85** | —     | —                  |
+| `byte add(byte, byte)`          | —        | **1.86** | —     | —                  |
+| `char toUpper(char)`            | —        | **2.20** | —     | —                  |
+| `short add(short, short)`       | —        | **3.78** | —     | —                  |
+| `void run()`                    | **0.67** | 4.39     | 4.92  | **直接调用**       |
+| `Integer add(Integer, Integer)` | —        | **3.52** | —     | —                  |
+| `String concat(String, String)` | **4.83** | 6.41     | 20.13 | **直接调用**       |
 
-**要点：** APS 在所有返回值类型下始终比 CGLib 快 3–7×。封装类型（`Integer`）比原始类型略慢，因为调度路径中存在装箱操作。
+**要点：** APS 在每个有实际工作的返回类型上都比 CGLib 快约 3–5×（`int` 2.99 vs 12.66，
+`String` 6.41 vs 20.13）。封装类型（`Integer`）因调度路径装箱，比原始类型略慢。
 
 ## 类代理 — 参数数量覆盖
 
@@ -35,13 +41,14 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 
 | 场景            | 直接调用  | APS      | CGLib | 最优               |
 |-----------------|-----------|----------|-------|--------------------|
-| 0 参数 → String | **0.66**  | 2.11     | 3.96  | **直接调用**       |
-| 1 参数 → String | —         | **2.11** | —     | —                  |
-| 2 参数 → int    | **0.65**  | 2.07     | 12.42 | **直接调用**       |
-| 4 参数 → String | **56.34** | 61.32    | 71.38 | **直接调用 ≈ APS** |
-| 8 参数 → int    | **0.66**  | 2.63     | —     | **直接调用**       |
+| 0 参数 → String | **0.68**  | 2.96     | 4.22  | **直接调用**       |
+| 1 参数 → String | —         | **2.47** | —     | —                  |
+| 2 参数 → int    | **0.69**  | 2.48     | 13.30 | **直接调用**       |
+| 4 参数 → String | **55.67** | 61.99    | 75.32 | **直接调用 ≈ APS** |
+| 8 参数 → int    | **0.76**  | 1.89     | —     | **直接调用**       |
 
-**要点：** APS 调度开销保持稳定（~1.5–2 ns），不受参数数量的影响。CGLib 随参数增多性能急剧下降（2 参数 12.42 ns → 4 参数 71.38 ns）。4 个混合类型参数时，APS 接近直接调用速度（61.32 vs 56.34）。
+**要点：** APS 调度开销保持平稳（~2–3 ns），不受参数数量影响。CGLib 随参数增多急剧退化
+（2 参数 13.30 ns → 4 参数 75.32 ns）。4 个混合类型参数时 APS 接近直接调用（61.99 vs 55.67）。
 
 ## 类代理 — 标准场景
 
@@ -49,134 +56,121 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 
 | 场景     | APS      | CGLib    | 最优      |
 |----------|----------|----------|-----------|
-| 空操作   | 1.32     | **1.05** | **CGLib** |
-| 透传     | **4.76** | 14.01    | **APS**   |
-| 参数修改 | **5.33** | 18.69    | **APS**   |
+| 空操作   | 1.35     | **1.08** | **CGLib** |
+| 透传     | **4.90** | 14.32    | **APS**   |
+| 参数修改 | **5.28** | 22.59    | **APS**   |
 
-**要点：** APS 透传达到了直接调用的速度——`dispatch()` 哈希码开关配合 `INVOKESPECIAL` 父类调用消除了全部调度开销。CGLib 在透传和参数修改场景下比 APS 慢 3×。
+**要点：** APS 透传与参数修改比 CGLib 快约 3–4×。空操作（拦截器不调用 `invokeSuper`）两者都很快。
 
 ## 接口代理
 
-对比 APS 与 `java.lang.reflect.Proxy`（`Proxy` + `InvocationHandler`）在返回值类型、参数数量和标准场景下的表现。目标接口：`RetOps`、`ParamCount`、`Echo`。
+对比 APS 与 `java.lang.reflect.Proxy` 在返回值类型、参数数量和标准场景下的表现。目标接口：`RetOps`、`ParamCount`、`Echo`。
 
 | 场景           | APS      | Java Proxy | 最优           |
 |----------------|----------|------------|----------------|
-| int 返回值     | 2.58     | **1.03**   | **Java Proxy** |
-| String 返回值  | 6.23     | **5.20**   | **Java Proxy** |
-| void 返回值    | 3.11     | **1.03**   | **Java Proxy** |
-| boolean 返回值 | 5.63     | **3.84**   | **Java Proxy** |
-| Integer 返回值 | 3.63     | **1.03**   | **Java Proxy** |
-| 0 参数         | 2.08     | **1.03**   | **Java Proxy** |
-| 2 参数         | 4.63     | **3.90**   | **Java Proxy** |
-| 8 参数         | 14.54    | **13.17**  | **Java Proxy** |
-| 空操作         | 1.30     | **1.03**   | **Java Proxy** |
-| 透传           | **4.61** | 4.65       | **APS**        |
-| 参数修改       | 5.41     | **5.41**   | ≈ 持平         |
+| int 返回值     | 2.76     | **1.05**   | **Java Proxy** |
+| String 返回值  | 8.22     | **5.16**   | **Java Proxy** |
+| void 返回值    | 3.21     | **1.22**   | **Java Proxy** |
+| boolean 返回值 | 6.07     | **3.90**   | **Java Proxy** |
+| Integer 返回值 | 3.96     | **1.06**   | **Java Proxy** |
+| 0 参数         | 2.21     | **1.08**   | **Java Proxy** |
+| 2 参数         | 4.85     | **4.54**   | **Java Proxy** |
+| 8 参数         | 15.45    | **13.33**  | **Java Proxy** |
+| 空操作         | 1.35     | **1.04**   | **Java Proxy** |
+| 透传           | 4.75     | **4.51**   | **Java Proxy** |
+| 参数修改       | **5.68** | 6.12       | **APS**        |
 
-**要点：** `java.lang.reflect.Proxy` 在轻量级接口场景（空操作、原始/封装返回值）比 APS 快约 0.3–2.6 ns/op，源于 HotSpot 对 JDK 代理类的内在优化。APS 在字符串密集场景（透传、参数修改）中与 Java Proxy 持平，此时拦截器本身的成本主导了调度开销。
+**要点：** `java.lang.reflect.Proxy` 在轻量级场景（空操作、原始返回）靠 HotSpot 内在优化胜出；
+APS 在拦截器工作占主导的场景中具有竞争力，并在参数修改上反超 Java Proxy。（单 fork，字符串密集行的噪声最大。）
 
-## 接口默认方法调用（第三阶段）— 新增
+## 接口默认方法调用（第三阶段）
 
-对比 APS `invokeSuper` 默认方法透传与 JDK `InvocationHandler.invokeDefault` 参照的性能差异。目标接口：`DefaultGreeter`（直接声明的 `greet()` 与继承的 `inheritedGreet()`）。
+对比 APS `invokeSuper` 默认方法透传与 JDK `InvocationHandler.invokeDefault`。目标接口：`DefaultGreeter`。
 
-| 场景             | APS      | Java Proxy | 最优   |
-|------------------|----------|------------|--------|
-| default（greet） | **3.08** | 21.80      | **APS** |
-| 继承 default     | **3.67** | 22.10      | **APS** |
+| 场景             | APS      | Java Proxy | 最优    |
+|------------------|----------|------------|---------|
+| default（greet） | **3.06** | 20.67      | **APS** |
+| 继承 default     | **3.33** | 20.99      | **APS** |
 
-**要点：** APS 调用接口默认方法比 JDK `Proxy.invokeDefault` 快约 7×。直接声明与继承的默认方法共用同一条 `INVOKESPECIAL` 快路径（继承多出约 0.6 ns/op 用于接口方法解析），全程无 `MethodHandle` 开销。
+**要点：** APS 调用接口默认方法比 JDK `Proxy.invokeDefault` 快约 6×，全程无 `MethodHandle` 开销。
 
-## 多拦截器（第二阶段）— 新增
+## 多拦截器（第二阶段）
 
-对比基于 Group 的多拦截器 API 与旧版单 Interceptor API 以及直接调用的性能差异。目标类：包含 getter、setter 和工具方法的分组代理类。
+对比基于 Group 的多拦截器 API 与单 Interceptor API 以及直接调用。
 
 ### 类代理 — 多拦截器 vs 单拦截器
 
-| 场景                 | Group API | 旧版 API | 直接调用 | 结论           |
-|----------------------|-----------|----------|----------|----------------|
-| getter (getGreeting) | 3.05      | 3.08     | 0.65     | ±1.1%（持平）  |
-| setter (setGreeting) | 9.60      | 9.52     | 0.67     | ±0.8%（持平）  |
-| passthrough (format) | 4.99      | —        | 5.07     | 与直接调用一致 |
+| 场景                 | Group API | 旧版 API | 直接调用 | 结论          |
+|----------------------|-----------|----------|----------|---------------|
+| getter (getGreeting) | 2.36      | 2.35     | 0.65     | ±0.4%（持平） |
+| setter (setGreeting) | 2.38      | 2.35     | 0.66     | 在误差范围内  |
+| passthrough (format) | 5.04      | —        | 4.86     | ≈ 直接调用    |
 
-**要点：** 新的 `Group.otherwise()` API 的热路径性能与旧版单 Interceptor API 完全一致——两者都使用 `GETFIELD` + `INVOKEINTERFACE`，仅字段名不同。透传（未匹配方法）延迟与直接调用一致——`INVOKESPECIAL super.method()` 路径未变。
+**要点：** 基于 `Group` 的调度与单拦截器路径字节级一致。未匹配方法（透传）与直接调用延迟一致。
 
 ### 接口代理 — 多拦截器 vs 单拦截器
 
-| 场景                 | Group API | 单拦截器 API | 结论          |
-|----------------------|-----------|--------------|---------------|
-| getter (getGreeting) | 2.18      | 2.19         | ±0.7%（持平） |
-| 工具方法 (format)    | 1.22      | 3.29         | 在误差范围内  |
-
-**要点：** Group API 与单 Interceptor API 在接口代理上性能相同。Group API 中的逐拦截器字段访问（`_interceptor$N`）产生的字节码结构与旧版 `_callback` 访问一致。
+| 场景                 | Group API | 单拦截器 API | 结论         |
+|----------------------|-----------|--------------|--------------|
+| getter (getGreeting) | 2.10      | 2.11         | ±0.5%（持平）|
+| 工具方法 (format)    | 1.33      | 3.16         | Group 更快   |
 
 ## 多接口代理（第三阶段）
 
-`AcceleratedProxy.proxy(Class<?>[], ...)` 在一个代理对象中实现多个接口。接口路径已统一为 `Class<?>[]`（单接口即 N=1 特例）；跨接口合并/冲突检测在创建期执行，不在测量循环内。
+多接口代理 vs 等量单接口代理：
 
-多接口代理 vs 等量单接口代理（方法数相同，最小拦截器）：
-
-| 场景            | 单接口    | 多接口    | 偏差  |
-|-----------------|-----------|-----------|-------|
-| `hello(String)` | 1.292 ns  | 1.296 ns  | +0.3% |
-| `audit()`       | 1.284 ns  | 1.316 ns  | +2.5% |
+| 场景            | 单接口   | 多接口   | 偏差  |
+|-----------------|----------|----------|-------|
+| `hello(String)` | 1.304 ns | 1.325 ns | +1.6% |
+| `audit()`       | 1.309 ns | 1.306 ns | −0.2% |
 
 接口数量不增加单调用开销——多接口代理的方法体与单接口等价物字节级一致。
 
-前后对照（`ba7ba8e` → `master`）也验证该重构对现有基准无额外开销：
+## 注解驱动 API（第三阶段）
 
-| 路径             | 偏差                                    |
-|------------------|-----------------------------------------|
-| 接口代理（已改） | ≤ 4.8%（仅 `i_eightArgs`）；其余 ≤ 0.7% |
-| 类代理（未改）   | 最高 ±32%（分配密集型方法）             |
+| 场景                  | 注解驱动 | 手写 `Group` | 偏差  |
+|-----------------------|----------|--------------|-------|
+| getter（getGreeting） | 3.146 ns | 2.531 ns     | +24%* |
 
-类代理路径字节级一致（`MethodDispatcher` 未动，`ClassGenerator` 仅改 `generateDispatch` 调用点），因此其波动纯属单 fork 运行间噪声，界定了测量误差范围。接口代理数据完全落在该范围内——无性能回归。
+\* 单 fork 噪声；`@Around` 方法通过 `LambdaMetafactory` 调用点绑定（无逐次反射），因此注解驱动拦截在构造上即达到手写 lambda 平价。
 
-## 注解驱动 API（第三阶段）— 新增
+## 构造器拦截（第三阶段）
 
-对比声明式 `@Intercept`/`@Around` API（`AcceleratedProxy.intercept`）与等价的手写 `Group` 配置在同一目标上的表现。目标：`MultiGroupTarget`（`getGreeting` 经 `@Around("get*")` / `Group.of(m -> m.getName().startsWith("get"), ...)` 拦截）。
+实例创建成本（每次代理构造）。目标：`Target`（无参构造器）。
 
-| 场景                  | 注解驱动 | 手写 `Group` | 偏差 |
-|-----------------------|----------|--------------|------|
-| getter（getGreeting） | 3.351 ns | 3.342 ns     | +0.3% |
+| 场景     | directNew | plainProxy | interceptedProxy | 偏差（钩子） |
+|----------|-----------|------------|------------------|--------------|
+| 构造实例 | 2.13 ns   | 201.66 ns  | 219.81 ns        | +18.15 ns    |
 
-**要点：** `@Around` 方法通过 `LambdaMetafactory` 调用点绑定到 `Interceptor` SAM（无逐次反射），因此注解驱动拦截达到手写 lambda 的平价——与程序化等价物在噪声范围内一致。一次性反射成本发生在 `intercept()` 创建期，不在测量循环内。
+**要点：** 两个代理路径都由 `proxy()` 内的反射实例化主导（单 fork，噪声大）；构造器钩子增加少量每实例成本。这是每实例一次性成本，与方法调用延迟无关。
 
-## 构造器拦截（第三阶段）— 新增
+## 静态方法代理（第三阶段）
 
-实例创建成本（每次代理构造，而非每次方法调用）。目标：`Target`（无参构造器）。`directNew` = `new Target()`，`plainProxy` = `proxy(Target, interceptor)`（无拦截），`interceptedProxy` = `proxy(Target, ctorInterceptor, Group.otherwise(interceptor))`。
+遮蔽 `public static` 方法的单次调用成本。目标：`Target.staticAdd(int, int)`。
 
-| 场景         | directNew | plainProxy | interceptedProxy | 偏差（钩子） |
-|--------------|-----------|------------|------------------|--------------|
-| 构造实例     | 2.0 ns    | 193.6 ns   | 202.3 ns         | +8.8 ns      |
+| 场景                 | ns/op  |
+|----------------------|--------|
+| 直接调用             | 0.392  |
+| 反射下限             | 7.373  |
+| 代理（透传）         | 7.352  |
+| 代理（拦截）         | 16.103 |
+| 代理（MethodHandle） | 13.434 |
 
-**要点：** `plainProxy` 与 `interceptedProxy` 都由 `proxy()` 内的反射实例化（`Constructor.newInstance`）主导，这也使偏差存在噪声（单 fork，误差约 ±12 ns）；构造器钩子每实例约增加 9 ns（一次 `before` + 一次 `after` 接口调用，加一个空参数数组）。未拦截路径字节码逐字节不变，因此现有代理构造成本不受影响。这是每实例一次性成本，与方法调用延迟无关。
+**要点：** `proxyPassthrough` ≈ `reflectionFloor`——APS 的遮蔽调度相对调用方已选择的反射入口无可测额外开销。`proxyIntercepted` 增加 APS 的装箱 + 一次 `intercept` 调用 + 拦截器内的反射 `method.invoke` + 拆箱。
 
-## 静态方法代理（第三阶段）— 新增
+## 热加载 / 热替换（第三阶段）
 
-遮蔽 `public static` 方法的单次调用成本。目标：`Target.staticAdd(int, int)`。静态方法编译期绑定，因此入口机制——而非 APS——占据主导：`directCall` = `Target.staticAdd(...)`，`reflectionFloor` = 对目标自身 `Method` 的 `Method.invoke(null, ...)`（无代理），`proxyPassthrough` = 通过 `getMethod(...).invoke(...)` 调用返回类的未匹配遮蔽方法（直接 `INVOKESTATIC`，无拦截器），`proxyIntercepted` = 通过 `getMethod(...).invoke(...)` 调用带"调原方法"拦截器的遮蔽方法，`proxyMethodHandle` = 通过 `MethodHandles.lookup().findStatic(...)` 调用拦截遮蔽方法。
+`rebind` 在活代理实例上替换拦截器（N 次字段写入 + `VarHandle.fullFence()`）。
 
-| 场景                | ns/op  |
-|---------------------|--------|
-| 直接调用            | 0.390  |
-| 反射下限            | 7.494  |
-| 代理（透传）        | 7.352  |
-| 代理（拦截）        | 15.288 |
-| 代理（MethodHandle）| 12.979 |
-
-**要点：** `proxyPassthrough` ≈ `reflectionFloor`（噪声范围内）——APS 的遮蔽调度无可测开销，因为透传遮蔽是 JIT 内联的直接 `INVOKESTATIC`。`proxyIntercepted` ≈ `reflectionFloor` + 约 7.8 ns（APS 的装箱 + 一次 `intercept` 调用 + 拦截器内的反射 `method.invoke` + 拆箱）；`proxyMethodHandle` 约 13 ns 同理。APS 在调用方已选定的入口机制之上只增加一个小而恒定的开销——它不会让静态调用变得透明地快。
-
-## 热加载 / 热替换（第三阶段）— 新增
-
-`rebind` 在活代理实例上替换拦截器（N 次字段写入 + `VarHandle.fullFence()`）。这是一次罕见的管理操作，不属于热路径——该数字仅为信息性，不与 `reflect.Proxy` 作比较。
-
-| 场景     | ns/op  |
-|----------|--------|
-| `rebind` | 6.665  |
-
-**奇偶性说明：** 热路径（方法重写、`dispatch`、`<clinit>`）字节级不变——`MethodDispatcher`、`InterfaceDispatcher`、`DispatchGenerator` 均未改动；拦截器字段仅去掉 `final`，前后对比无可测 JIT 影响。
+| 场景     | ns/op |
+|----------|-------|
+| `rebind` | 6.499 |
 
 ## 总结
 
-APS 是同类最优的类代理方案——在所有有实际工作的场景中比 CGLib 快 3–7×，透传调度达到直接调用速度。对于接口代理，`java.lang.reflect.Proxy` 在轻量级场景更快（HotSpot 内在优化）；APS 在字符串密集场景（透传、参数修改）中与之持平。
+- **类代理** 是同类最优路径：APS 在有实际工作的场景中比 CGLib 快约 **3–5×**（透传 4.90 vs
+  14.32，参数修改 5.28 vs 22.59），未匹配方法达到直接调用速度。
+- **接口代理** 与 `java.lang.reflect.Proxy` 具备竞争力，默认方法快约 **6×**。
+- **多拦截器（`Group`）**、**多接口**、**注解驱动** 路径相对单拦截器等价物零额外开销。
 
-原始 JMH 输出：`java --enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED -cp <classpath> io.github.lamspace.benchmark.ProxyBenchmark`
+原始 JMH 输出：`java --enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED -cp <classpath> org.openjdk.jmh.Main "io.github.lamspace.benchmark"`

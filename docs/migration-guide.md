@@ -163,12 +163,12 @@ Methods with the same signature and return type across interfaces are merged; am
 | Method filtering               | Yes (Group.of)                       | Yes (CallbackFilter)       | No                            |
 | No-default-constructor support | Yes                                  | Yes                        | N/A                           |
 | Primitive boxing               | Automatic                            | Automatic                  | Automatic                     |
-| Exception propagation          | As-is (no wrapping)                  | Checked → InvocationTarget | Checked → UndeclaredThrowable |
+| Exception propagation          | Checked → UndeclaredThrowable        | Checked → InvocationTarget | Checked → UndeclaredThrowable |
 | Final class/method proxy       | No (JVM limit)                       | No (JVM limit)             | N/A                           |
-| Static method proxy            | Roadmap                              | No                         | No                            |
-| Constructor interception       | Roadmap                              | Yes                        | No                            |
+| Static method proxy            | Yes                                  | No                         | No                            |
+| Constructor interception       | Yes                                  | Yes                        | No                            |
 | Hot reload / rebind            | Yes (`evict`, `rebind`)              | No                         | No                            |
-| Maven Central                  | Roadmap                              | Yes                        | Built-in (JDK)                |
+| Maven Central                  | Coming soon                          | Yes                        | Built-in (JDK)                |
 
 ---
 

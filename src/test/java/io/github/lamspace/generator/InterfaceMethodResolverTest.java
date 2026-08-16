@@ -35,6 +35,7 @@ class InterfaceMethodResolverTest {
 
     interface B {
         String hello(String name);          // same signature + same return -> merge
+
         int count();                        // distinct
     }
 

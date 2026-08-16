@@ -39,7 +39,9 @@ class NonPublicInterfaceProxyTest {
         assertEquals("HELLO", proxy.shout("hello"));
     }
 
-    /** Public interface in the test package, mixed with a package-private one. */
+    /**
+     * Public interface in the test package, mixed with a package-private one.
+     */
     public interface PublicMarker {
         String mark();
     }

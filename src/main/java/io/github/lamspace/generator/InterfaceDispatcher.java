@@ -21,7 +21,6 @@ import io.github.lamspace.MethodMapping;
 import org.objectweb.asm.*;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -49,16 +48,13 @@ final class InterfaceDispatcher {
      * @param mapping           method → interceptor index mapping
      * @param interceptorCount  number of distinct Interceptor instances
      * @param registry          clinit entry registry
-     * @return list of method names for which dispatchers were generated
      */
-    static List<String> dispatchMethods(ClassWriter cw,
-                                        List<InterfaceMethodResolver.ResolvedMethod> resolved,
-                                        String generatedInternal,
-                                        MethodMapping mapping,
-                                        int interceptorCount,
-                                        ClinitRegistry registry) {
-        List<String> dispatchedMethods = new ArrayList<>();
-
+    static void dispatchMethods(ClassWriter cw,
+                                List<InterfaceMethodResolver.ResolvedMethod> resolved,
+                                String generatedInternal,
+                                MethodMapping mapping,
+                                int interceptorCount,
+                                ClinitRegistry registry) {
         for (int i = 0; i < resolved.size(); i++) {
             InterfaceMethodResolver.ResolvedMethod rm = resolved.get(i);
             Method method = rm.canonical();
@@ -73,16 +69,11 @@ final class InterfaceDispatcher {
             addStaticField(cw, methodFieldName,
                     "Ljava/lang/reflect/Method;");
 
-            registry.register(rm.owner(), method, generatedInternal,
-                    methodFieldName, i);
+            registry.register(rm.owner(), method, methodFieldName);
 
             generateImplementation(cw, method, generatedInternal,
                     shouldIntercept, interceptorIndex, methodFieldName);
-
-            dispatchedMethods.add(method.getName());
         }
-
-        return dispatchedMethods;
     }
 
     private static void addStaticField(ClassWriter cw, String name,

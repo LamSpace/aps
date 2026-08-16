@@ -16,7 +16,9 @@
 
 package io.github.lamspace.otherpkg;
 
-/** Package-private interface in a second package, for the cross-package conflict test. */
+/**
+ * Package-private interface in a second package, for the cross-package conflict test.
+ */
 interface OtherSecretService {
 
     int compute();

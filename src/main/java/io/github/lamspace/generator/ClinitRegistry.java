@@ -31,14 +31,11 @@ final class ClinitRegistry {
     /**
      * A tuple recording a single method dispatch registration.
      *
-     * @param targetClass       the original class or interface declaring the method
-     * @param method            the method being proxied
-     * @param generatedInternal the internal name of the generated proxy class
-     * @param methodFieldName   the name of the static field holding the {@code Method} object
-     * @param index             the dispatch table index for this method
+     * @param targetClass     the original class or interface declaring the method
+     * @param method          the method being proxied
+     * @param methodFieldName the name of the static field holding the {@code Method} object
      */
-    record Entry(Class<?> targetClass, Method method, String generatedInternal,
-                 String methodFieldName, int index) {
+    record Entry(Class<?> targetClass, Method method, String methodFieldName) {
     }
 
     private final List<Entry> entries = new ArrayList<>();
@@ -51,17 +48,13 @@ final class ClinitRegistry {
      * for each proxied method. The registered entries are later consumed
      * by {@link #drain()} to emit the {@code <clinit>} block.
      *
-     * @param targetClass       the original class or interface declaring the method
-     * @param method            the method being proxied
-     * @param generatedInternal the internal name of the generated proxy class
-     * @param methodFieldName   the name of the static field holding the {@code Method} object
-     * @param index             the dispatch table index for this method
+     * @param targetClass     the original class or interface declaring the method
+     * @param method          the method being proxied
+     * @param methodFieldName the name of the static field holding the {@code Method} object
      */
     void register(Class<?> targetClass, Method method,
-                  String generatedInternal,
-                  String methodFieldName, int index) {
-        entries.add(new Entry(targetClass, method, generatedInternal,
-                methodFieldName, index));
+                  String methodFieldName) {
+        entries.add(new Entry(targetClass, method, methodFieldName));
     }
 
     /**

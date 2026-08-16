@@ -22,10 +22,8 @@ import org.objectweb.asm.*;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 
 /**
  * Generates method override bytecode for a proxy subclass.
@@ -54,15 +52,14 @@ public class MethodDispatcher {
      * @param mapping           method → interceptor index mapping
      * @param interceptorCount  number of distinct Interceptor instances
      * @param registry          clinit entry registry
-     * @return list of method names for which dispatchers were generated
      */
-    public static List<String> dispatchMethods(ClassWriter cw,
-                                               Class<?> targetClass,
-                                               String generatedInternal,
-                                               MethodMapping mapping,
-                                               int interceptorCount,
-                                               ClinitRegistry registry) {
-        List<String> dispatchedMethods = new ArrayList<>();
+    public static void dispatchMethods(ClassWriter cw,
+                                       Class<?> targetClass,
+                                       String generatedInternal,
+                                       MethodMapping mapping,
+                                       int interceptorCount,
+                                       ClinitRegistry registry) {
+        int dispatched = 0;
 
         // Stable sort for cross-JVM determinism (must match
         // AcceleratedProxy.matchMethods)
@@ -79,7 +76,7 @@ public class MethodDispatcher {
                 continue;
             }
 
-            int index = dispatchedMethods.size();
+            int index = dispatched;
             int interceptorIndex = mapping.indices()[index];
             boolean shouldIntercept = interceptorIndex >= 0;
 
@@ -89,16 +86,13 @@ public class MethodDispatcher {
             addStaticField(cw, methodFieldName,
                     "Ljava/lang/reflect/Method;");
 
-            registry.register(targetClass, method, generatedInternal,
-                    methodFieldName, index);
+            registry.register(targetClass, method, methodFieldName);
 
             generateOverride(cw, method, generatedInternal,
                     shouldIntercept, interceptorIndex, methodFieldName);
 
-            dispatchedMethods.add(method.getName());
+            dispatched++;
         }
-
-        return dispatchedMethods;
     }
 
     private static void addStaticField(ClassWriter cw, String name,

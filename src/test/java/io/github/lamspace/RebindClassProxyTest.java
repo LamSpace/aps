@@ -23,12 +23,19 @@ import static org.junit.jupiter.api.Assertions.*;
 class RebindClassProxyTest {
 
     public static class Greeter {
-        public String hello(String name) { return "Hello, " + name; }
+        public String hello(String name) {
+            return "Hello, " + name;
+        }
     }
 
     public static class Pair {
-        public String a() { return "a"; }
-        public String b() { return "b"; }
+        public String a() {
+            return "a";
+        }
+
+        public String b() {
+            return "b";
+        }
     }
 
     private static Interceptor constant(String value) {

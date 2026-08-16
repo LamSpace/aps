@@ -146,7 +146,10 @@ class WeakCacheTest {
         AtomicInteger calls = new AtomicInteger();
         WeakCache<String, Integer, String> cache = new WeakCache<>(
                 (key, param) -> param,
-                (key, param) -> { calls.incrementAndGet(); return key + ":" + param; }
+                (key, param) -> {
+                    calls.incrementAndGet();
+                    return key + ":" + param;
+                }
         );
         cache.get("a", 1);
         cache.get("a", 1);
@@ -175,7 +178,10 @@ class WeakCacheTest {
         );
         cache.get(null, 1);
         AtomicBoolean sawNull = new AtomicBoolean(false);
-        cache.removeIf(k -> { if (k == null) sawNull.set(true); return false; });
+        cache.removeIf(k -> {
+            if (k == null) sawNull.set(true);
+            return false;
+        });
         assertFalse(sawNull.get());
     }
 }

@@ -57,9 +57,16 @@ class AnnotationDrivenApiTest {
     }
 
     public static class Greeter {
-        public String getGreeting() { return "hello"; }
-        public void setGreeting(String g) { }
-        public String format(String prefix) { return prefix + ":ok"; }
+        public String getGreeting() {
+            return "hello";
+        }
+
+        public void setGreeting(String g) {
+        }
+
+        public String format(String prefix) {
+            return prefix + ":ok";
+        }
     }
 
     @Intercept
@@ -89,12 +96,23 @@ class AnnotationDrivenApiTest {
 
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.METHOD)
-    public @interface Tx {}
+    public @interface Tx {
+    }
 
     public static class Service {
-        @Tx public String save(String x) { return "saved:" + x; }
-        @Tx public int load() { return 1; }
-        public String ping() { return "pong"; }
+        @Tx
+        public String save(String x) {
+            return "saved:" + x;
+        }
+
+        @Tx
+        public int load() {
+            return 1;
+        }
+
+        public String ping() {
+            return "pong";
+        }
     }
 
     @Intercept
@@ -154,8 +172,14 @@ class AnnotationDrivenApiTest {
     }
 
     public static class MixedService {
-        @Tx public String getTagged() { return "tagged"; }
-        public String getPlain() { return "plain"; }
+        @Tx
+        public String getTagged() {
+            return "tagged";
+        }
+
+        public String getPlain() {
+            return "plain";
+        }
     }
 
     @Test
@@ -181,9 +205,17 @@ class AnnotationDrivenApiTest {
     }
 
     public static class HasGetterAndIsser {
-        public String getName() { return "n"; }
-        public boolean isReady() { return true; }
-        public String ping() { return "p"; }
+        public String getName() {
+            return "n";
+        }
+
+        public boolean isReady() {
+            return true;
+        }
+
+        public String ping() {
+            return "p";
+        }
     }
 
     @Test
@@ -283,7 +315,8 @@ class AnnotationDrivenApiTest {
     }
 
     @Intercept
-    public static class NoAroundMethod { }
+    public static class NoAroundMethod {
+    }
 
     @Test
     void noAroundMethodFailsFast() {
@@ -308,7 +341,8 @@ class AnnotationDrivenApiTest {
     @Intercept
     public static class VoidReturn {
         @Around("get*")
-        public void handle(Object proxy, Method method, Object[] args) { }
+        public void handle(Object proxy, Method method, Object[] args) {
+        }
     }
 
     @Test
@@ -376,6 +410,7 @@ class AnnotationDrivenApiTest {
 
     public interface GreeterIface {
         String getGreeting();
+
         String format(String prefix);
     }
 

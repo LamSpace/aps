@@ -46,7 +46,9 @@ import java.util.concurrent.TimeUnit;
 public class RebindBenchmark {
 
     public static class Target {
-        public String hello(String name) { return "Hello, " + name; }
+        public String hello(String name) {
+            return "Hello, " + name;
+        }
     }
 
     private static final Interceptor NOOP_A = (o, m, a) -> null;

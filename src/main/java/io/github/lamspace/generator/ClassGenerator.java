@@ -29,7 +29,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -102,26 +101,6 @@ public class ClassGenerator {
     }
 
     /**
-     * Returns the parameter types for the generated class constructor.
-     *
-     * @return an array of Interceptor.class (one per distinct interceptor)
-     * followed by the types of the constructor arguments
-     */
-    public Class<?>[] constructorArgs() {
-        Class<?>[] all = new Class<?>[interceptors.length
-                + constructorArgs.length];
-        for (int i = 0; i < interceptors.length; i++) {
-            all[i] = Interceptor.class;
-        }
-        for (int i = 0; i < constructorArgs.length; i++) {
-            Object arg = constructorArgs[i];
-            all[interceptors.length + i] = (arg != null)
-                    ? arg.getClass() : Object.class;
-        }
-        return all;
-    }
-
-    /**
      * Generates the subclass bytecode. The class is placed in the same
      * runtime package as the target class.
      *
@@ -156,7 +135,7 @@ public class ClassGenerator {
         // -- Reflected superclass Constructor for the interception hook --
         if (ctorIntercept) {
             cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC
-                    | Opcodes.ACC_FINAL, "_ctor$",
+                            | Opcodes.ACC_FINAL, "_ctor$",
                     "Ljava/lang/reflect/Constructor;", null, null);
         }
 
@@ -182,17 +161,10 @@ public class ClassGenerator {
         List<ClinitRegistry.Entry> entries = registry.drain();
 
         // -- dispatch(Method, Object[]) --
-        List<Method> methods = new ArrayList<>();
-        for (ClinitRegistry.Entry entry : entries) {
-            methods.add(entry.method());
-        }
-        Map<Method, Integer> hashMap =
-                DispatchGenerator.resolveHashes(methods);
         List<MethodInfo> infos = new ArrayList<>();
         for (ClinitRegistry.Entry entry : entries) {
             infos.add(new MethodInfo(entry.method(),
-                    entry.methodFieldName(),
-                    hashMap.get(entry.method())));
+                    entry.methodFieldName()));
         }
         DispatchGenerator.generateDispatch(cw, generatedInternal,
                 targetInternal, infos, true);
@@ -325,12 +297,12 @@ public class ClassGenerator {
     }
 
     private void generateInterceptedConstructor(MethodVisitor mv,
-                                               String generatedInternal,
-                                               String targetInternal,
-                                               int ctorInterceptorSlot,
-                                               Class<?>[] superParamTypes,
-                                               String interceptorDesc,
-                                               Constructor<?> superCtor) {
+                                                String generatedInternal,
+                                                String targetInternal,
+                                                int ctorInterceptorSlot,
+                                                Class<?>[] superParamTypes,
+                                                String interceptorDesc,
+                                                Constructor<?> superCtor) {
         Class<?>[] declaredParams = superCtor.getParameterTypes();
 
         int firstArgSlot = ctorInterceptorSlot + 1;

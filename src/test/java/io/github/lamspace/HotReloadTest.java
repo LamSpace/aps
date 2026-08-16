@@ -23,7 +23,9 @@ import static org.junit.jupiter.api.Assertions.*;
 class HotReloadTest {
 
     public static class Greeter {
-        public String hello(String name) { return "Hello, " + name; }
+        public String hello(String name) {
+            return "Hello, " + name;
+        }
     }
 
     @Test
@@ -60,7 +62,8 @@ class HotReloadTest {
         Greeter p1 = AcceleratedProxy.proxy(Greeter.class, (o, m, a) -> null);
         Class<?> c1 = p1.getClass();
 
-        ClassLoader unrelated = new ClassLoader() { };
+        ClassLoader unrelated = new ClassLoader() {
+        };
         AcceleratedProxy.evictClassLoader(unrelated);
         Greeter p2 = AcceleratedProxy.proxy(Greeter.class, (o, m, a) -> null);
         assertSame(c1, p2.getClass());      // untouched: same cached class

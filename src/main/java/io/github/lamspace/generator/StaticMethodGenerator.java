@@ -47,6 +47,13 @@ public class StaticMethodGenerator {
     private final Interceptor[] interceptors;
     private final MethodMapping mapping;
 
+    /**
+     * Creates a generator for the given static methods.
+     *
+     * @param methods      the static methods to shadow
+     * @param interceptors deduped interceptor instances
+     * @param mapping      method → interceptor index mapping
+     */
     public StaticMethodGenerator(Method[] methods, Interceptor[] interceptors,
                                  MethodMapping mapping) {
         this.methods = methods.clone();
@@ -84,8 +91,7 @@ public class StaticMethodGenerator {
                 String fieldName = "_method$" + method.getName() + "$" + i;
                 cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC,
                         fieldName, "Ljava/lang/reflect/Method;", null, null);
-                registry.register(method.getDeclaringClass(), method,
-                        generatedInternal, fieldName, i);
+                registry.register(method.getDeclaringClass(), method, fieldName);
                 generateIntercepted(cw, method, generatedInternal,
                         interceptorIndex, fieldName);
             } else {

@@ -41,15 +41,23 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface Around {
 
-    /** Single name-glob shorthand: {@code @Around("get*")}. */
+    /**
+     * Single name-glob shorthand: {@code @Around("get*")}.
+     */
     String value() default "";
 
-    /** Method-name glob patterns. Empty = no glob constraint. */
+    /**
+     * Method-name glob patterns. Empty = no glob constraint.
+     */
     String[] glob() default {};
 
-    /** Method-name regex patterns. Empty = no regex constraint. */
+    /**
+     * Method-name regex patterns. Empty = no regex constraint.
+     */
     String[] regex() default {};
 
-    /** Annotation types the target method must carry. Empty = no constraint. */
+    /**
+     * Annotation types the target method must carry. Empty = no constraint.
+     */
     Class<? extends Annotation>[] annotatedWith() default {};
 }

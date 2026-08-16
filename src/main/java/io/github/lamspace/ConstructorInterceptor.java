@@ -48,7 +48,7 @@ public interface ConstructorInterceptor {
      * @param ctor the superclass constructor that will run
      * @param args the initial constructor arguments, boxed
      * @return the arguments to pass to the superclass constructor; must be
-     *         non-null with the same length as {@code ctor.getParameterCount()}
+     * non-null with the same length as {@code ctor.getParameterCount()}
      * @throws Throwable to veto construction; a checked exception is surfaced
      *                   to the caller as {@code UndeclaredThrowableException}
      */
