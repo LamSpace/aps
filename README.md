@@ -4,7 +4,7 @@
 [![Java](https://img.shields.io/badge/java-25%2B-orange)](https://jdk.java.net/)
 [![JMH](https://img.shields.io/badge/benchmark-JMH%201.37-red)](https://github.com/openjdk/jmh)
 
-[中文版](README_CN.md) | [用户指导](docs/guide/README.md) | [基准测试报告](docs/benchmark-results.md)
+[中文版](README_CN.md) | [User Guide](docs/guide/README.md) | [Benchmark Results](docs/benchmark-results.md)
 
 A high-performance dynamic proxy library for Java. APS generates proxy classes at runtime with ASM and dispatches every intercepted call through a **hashCode-driven switch with a direct `INVOKESPECIAL` super call** — no reflection, no
 `MethodHandle`, JIT-inlinable. Interface proxies run at `java.lang.reflect.Proxy`
