@@ -55,6 +55,19 @@ class NonPublicInterfaceProxyTest {
     }
 
     @Test
+    void mixedPublicInDifferentPackageAndPackagePrivate() {
+        Object proxy = AcceleratedProxy.proxy(
+                new Class<?>[]{java.util.function.Function.class,
+                        SecretService.class},
+                (o, m, a) -> "x");
+
+        assertEquals("x",
+                ((java.util.function.Function<String, String>) proxy)
+                        .apply("ignored"));
+        assertEquals("x", ((SecretService) proxy).greet("ignored"));
+    }
+
+    @Test
     void nonPublicInterfacesInDifferentPackagesThrow() throws Exception {
         Class<?> other = Class.forName(
                 "io.github.lamspace.otherpkg.OtherSecretService");

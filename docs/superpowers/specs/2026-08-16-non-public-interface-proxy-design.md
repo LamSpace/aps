@@ -72,8 +72,12 @@ private static Class<?> nonPublicAnchor(Class<?>[] interfaces) {
 
 `Modifier.isPublic` is the correct discriminator: a package-private top-level
 or nested interface has no `PUBLIC` bit; a `public` interface (top-level or
-nested) does. This helper is called twice for different reasons (§2.3, §2.5);
-it is a cheap idempotent scan and is the single source of truth for the rule.
+nested) does. (Caveat: a `public` nested interface whose enclosing class is
+package-private reports the `PUBLIC` bit but is effectively package-private,
+so it is misclassified as public and fails later at class-definition time —
+out of scope, see §7.) This helper is called twice for different reasons
+(§2.3, §2.5); it is a cheap idempotent scan and is the single source of truth
+for the rule.
 
 ### 2.2 Lookup selection
 
@@ -123,10 +127,11 @@ String generatedInternal = packagePrefix + baseName + "$$AcceleratedProxy$$" + C
 `ClassGenerator`'s existing "same package as the target" derivation:
 
 ```java
-String packagePrefix = (anchor == null)
-        ? "io/github/lamspace/"
-        : Type.getInternalName(anchor).substring(0,
-              Type.getInternalName(anchor).lastIndexOf('/') + 1);
+String packagePrefix = "io/github/lamspace/";
+if (anchor != null) {
+    String pkg = anchor.getPackageName();
+    packagePrefix = pkg.isEmpty() ? "" : pkg.replace('.', '/') + "/";
+}
 ```
 
 - **All public**: `packagePrefix == "io/github/lamspace/"` → the generated name
@@ -296,8 +301,10 @@ file changed) and needs no update.
    right semantics (`privateLookupIn` + `--add-opens` fast-fail + primitive/array
    fallback); the non-public anchor is a normal class from its perspective.
 7. **Scope is package-private only.** Private/protected *nested* interfaces are
-   out of scope; they will fail (via `privateLookupIn`), never silently
-   misbehave.
+   out of scope; in the unnamed module `privateLookupIn` succeeds regardless of
+   the target's own modifier, so they fail later at `defineHiddenClass` with an
+   `IllegalAccessError` (an `Error`, not wrapped) — loud failure, never silent
+   misbehavior.
 
 ## 7. Out of scope
 
