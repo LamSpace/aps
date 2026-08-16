@@ -19,7 +19,7 @@ package io.github.lamspace.pkgprivate;
 import io.github.lamspace.AcceleratedProxy;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class NonPublicInterfaceProxyTest {
 
@@ -37,5 +37,55 @@ class NonPublicInterfaceProxyTest {
                 (o, m, a) -> AcceleratedProxy.invokeSuper(o, m, a));
 
         assertEquals("HELLO", proxy.shout("hello"));
+    }
+
+    /** Public interface in the test package, mixed with a package-private one. */
+    public interface PublicMarker {
+        String mark();
+    }
+
+    @Test
+    void mixedPublicAndPackagePrivateInterfaces() {
+        Object proxy = AcceleratedProxy.proxy(
+                new Class<?>[]{PublicMarker.class, SecretService.class},
+                (o, m, a) -> "x");
+
+        assertEquals("x", ((PublicMarker) proxy).mark());
+        assertEquals("x", ((SecretService) proxy).greet("ignored"));
+    }
+
+    @Test
+    void nonPublicInterfacesInDifferentPackagesThrow() throws Exception {
+        Class<?> other = Class.forName(
+                "io.github.lamspace.otherpkg.OtherSecretService");
+
+        assertThrows(IllegalArgumentException.class, () ->
+                AcceleratedProxy.proxy(
+                        new Class<?>[]{SecretService.class, other},
+                        (o, m, a) -> null));
+    }
+
+    @Test
+    void cachesGeneratedClassPerInterface() {
+        SecretService first = AcceleratedProxy.proxy(SecretService.class,
+                (o, m, a) -> "x");
+        SecretService second = AcceleratedProxy.proxy(SecretService.class,
+                (o, m, a) -> "y");
+
+        assertSame(first.getClass(), second.getClass());
+    }
+
+    @Test
+    void evictAndReproxy() {
+        SecretService first = AcceleratedProxy.proxy(SecretService.class,
+                (o, m, a) -> "a");
+        Class<?> cls = first.getClass();
+
+        AcceleratedProxy.evict(SecretService.class);
+        SecretService second = AcceleratedProxy.proxy(SecretService.class,
+                (o, m, a) -> "b");
+
+        assertNotSame(cls, second.getClass());
+        assertEquals("b", second.greet("x"));
     }
 }

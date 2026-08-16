@@ -8,9 +8,9 @@
 
 ## 2. Conflict and mixed-array scenarios
 
-- [ ] 2.1 Create `src/test/java/io/github/lamspace/otherpkg/OtherSecretService.java`
-- [ ] 2.2 Add mixed public + package-private, cross-package conflict, cache-identity, and evict tests
-- [ ] 2.3 Run `NonPublicInterfaceProxyTest`; commit
+- [x] 2.1 Create `src/test/java/io/github/lamspace/otherpkg/OtherSecretService.java`
+- [x] 2.2 Add mixed public + package-private, cross-package conflict, cache-identity, and evict tests
+- [x] 2.3 Run `NonPublicInterfaceProxyTest`; commit
 
 ## 3. Public JDK interface regression guard
 
