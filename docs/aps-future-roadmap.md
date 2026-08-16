@@ -44,7 +44,7 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 | 7    | P3     | **虚拟线程兼容性**（已完成）   | 验证 APS 代理在虚拟线程上的行为，确认不 pin 载体线程                  |
 | 8    | P3     | **JPMS 强封装模块**（已完成）            | 处理 `java.base` 等强封装模块中类的代理访问                           |
 | 9    | P3     | **Maven Central 发布**         | 让其他项目能通过 Maven/Gradle 依赖引入，GroupId: `io.github.lamspace` |
-| 10   | P3     | **非 public 接口代理**         | 接口代理对首个接口走 `privateLookupIn`，支持代理包级私有的非 public 接口 |
+| 10   | P3     | **非 public 接口代理**（已完成） | 存在非 public 接口时用 `privateLookupIn` 把隐藏类定义到该接口所在包，支持包级私有接口；全 public 路径不变 |
 
 ### 接口默认方法调用（已完成）
 
@@ -135,11 +135,12 @@ Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MetricsInterceptor
 - 版本: 发布时升级至 `1.0.0`
 - 需要：Sonatype OSSRH 账号、GPG 签名、发布流水线
 
-### 非 public 接口代理
+### 非 public 接口代理（已完成）
 
-- 当前接口代理用 `MethodHandles.lookup()` 定义隐藏类，隐藏类落在 `io.github.lamspace` 包，只能实现 public 接口
-- 计划：接口代理对首个接口也走 `LookupManager.getLookup`，把隐藏类定义在接口所在包，从而支持包级私有的非 public 接口
-- 待完善：多接口跨包时的冲突规则、缓存键语义
+- 当接口集合中存在非 public 接口时，用 `LookupManager.getLookup` 获取该接口包的私有 lookup，把隐藏类定义到该接口所在包，从而支持代理包级私有的非 public 接口
+- 所有非 public 接口必须位于同一包，跨包时抛 `IllegalArgumentException`；public 接口可位于任意包
+- 全 public 接口时仍走 `MethodHandles.lookup()`，隐藏类留在 `io.github.lamspace` 包——public JDK 接口（如 `java.util.function.Function`）照常可用，字节码不变
+- 缓存键语义不变：仍以首个接口为弱键，`CacheParams` 已含完整接口数组，生成包名是该数组的纯函数
 
 ---
 

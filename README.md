@@ -22,6 +22,7 @@ A high-performance dynamic proxy library for Java, designed as a drop-in replace
 - **Constructor arguments** — supports proxying classes without a no-arg constructor
 - **Constructor interception** — a `ConstructorInterceptor` hook runs before/after the superclass constructor, with argument rewriting and veto support
 - **Static method proxy** — `AcceleratedProxy.proxyStatic(target, ...)` returns a generated class shadowing the target's `public static` methods through the same `Interceptor` (invoke reflectively or via `MethodHandle`)
+- **Non-public interface proxy** — package-private interfaces are proxied by defining the generated class in the interface's own package (the all-public path is unchanged)
 - **Hot reload / hot swap** — `evict(Class)` / `evictClassLoader(ClassLoader)` drop cached proxy classes for a hot-deployed target, and `rebind(proxy, interceptor)` swaps an interceptor on a live instance
 
 ## ⚡ Quick Start
@@ -143,6 +144,22 @@ int result = (Integer) proxyClass.getMethod("add", int.class, int.class)
 ```
 
 *Static methods are bound at compile time, so `Utils.add(...)` still calls the original; only calls on the returned class (reflective or `MethodHandle`) route through the interceptor.*
+
+### Non-Public Interface Proxy
+
+```java
+// package-private interface in your package
+interface SecretService {
+    String greet(String name);
+    default String shout(String s) { return s.toUpperCase(); }
+}
+
+SecretService proxy = AcceleratedProxy.proxy(SecretService.class, (obj, method, args) ->
+        AcceleratedProxy.invokeSuper(obj, method, args));
+
+proxy.greet("world");   // routed through the interceptor
+proxy.shout("hi");      // default method — invokeSuper calls the default impl
+```
 
 ### Hot Reload / Hot Swap
 

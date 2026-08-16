@@ -419,6 +419,11 @@ public final class AcceleratedProxy {
      * can be cast to each interface. Methods with the same signature and
      * return type across interfaces are merged into a single implementation.
      *
+     * <p>Package-private (non-{@code public}) interfaces are supported: the
+     * generated class is defined in the package shared by all non-public
+     * interfaces, so all non-public interfaces must share one package (or
+     * {@link IllegalArgumentException} is thrown).
+     *
      * @param interfaces  the interfaces to implement; must be non-null,
      *                    non-empty, and contain only interfaces
      * @param interceptor invoked for every method call on the proxy

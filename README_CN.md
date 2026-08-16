@@ -22,6 +22,7 @@
 - **构造参数支持** — 支持代理无默认构造方法的类
 - **构造器拦截** — `ConstructorInterceptor` 钩子在父类构造器前后运行，支持参数改写与否决
 - **静态方法代理** — `AcceleratedProxy.proxyStatic(target, ...)` 返回一个生成类，用同一 `Interceptor` 遮蔽目标类的 `public static` 方法（反射或 `MethodHandle` 调用）
+- **非 public 接口代理** — 包级私有接口通过在接口自身包内定义代理类来代理（全 public 路径保持不变）
 - **热加载/热替换** — `evict(Class)` / `evictClassLoader(ClassLoader)` 为热部署目标确定性丢弃缓存的代理类，`rebind(proxy, interceptor)` 在活实例上原地替换拦截器
 
 ## ⚡ 快速开始
@@ -141,6 +142,22 @@ int result = (Integer) proxyClass.getMethod("add", int.class, int.class)
 ```
 
 *静态方法在编译期绑定，`Utils.add(...)` 仍调用原方法；只有对返回的类（反射或 `MethodHandle`）调用才会经过拦截器。*
+
+### 非 Public 接口代理
+
+```java
+// 你包内的包级私有接口
+interface SecretService {
+    String greet(String name);
+    default String shout(String s) { return s.toUpperCase(); }
+}
+
+SecretService proxy = AcceleratedProxy.proxy(SecretService.class, (obj, method, args) ->
+        AcceleratedProxy.invokeSuper(obj, method, args));
+
+proxy.greet("world");   // 经拦截器路由
+proxy.shout("hi");      // default 方法 — invokeSuper 调用默认实现
+```
 
 ### 热加载 / 热替换
 
