@@ -3,3 +3,5 @@
 daemon.pid
 daemon.sock
 daemon.log
+codegraph.db-shm
+codegraph.db-wal
