@@ -19,23 +19,21 @@ All scores in ns/op (lower is better). Best per row **bolded**.
 
 Compares APS, CGLib, and direct call across all primitive return types, wrapper types, String, and void. Target: `RetOpsImpl` implementing `RetOps`.
 
-| Scenario (method)               | Direct   | APS      | CGLib | Best             |
-|---------------------------------|----------|----------|-------|------------------|
-| `int add(int, int)`             | **0.70** | 2.99     | 12.66 | **Direct**       |
-| `long add(long, long)`          | **0.69** | 3.52     | —     | **Direct**       |
-| `double add(double, double)`    | **0.69** | 2.46     | —     | **Direct**       |
-| `float add(float, float)`       | —        | **2.73** | —     | —                |
-| `boolean isPositive(int)`       | —        | **1.85** | —     | —                |
-| `byte add(byte, byte)`          | —        | **1.86** | —     | —                |
-| `char toUpper(char)`            | —        | **2.20** | —     | —                |
-| `short add(short, short)`       | —        | **3.78** | —     | —                |
-| `void run()`                    | **0.67** | 4.39     | 4.92  | **Direct**       |
-| `Integer add(Integer, Integer)` | —        | **3.52** | —     | —                |
-| `String concat(String, String)` | **4.83** | 6.41     | 20.13 | **Direct**       |
+| Scenario (method)               | Direct   | APS      | CGLib | Best       |
+|---------------------------------|----------|----------|-------|------------|
+| `int add(int, int)`             | **0.70** | 2.99     | 12.66 | **Direct** |
+| `long add(long, long)`          | **0.69** | 3.52     | —     | **Direct** |
+| `double add(double, double)`    | **0.69** | 2.46     | —     | **Direct** |
+| `float add(float, float)`       | —        | **2.73** | —     | —          |
+| `boolean isPositive(int)`       | —        | **1.85** | —     | —          |
+| `byte add(byte, byte)`          | —        | **1.86** | —     | —          |
+| `char toUpper(char)`            | —        | **2.20** | —     | —          |
+| `short add(short, short)`       | —        | **3.78** | —     | —          |
+| `void run()`                    | **0.67** | 4.39     | 4.92  | **Direct** |
+| `Integer add(Integer, Integer)` | —        | **3.52** | —     | —          |
+| `String concat(String, String)` | **4.83** | 6.41     | 20.13 | **Direct** |
 
-**Key takeaway:** APS beats CGLib by ~3–5× across every return type with actual work
-(`int` 2.99 vs 12.66, `String` 6.41 vs 20.13). The wrapper type (`Integer`) has slightly
-more overhead than primitives due to boxing in the dispatch path.
+**Key takeaway:** APS beats CGLib by ~3–5× across every return type with actual work (`int` 2.99 vs 12.66, `String` 6.41 vs 20.13). The wrapper type (`Integer`) has slightly more overhead than primitives due to boxing in the dispatch path.
 
 ## Class Proxy — Parameter Count Coverage
 
@@ -49,9 +47,7 @@ Varying parameter counts from 0 to 8. Target: `ParamCountImpl`.
 | 4 args → String | **55.67** | 61.99    | 75.32 | **Direct ≈ APS** |
 | 8 args → int    | **0.76**  | 1.89     | —     | **Direct**       |
 
-**Key takeaway:** APS dispatch overhead stays flat (~2–3 ns) regardless of parameter
-count. CGLib degrades sharply (2 args 13.30 ns vs 4 args 75.32 ns). With 4 mixed-type
-args APS is close to direct speed (61.99 vs 55.67).
+**Key takeaway:** APS dispatch overhead stays flat (~2–3 ns) regardless of parameter count. CGLib degrades sharply (2 args 13.30 ns vs 4 args 75.32 ns). With 4 mixed-type args APS is close to direct speed (61.99 vs 55.67).
 
 ## Class Proxy — Standard Scenarios
 
@@ -63,8 +59,7 @@ No-op, passthrough, and argument modification. Target: `EchoImpl`.
 | Passthrough | **4.90** | 14.32    | **APS**   |
 | Arg modify  | **5.28** | 22.59    | **APS**   |
 
-**Key takeaway:** APS passthrough and arg-modify are ~3–4× faster than CGLib. The no-op
-case (interceptor returns without `invokeSuper`) is cheap in both.
+**Key takeaway:** APS passthrough and arg-modify are ~3–4× faster than CGLib. The no-op case (interceptor returns without `invokeSuper`) is cheap in both.
 
 ## Interface Proxy
 
@@ -84,9 +79,7 @@ Interface proxies compare APS against `java.lang.reflect.Proxy` across return ty
 | Passthrough    | 4.75     | **4.51**   | **Java Proxy** |
 | Arg modify     | **5.68** | 6.12       | **APS**        |
 
-**Key takeaway:** `java.lang.reflect.Proxy` wins lightweight scenarios (no-op, primitive
-returns) via HotSpot intrinsics. APS is competitive where the interceptor work dominates
-and edges out Java Proxy on arg-modify. (Single-fork; string-heavy rows carry the most noise.)
+**Key takeaway:** `java.lang.reflect.Proxy` wins lightweight scenarios (no-op, primitive returns) via HotSpot intrinsics. APS is competitive where the interceptor work dominates and edges out Java Proxy on arg-modify. (Single-fork; string-heavy rows carry the most noise.)
 
 ## Interface Default Method Invocation (Phase 3)
 
@@ -105,20 +98,20 @@ Compares the Group-based multi-interceptor API against the single-Interceptor AP
 
 ### Class Proxy — Multi-Interceptor vs Single
 
-| Scenario             | Group API | Legacy API | Direct | Verdict          |
-|----------------------|-----------|------------|--------|------------------|
-| getter (getGreeting) | 2.36      | 2.35       | 0.65   | ±0.4% (same)     |
-| setter (setGreeting) | 2.38      | 2.35       | 0.66   | within variance  |
-| passthrough (format) | 5.04      | —          | 4.86   | ≈ direct         |
+| Scenario             | Group API | Legacy API | Direct | Verdict         |
+|----------------------|-----------|------------|--------|-----------------|
+| getter (getGreeting) | 2.36      | 2.35       | 0.65   | ±0.4% (same)    |
+| setter (setGreeting) | 2.38      | 2.35       | 0.66   | within variance |
+| passthrough (format) | 5.04      | —          | 4.86   | ≈ direct        |
 
 **Key takeaway:** `Group`-based dispatch is byte-identical to the single-interceptor path. Unmatched methods (passthrough) match direct-call latency.
 
 ### Interface Proxy — Multi-Interceptor vs Single
 
-| Scenario             | Group API | Single API | Verdict       |
-|----------------------|-----------|------------|---------------|
-| getter (getGreeting) | 2.10      | 2.11       | ±0.5% (same)  |
-| utility (format)     | 1.33      | 3.16       | Group faster  |
+| Scenario             | Group API | Single API | Verdict      |
+|----------------------|-----------|------------|--------------|
+| getter (getGreeting) | 2.10      | 2.11       | ±0.5% (same) |
+| utility (format)     | 1.33      | 3.16       | Group faster |
 
 ## Multi-Interface Proxy (Phase 3)
 
@@ -173,12 +166,9 @@ Per-call cost of a shadowed `public static` method. Target: `Target.staticAdd(in
 
 ## Summary
 
-- **Class proxies** are the best-in-class path: APS beats CGLib by **~3–5×** across
-  scenarios with actual work (passthrough 4.90 vs 14.32, arg-modify 5.28 vs 22.59), and
-  unmatched methods run at direct-call speed.
+- **Class proxies** are the best-in-class path: APS beats CGLib by **~3–5×** across scenarios with actual work (passthrough 4.90 vs 14.32, arg-modify 5.28 vs 22.59), and unmatched methods run at direct-call speed.
 - **Interface proxies** are competitive with `java.lang.reflect.Proxy` and **~6× faster**
   on default methods.
-- **Multi-interceptor (`Group`)**, **multi-interface**, and **annotation-driven** paths
-  add zero overhead over their single-interceptor equivalents.
+- **Multi-interceptor (`Group`)**, **multi-interface**, and **annotation-driven** paths add zero overhead over their single-interceptor equivalents.
 
 Raw JMH output: `java --enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED -cp <classpath> org.openjdk.jmh.Main "io.github.lamspace.benchmark"`

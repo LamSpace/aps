@@ -18,19 +18,19 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 
 对比 APS、CGLib 和直接调用在所有原始类型返回值、封装类型、String 和 void 下的表现。目标类：`RetOpsImpl` 实现 `RetOps`。
 
-| 场景（方法）                    | 直接调用 | APS      | CGLib | 最优               |
-|---------------------------------|----------|----------|-------|--------------------|
-| `int add(int, int)`             | **0.70** | 2.99     | 12.66 | **直接调用**       |
-| `long add(long, long)`          | **0.69** | 3.52     | —     | **直接调用**       |
-| `double add(double, double)`    | **0.69** | 2.46     | —     | **直接调用**       |
-| `float add(float, float)`       | —        | **2.73** | —     | —                  |
-| `boolean isPositive(int)`       | —        | **1.85** | —     | —                  |
-| `byte add(byte, byte)`          | —        | **1.86** | —     | —                  |
-| `char toUpper(char)`            | —        | **2.20** | —     | —                  |
-| `short add(short, short)`       | —        | **3.78** | —     | —                  |
-| `void run()`                    | **0.67** | 4.39     | 4.92  | **直接调用**       |
-| `Integer add(Integer, Integer)` | —        | **3.52** | —     | —                  |
-| `String concat(String, String)` | **4.83** | 6.41     | 20.13 | **直接调用**       |
+| 场景（方法）                    | 直接调用 | APS      | CGLib | 最优         |
+|---------------------------------|----------|----------|-------|--------------|
+| `int add(int, int)`             | **0.70** | 2.99     | 12.66 | **直接调用** |
+| `long add(long, long)`          | **0.69** | 3.52     | —     | **直接调用** |
+| `double add(double, double)`    | **0.69** | 2.46     | —     | **直接调用** |
+| `float add(float, float)`       | —        | **2.73** | —     | —            |
+| `boolean isPositive(int)`       | —        | **1.85** | —     | —            |
+| `byte add(byte, byte)`          | —        | **1.86** | —     | —            |
+| `char toUpper(char)`            | —        | **2.20** | —     | —            |
+| `short add(short, short)`       | —        | **3.78** | —     | —            |
+| `void run()`                    | **0.67** | 4.39     | 4.92  | **直接调用** |
+| `Integer add(Integer, Integer)` | —        | **3.52** | —     | —            |
+| `String concat(String, String)` | **4.83** | 6.41     | 20.13 | **直接调用** |
 
 **要点：** APS 在每个有实际工作的返回类型上都比 CGLib 快约 3–5×（`int` 2.99 vs 12.66，
 `String` 6.41 vs 20.13）。封装类型（`Integer`）因调度路径装箱，比原始类型略慢。
@@ -47,8 +47,7 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 | 4 参数 → String | **55.67** | 61.99    | 75.32 | **直接调用 ≈ APS** |
 | 8 参数 → int    | **0.76**  | 1.89     | —     | **直接调用**       |
 
-**要点：** APS 调度开销保持平稳（~2–3 ns），不受参数数量影响。CGLib 随参数增多急剧退化
-（2 参数 13.30 ns → 4 参数 75.32 ns）。4 个混合类型参数时 APS 接近直接调用（61.99 vs 55.67）。
+**要点：** APS 调度开销保持平稳（~2–3 ns），不受参数数量影响。CGLib 随参数增多急剧退化 （2 参数 13.30 ns → 4 参数 75.32 ns）。4 个混合类型参数时 APS 接近直接调用（61.99 vs 55.67）。
 
 ## 类代理 — 标准场景
 
@@ -80,8 +79,7 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 | 透传           | 4.75     | **4.51**   | **Java Proxy** |
 | 参数修改       | **5.68** | 6.12       | **APS**        |
 
-**要点：** `java.lang.reflect.Proxy` 在轻量级场景（空操作、原始返回）靠 HotSpot 内在优化胜出；
-APS 在拦截器工作占主导的场景中具有竞争力，并在参数修改上反超 Java Proxy。（单 fork，字符串密集行的噪声最大。）
+**要点：** `java.lang.reflect.Proxy` 在轻量级场景（空操作、原始返回）靠 HotSpot 内在优化胜出； APS 在拦截器工作占主导的场景中具有竞争力，并在参数修改上反超 Java Proxy。（单 fork，字符串密集行的噪声最大。）
 
 ## 接口默认方法调用（第三阶段）
 
@@ -110,10 +108,10 @@ APS 在拦截器工作占主导的场景中具有竞争力，并在参数修改�
 
 ### 接口代理 — 多拦截器 vs 单拦截器
 
-| 场景                 | Group API | 单拦截器 API | 结论         |
-|----------------------|-----------|--------------|--------------|
-| getter (getGreeting) | 2.10      | 2.11         | ±0.5%（持平）|
-| 工具方法 (format)    | 1.33      | 3.16         | Group 更快   |
+| 场景                 | Group API | 单拦截器 API | 结论          |
+|----------------------|-----------|--------------|---------------|
+| getter (getGreeting) | 2.10      | 2.11         | ±0.5%（持平） |
+| 工具方法 (format)    | 1.33      | 3.16         | Group 更快    |
 
 ## 多接口代理（第三阶段）
 
@@ -168,9 +166,8 @@ APS 在拦截器工作占主导的场景中具有竞争力，并在参数修改�
 
 ## 总结
 
-- **类代理** 是同类最优路径：APS 在有实际工作的场景中比 CGLib 快约 **3–5×**（透传 4.90 vs
-  14.32，参数修改 5.28 vs 22.59），未匹配方法达到直接调用速度。
+- **类代理** 是同类最优路径：APS 在有实际工作的场景中比 CGLib 快约 **3–5×**（透传 4.90 vs 14.32，参数修改 5.28 vs 22.59），未匹配方法达到直接调用速度。
 - **接口代理** 与 `java.lang.reflect.Proxy` 具备竞争力，默认方法快约 **6×**。
-- **多拦截器（`Group`）**、**多接口**、**注解驱动** 路径相对单拦截器等价物零额外开销。
+- **多拦截器（`Group`）**、 **多接口**、 **注解驱动** 路径相对单拦截器等价物零额外开销。
 
 原始 JMH 输出：`java --enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED -cp <classpath> org.openjdk.jmh.Main "io.github.lamspace.benchmark"`

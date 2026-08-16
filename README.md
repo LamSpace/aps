@@ -102,8 +102,7 @@ Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MetricsInterceptor
 
 JMH benchmarks on Java 25 (all scores in ns/op, lower is better). Full tables, methodology, and run instructions: [docs/benchmark-results.md](docs/benchmark-results.md).
 
-- **Class proxies beat CGLib by ~3–5×** on scenarios with actual work; unmatched
-  methods run at direct-call speed.
+- **Class proxies beat CGLib by ~3–5×** on scenarios with actual work; unmatched methods run at direct-call speed.
 - **Interface proxies** run at parity with `java.lang.reflect.Proxy` and are **~6× faster** on default methods.
 - **Multi-interceptor (`Group`)** has byte-identical hot paths to the single-interceptor API — **zero** degradation.
 - **Annotation-driven** interception reaches hand-written-lambda parity.
