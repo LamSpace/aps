@@ -169,6 +169,34 @@ public final class AcceleratedProxy {
     }
 
     /**
+     * Returns the first non-{@code public} interface in {@code interfaces}, or
+     * {@code null} if all are public. Validates that all non-public interfaces
+     * share a single package (a JVM class can only be defined in one package,
+     * and a package-private interface is accessible only from its own package).
+     *
+     * @param interfaces the interfaces to proxy
+     * @return the anchor non-public interface, or {@code null}
+     * @throws IllegalArgumentException if non-public interfaces span packages
+     */
+    private static Class<?> nonPublicAnchor(Class<?>[] interfaces) {
+        Class<?> anchor = null;
+        for (Class<?> itf : interfaces) {
+            if (!Modifier.isPublic(itf.getModifiers())) {
+                if (anchor == null) {
+                    anchor = itf;
+                } else if (!anchor.getPackageName().equals(
+                        itf.getPackageName())) {
+                    throw new IllegalArgumentException(
+                            "cannot proxy non-public interfaces from different "
+                                    + "packages: " + anchor.getName()
+                                    + " and " + itf.getName());
+                }
+            }
+        }
+        return anchor;
+    }
+
+    /**
      * Evaluates the Group chain against every proxyable method on the target
      * class. Only non-static, non-final, non-private methods are included.
      */
@@ -259,11 +287,23 @@ public final class AcceleratedProxy {
             Interceptor[] dummy = new Interceptor[interceptorCount];
 
             if (params.interfaces() != null) {
+                Class<?>[] interfaces = params.interfaces();
+                Class<?> anchor = nonPublicAnchor(interfaces);
+                // All-public interfaces keep the historical APS package; a
+                // non-public anchor places the class in that interface's
+                // package so it can implement a package-private interface.
+                String packagePrefix = "io/github/lamspace/";
+                if (anchor != null) {
+                    String pkg = anchor.getPackageName();
+                    packagePrefix = pkg.isEmpty() ? "" : pkg.replace('.', '/') + "/";
+                }
                 InterfaceGenerator generator = new InterfaceGenerator(
-                        params.interfaces(), dummy, mapping);
+                        interfaces, dummy, mapping, packagePrefix);
                 bytecode = generator.generate();
-                return java.lang.invoke.MethodHandles.lookup()
-                        .defineHiddenClass(bytecode, true).lookupClass();
+                MethodHandles.Lookup lookup = (anchor == null)
+                        ? MethodHandles.lookup()
+                        : LookupManager.getLookup(anchor);
+                return lookup.defineHiddenClass(bytecode, true).lookupClass();
             } else {
                 Class<?> target = params.targetClass();
                 ClassGenerator generator = new ClassGenerator(target,
@@ -760,6 +800,7 @@ public final class AcceleratedProxy {
             }
         }
         Class<?>[] copy = interfaces.clone();
+        nonPublicAnchor(copy); // fail fast on cross-package non-public interfaces
         MatchResult matchResult = matchMethods(copy, groups);
         CacheParams params = new CacheParams(null, copy,
                 matchResult.mapping(), new Object[0], false);

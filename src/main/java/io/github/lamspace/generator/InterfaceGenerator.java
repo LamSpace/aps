@@ -43,20 +43,26 @@ public class InterfaceGenerator {
     private final Class<?>[] interfaces;
     private final Interceptor[] interceptors;
     private final MethodMapping mapping;
+    private final String packagePrefix;
 
     /**
      * Creates a generator for the given interfaces.
      *
-     * @param interfaces   the interfaces to implement
-     * @param interceptors deduped interceptor instances
-     * @param mapping      method → interceptor index mapping
+     * @param interfaces    the interfaces to implement
+     * @param interceptors  deduped interceptor instances
+     * @param mapping       method → interceptor index mapping
+     * @param packagePrefix internal-name package prefix for the generated
+     *                      class (e.g. {@code "io/github/lamspace/"} or
+     *                      {@code "com/example/pkg/"})
      */
     public InterfaceGenerator(Class<?>[] interfaces,
                               Interceptor[] interceptors,
-                              MethodMapping mapping) {
+                              MethodMapping mapping,
+                              String packagePrefix) {
         this.interfaces = interfaces.clone();
         this.interceptors = interceptors.clone();
         this.mapping = mapping;
+        this.packagePrefix = packagePrefix;
     }
 
     /**
@@ -76,7 +82,7 @@ public class InterfaceGenerator {
         } else {
             baseName = "MultiInterface";
         }
-        String generatedInternal = "io/github/lamspace/" + baseName
+        String generatedInternal = packagePrefix + baseName
                 + "$$AcceleratedProxy$$" + COUNTER.getAndIncrement();
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);

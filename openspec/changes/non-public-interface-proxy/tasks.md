@@ -1,10 +1,10 @@
 ## 1. Core non-public interface proxying
 
-- [ ] 1.1 Create package-private test interface `src/test/java/io/github/lamspace/pkgprivate/SecretService.java`
-- [ ] 1.2 Write failing test `NonPublicInterfaceProxyTest` (package-private interception + `invokeSuper` on a `default` method)
-- [ ] 1.3 Add `nonPublicAnchor` helper to `AcceleratedProxy` and wire it into `proxyInterfaces` (validation) and `generateProxyClass` (package + lookup)
-- [ ] 1.4 Add `packagePrefix` parameter to `InterfaceGenerator` and use it in `generate()`
-- [ ] 1.5 Run `NonPublicInterfaceProxyTest` and the full `mvn test`; commit
+- [x] 1.1 Create package-private test interface `src/test/java/io/github/lamspace/pkgprivate/SecretService.java`
+- [x] 1.2 Write failing test `NonPublicInterfaceProxyTest` (package-private interception + `invokeSuper` on a `default` method)
+- [x] 1.3 Add `nonPublicAnchor` helper to `AcceleratedProxy` and wire it into `proxyInterfaces` (validation) and `generateProxyClass` (package + lookup)
+- [x] 1.4 Add `packagePrefix` parameter to `InterfaceGenerator` and use it in `generate()`
+- [x] 1.5 Run `NonPublicInterfaceProxyTest` and the full `mvn test`; commit
 
 ## 2. Conflict and mixed-array scenarios
 
