@@ -14,8 +14,8 @@
 
 ## 3. Public JDK interface regression guard
 
-- [ ] 3.1 Create `PublicJdkInterfaceProxyTest` (proxy `java.util.function.Function` without `--add-opens`)
-- [ ] 3.2 Run the test; commit
+- [x] 3.1 Create `PublicJdkInterfaceProxyTest` (proxy `java.util.function.Function` without `--add-opens`)
+- [x] 3.2 Run the test; commit
 
 ## 4. Documentation
 
