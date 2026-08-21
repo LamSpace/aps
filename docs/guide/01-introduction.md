@@ -1,8 +1,8 @@
 # 1. Introduction
 
-APS (**Accelerated Proxy Solution**) is a high-performance dynamic proxy library for Java. It generates a proxy class at runtime with ASM and routes every intercepted method call through a hashCode-driven `dispatch()` switch that emits a direct `INVOKESPECIAL super.method(args)` — **no reflection and no MethodHandle on the hot path**.
+OpenProxy is a high-performance dynamic proxy library for Java. It generates a proxy class at runtime with ASM and routes every intercepted method call through a hashCode-driven `dispatch()` switch that emits a direct `INVOKESPECIAL super.method(args)` — **no reflection and no MethodHandle on the hot path**.
 
-APS class proxies beat CGLib by ~3–5× across scenarios with actual work, interface proxies run at `java.lang.reflect.Proxy` parity, and default methods are ~6× faster than the JDK.
+OpenProxy class proxies beat CGLib by ~3–5× across scenarios with actual work, interface proxies run at `java.lang.reflect.Proxy` parity, and default methods are ~6× faster than the JDK.
 
 ## Highlights
 
@@ -42,9 +42,9 @@ String greeting = proxy.hello("World");
    `Interceptor.intercept(proxy, method, args)`, and unboxes the result. If your interceptor calls `invokeSuper`, the `dispatch()` method branches on
    `method.hashCode()` and jumps straight to `INVOKESPECIAL super.method(...)`.
 
-## APS vs the alternatives
+## OpenProxy vs the alternatives
 
-|                          | APS                    | CGLib                       | `java.lang.reflect.Proxy` |
+|                          | OpenProxy                    | CGLib                       | `java.lang.reflect.Proxy` |
 |--------------------------|------------------------|-----------------------------|---------------------------|
 | Proxies concrete classes | ✅                     | ✅                          | ❌ (interfaces only)      |
 | Super-call mechanism     | direct `INVOKESPECIAL` | `MethodProxy` + `FastClass` | N/A                       |

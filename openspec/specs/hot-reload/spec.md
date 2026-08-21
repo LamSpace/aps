@@ -1,7 +1,7 @@
 # hot-reload Specification
 
 ## Purpose
-Lets long-running frameworks deterministically drop cached APS proxy classes for a hot-deployed target, and swap the interceptor on a live proxy instance without recreating it.
+Lets long-running frameworks deterministically drop cached OpenProxy proxy classes for a hot-deployed target, and swap the interceptor on a live proxy instance without recreating it.
 ## Requirements
 ### Requirement: Deterministic proxy-class eviction
 
@@ -53,7 +53,7 @@ The library SHALL provide `AcceleratedProxy.rebind(Object, Interceptor)` and `Ac
 
 #### Scenario: Rebind rejects non-proxy objects
 
-- **WHEN** `rebind` is called on an object that is not an APS-generated proxy (including `null`)
+- **WHEN** `rebind` is called on an object that is not an OpenProxy-generated proxy (including `null`)
 - **THEN** an `IllegalArgumentException` is thrown
 
 #### Scenario: Rebind is per-instance

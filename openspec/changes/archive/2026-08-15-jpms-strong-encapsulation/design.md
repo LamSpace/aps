@@ -13,7 +13,7 @@ Class proxies are defined as hidden classes via `LookupManager.getLookup(target)
 **Non-Goals:**
 
 - Non-public interface proxying (deferred to roadmap item 10).
-- APS's own `module-info.java` / `Automatic-Module-Name` (Maven Central item).
+- OpenProxy's own `module-info.java` / `Automatic-Module-Name` (Maven Central item).
 - Cross-ClassLoader hot deployment (a separate concern; `--add-opens` does not address it).
 - A "smart" hybrid that falls back to a public lookup only when the target is public with accessible members.
 

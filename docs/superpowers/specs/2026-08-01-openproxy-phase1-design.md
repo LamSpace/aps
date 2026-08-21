@@ -1,10 +1,10 @@
-# APS Phase 1 — Documentation & Performance Validation
+# OpenProxy Phase 1 — Documentation & Performance Validation
 
 Date: 2026-08-01 Status: approved
 
 ## 1. 定位
 
-Phase 1 的目标是让 APS 项目 **可信**：一个新项目要说服框架作者从 CGLib 迁移过来，必须有完整文档（README、Javadoc、迁移指南）和真实的性能数据（JMH 多维度对比）。
+Phase 1 的目标是让 OpenProxy 项目 **可信**：一个新项目要说服框架作者从 CGLib 迁移过来，必须有完整文档（README、Javadoc、迁移指南）和真实的性能数据（JMH 多维度对比）。
 
 不做新功能，只补文档和验证。
 
@@ -15,12 +15,12 @@ Phase 1 的目标是让 APS 项目 **可信**：一个新项目要说服框架�
 | README.md     | 项目根目录 `README.md`     | 5 秒上手 + 性能数据 + 安装说明 + CGLib 对比      |
 | JMH Benchmark | `ProxyBenchmark.java` 重写 | 4 实现 × 6 场景全部跑通，数据记录到文档          |
 | Javadoc       | 所有 public 类/方法        | `mvn javadoc:javadoc` 无警告                     |
-| 迁移指南      | `docs/migration-guide.md`  | CGLib→APS 和 Proxy→APS 两个完整示例 + 功能对照表 |
+| 迁移指南      | `docs/migration-guide.md`  | CGLib→OpenProxy 和 Proxy→OpenProxy 两个完整示例 + 功能对照表 |
 
 ## 3. README.md 结构
 
 ```
-# APS — Accelerated Proxy Solution
+# OpenProxy
 ## 核心特性（4 点）
 ## 5 秒上手（代码块）
 ## 性能（JMH 对比表格 + 加速比）
@@ -38,7 +38,7 @@ Phase 1 的目标是让 APS 项目 **可信**：一个新项目要说服框架�
 | 实现       | 说明                                                                             |
 |------------|----------------------------------------------------------------------------------|
 | Direct     | 直接 new 对象调用，性能基线                                                      |
-| APS        | `AcceleratedProxy.create()` + `superHandle.invoke(args)`                         |
+| OpenProxy        | `AcceleratedProxy.create()` + `superHandle.invoke(args)`                         |
 | CGLib      | `Enhancer.create()` + `MethodInterceptor` + `methodProxy.invokeSuper()`          |
 | Java Proxy | `Proxy.newProxyInstance()` + `InvocationHandler` + `method.invoke(target, args)` |
 
@@ -69,7 +69,7 @@ Phase 1 的目标是让 APS 项目 **可信**：一个新项目要说服框架�
 
 | 类                  | 当前状态 | 补什么                                    |
 |---------------------|----------|-------------------------------------------|
-| `APS`               | 部分有   | `@throws` 触发条件                        |
+| `OpenProxy`               | 部分有   | `@throws` 触发条件                        |
 | `Callback`          | ✅ 完整  | 无                                        |
 | `ClassFilter`       | ✅ 完整  | 无                                        |
 | `ClassGenerator`    | 无       | 类级 + `generate()` + `constructorArgs()` |
@@ -84,8 +84,8 @@ Phase 1 的目标是让 APS 项目 **可信**：一个新项目要说服框架�
 
 文件：`docs/migration-guide.md`
 
-- **CGLib → APS**：Enhancer → AcceleratedProxy.create，MethodProxy.invokeSuper → superHandle.invoke
-- **Java Proxy → APS**：接口代理 → 具体类代理
+- **CGLib → OpenProxy**：Enhancer → AcceleratedProxy.create，MethodProxy.invokeSuper → superHandle.invoke
+- **Java Proxy → OpenProxy**：接口代理 → 具体类代理
 - **功能对照表**：final 方法、static 方法、构造器、基本类型、异常处理等逐项对比
 
 ## 7. 执行顺序

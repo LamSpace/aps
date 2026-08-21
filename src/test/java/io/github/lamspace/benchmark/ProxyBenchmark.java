@@ -122,13 +122,13 @@ public class ProxyBenchmark {
     @State(Scope.Thread)
     public static class RetTypeState {
         RetOpsImpl direct;
-        RetOpsImpl aps;
+        RetOpsImpl proxy;
         RetOpsImpl cglib;
 
         @Setup
         public void setup() {
             direct = new RetOpsImpl();
-            aps = AcceleratedProxy.proxy(RetOpsImpl.class,
+            proxy = AcceleratedProxy.proxy(RetOpsImpl.class,
                     (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
             Enhancer e = new Enhancer();
             e.setSuperclass(RetOpsImpl.class);
@@ -140,57 +140,57 @@ public class ProxyBenchmark {
 
     @Benchmark
     public int c_intOp(RetTypeState s) {
-        return s.aps.intOp(3, 4);
+        return s.proxy.intOp(3, 4);
     }
 
     @Benchmark
     public long c_longOp(RetTypeState s) {
-        return s.aps.longOp(3L, 4L);
+        return s.proxy.longOp(3L, 4L);
     }
 
     @Benchmark
     public double c_doubleOp(RetTypeState s) {
-        return s.aps.doubleOp(3.0, 4.0);
+        return s.proxy.doubleOp(3.0, 4.0);
     }
 
     @Benchmark
     public float c_floatOp(RetTypeState s) {
-        return s.aps.floatOp(3f, 4f);
+        return s.proxy.floatOp(3f, 4f);
     }
 
     @Benchmark
     public boolean c_boolOp(RetTypeState s) {
-        return s.aps.boolOp(5);
+        return s.proxy.boolOp(5);
     }
 
     @Benchmark
     public byte c_byteOp(RetTypeState s) {
-        return s.aps.byteOp((byte) 3, (byte) 4);
+        return s.proxy.byteOp((byte) 3, (byte) 4);
     }
 
     @Benchmark
     public char c_charOp(RetTypeState s) {
-        return s.aps.charOp('a');
+        return s.proxy.charOp('a');
     }
 
     @Benchmark
     public short c_shortOp(RetTypeState s) {
-        return s.aps.shortOp((short) 3, (short) 4);
+        return s.proxy.shortOp((short) 3, (short) 4);
     }
 
     @Benchmark
     public void c_voidOp(RetTypeState s) {
-        s.aps.voidOp();
+        s.proxy.voidOp();
     }
 
     @Benchmark
     public Integer c_intWrapOp(RetTypeState s) {
-        return s.aps.intWrapOp(3, 4);
+        return s.proxy.intWrapOp(3, 4);
     }
 
     @Benchmark
     public String c_strOp(RetTypeState s) {
-        return s.aps.strOp("a", "b");
+        return s.proxy.strOp("a", "b");
     }
 
     @Benchmark
@@ -239,12 +239,12 @@ public class ProxyBenchmark {
 
     @State(Scope.Thread)
     public static class IfaceRetTypeState {
-        RetOps aps;
+        RetOps proxy;
         RetOps javaProxy;
 
         @Setup
         public void setup() {
-            aps = AcceleratedProxy.proxy(RetOps.class,
+            proxy = AcceleratedProxy.proxy(RetOps.class,
                     (obj, method, args) -> {
                         if (method.getName().equals("intOp")) return (int) args[0] + (int) args[1];
                         if (method.getName().equals("strOp")) return (String) args[0] + (String) args[1];
@@ -268,27 +268,27 @@ public class ProxyBenchmark {
 
     @Benchmark
     public int i_intOp(IfaceRetTypeState s) {
-        return s.aps.intOp(3, 4);
+        return s.proxy.intOp(3, 4);
     }
 
     @Benchmark
     public String i_strOp(IfaceRetTypeState s) {
-        return s.aps.strOp("a", "b");
+        return s.proxy.strOp("a", "b");
     }
 
     @Benchmark
     public void i_voidOp(IfaceRetTypeState s) {
-        s.aps.voidOp();
+        s.proxy.voidOp();
     }
 
     @Benchmark
     public boolean i_boolOp(IfaceRetTypeState s) {
-        return s.aps.boolOp(5);
+        return s.proxy.boolOp(5);
     }
 
     @Benchmark
     public Integer i_intWrapOp(IfaceRetTypeState s) {
-        return s.aps.intWrapOp(3, 4);
+        return s.proxy.intWrapOp(3, 4);
     }
 
     @Benchmark
@@ -358,13 +358,13 @@ public class ProxyBenchmark {
     @State(Scope.Thread)
     public static class ParamCountState {
         ParamCountImpl direct;
-        ParamCountImpl aps;
+        ParamCountImpl proxy;
         ParamCountImpl cglib;
 
         @Setup
         public void setup() {
             direct = new ParamCountImpl();
-            aps = AcceleratedProxy.proxy(ParamCountImpl.class,
+            proxy = AcceleratedProxy.proxy(ParamCountImpl.class,
                     (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
             Enhancer e = new Enhancer();
             e.setSuperclass(ParamCountImpl.class);
@@ -376,27 +376,27 @@ public class ProxyBenchmark {
 
     @Benchmark
     public String c_zeroArg(ParamCountState s) {
-        return s.aps.zeroArg();
+        return s.proxy.zeroArg();
     }
 
     @Benchmark
     public String c_oneArg(ParamCountState s) {
-        return s.aps.oneArg("x");
+        return s.proxy.oneArg("x");
     }
 
     @Benchmark
     public int c_twoArgs(ParamCountState s) {
-        return s.aps.twoArgs(3, 4);
+        return s.proxy.twoArgs(3, 4);
     }
 
     @Benchmark
     public String c_fourArgs(ParamCountState s) {
-        return s.aps.fourArgs("a", 1, 2L, 3.0);
+        return s.proxy.fourArgs("a", 1, 2L, 3.0);
     }
 
     @Benchmark
     public int c_eightArgs(ParamCountState s) {
-        return s.aps.eightArgs(1, 2, 3, 4, 5, 6, 7, 8);
+        return s.proxy.eightArgs(1, 2, 3, 4, 5, 6, 7, 8);
     }
 
     @Benchmark
@@ -437,12 +437,12 @@ public class ProxyBenchmark {
     // Interface proxy
     @State(Scope.Thread)
     public static class IfaceParamCountState {
-        ParamCount aps;
+        ParamCount proxy;
         ParamCount javaProxy;
 
         @Setup
         public void setup() {
-            aps = AcceleratedProxy.proxy(ParamCount.class, (obj, method, args) -> {
+            proxy = AcceleratedProxy.proxy(ParamCount.class, (obj, method, args) -> {
                 if (method.getName().equals("zeroArg")) return "ok";
                 if (method.getName().equals("oneArg")) return args[0];
                 if (method.getName().equals("twoArgs")) return (int) args[0] + (int) args[1];
@@ -468,22 +468,22 @@ public class ProxyBenchmark {
 
     @Benchmark
     public String i_zeroArg(IfaceParamCountState s) {
-        return s.aps.zeroArg();
+        return s.proxy.zeroArg();
     }
 
     @Benchmark
     public String i_oneArg(IfaceParamCountState s) {
-        return s.aps.oneArg("x");
+        return s.proxy.oneArg("x");
     }
 
     @Benchmark
     public int i_twoArgs(IfaceParamCountState s) {
-        return s.aps.twoArgs(3, 4);
+        return s.proxy.twoArgs(3, 4);
     }
 
     @Benchmark
     public int i_eightArgs(IfaceParamCountState s) {
-        return s.aps.eightArgs(1, 2, 3, 4, 5, 6, 7, 8);
+        return s.proxy.eightArgs(1, 2, 3, 4, 5, 6, 7, 8);
     }
 
     @Benchmark
@@ -888,12 +888,12 @@ public class ProxyBenchmark {
 
     @State(Scope.Thread)
     public static class DefaultMethodState {
-        DefaultGreeter aps;
+        DefaultGreeter proxy;
         DefaultGreeter javaProxy;
 
         @Setup
         public void setup() {
-            aps = AcceleratedProxy.proxy(DefaultGreeter.class,
+            proxy = AcceleratedProxy.proxy(DefaultGreeter.class,
                     (obj, method, args) -> {
                         if (method.isDefault()) {
                             return AcceleratedProxy.invokeSuper(
@@ -917,12 +917,12 @@ public class ProxyBenchmark {
 
     @Benchmark
     public String i_default_greet(DefaultMethodState s) {
-        return s.aps.greet();
+        return s.proxy.greet();
     }
 
     @Benchmark
     public String i_default_inherited(DefaultMethodState s) {
-        return s.aps.inheritedGreet();
+        return s.proxy.inheritedGreet();
     }
 
     @Benchmark

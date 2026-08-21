@@ -1,4 +1,4 @@
-# APS 基准测试报告
+# OpenProxy 基准测试报告
 
 [English](benchmark-results.md)
 
@@ -16,9 +16,9 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 
 ## 类代理 — 返回值类型覆盖
 
-对比 APS、CGLib 和直接调用在所有原始类型返回值、封装类型、String 和 void 下的表现。目标类：`RetOpsImpl` 实现 `RetOps`。
+对比 OpenProxy、CGLib 和直接调用在所有原始类型返回值、封装类型、String 和 void 下的表现。目标类：`RetOpsImpl` 实现 `RetOps`。
 
-| 场景（方法）                    | 直接调用 | APS      | CGLib | 最优         |
+| 场景（方法）                    | 直接调用 | OpenProxy      | CGLib | 最优         |
 |---------------------------------|----------|----------|-------|--------------|
 | `int add(int, int)`             | **0.70** | 2.99     | 12.66 | **直接调用** |
 | `long add(long, long)`          | **0.69** | 3.52     | —     | **直接调用** |
@@ -32,40 +32,40 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 | `Integer add(Integer, Integer)` | —        | **3.52** | —     | —            |
 | `String concat(String, String)` | **4.83** | 6.41     | 20.13 | **直接调用** |
 
-**要点：** APS 在每个有实际工作的返回类型上都比 CGLib 快约 3–5×（`int` 2.99 vs 12.66，
+**要点：** OpenProxy 在每个有实际工作的返回类型上都比 CGLib 快约 3–5×（`int` 2.99 vs 12.66，
 `String` 6.41 vs 20.13）。封装类型（`Integer`）因调度路径装箱，比原始类型略慢。
 
 ## 类代理 — 参数数量覆盖
 
 参数数量从 0 到 8 的变化。目标类：`ParamCountImpl`。
 
-| 场景            | 直接调用  | APS      | CGLib | 最优               |
+| 场景            | 直接调用  | OpenProxy      | CGLib | 最优               |
 |-----------------|-----------|----------|-------|--------------------|
 | 0 参数 → String | **0.68**  | 2.96     | 4.22  | **直接调用**       |
 | 1 参数 → String | —         | **2.47** | —     | —                  |
 | 2 参数 → int    | **0.69**  | 2.48     | 13.30 | **直接调用**       |
-| 4 参数 → String | **55.67** | 61.99    | 75.32 | **直接调用 ≈ APS** |
+| 4 参数 → String | **55.67** | 61.99    | 75.32 | **直接调用 ≈ OpenProxy** |
 | 8 参数 → int    | **0.76**  | 1.89     | —     | **直接调用**       |
 
-**要点：** APS 调度开销保持平稳（~2–3 ns），不受参数数量影响。CGLib 随参数增多急剧退化 （2 参数 13.30 ns → 4 参数 75.32 ns）。4 个混合类型参数时 APS 接近直接调用（61.99 vs 55.67）。
+**要点：** OpenProxy 调度开销保持平稳（~2–3 ns），不受参数数量影响。CGLib 随参数增多急剧退化 （2 参数 13.30 ns → 4 参数 75.32 ns）。4 个混合类型参数时 OpenProxy 接近直接调用（61.99 vs 55.67）。
 
 ## 类代理 — 标准场景
 
 空操作、透传和参数修改。目标类：`EchoImpl`。
 
-| 场景     | APS      | CGLib    | 最优      |
+| 场景     | OpenProxy      | CGLib    | 最优      |
 |----------|----------|----------|-----------|
 | 空操作   | 1.35     | **1.08** | **CGLib** |
-| 透传     | **4.90** | 14.32    | **APS**   |
-| 参数修改 | **5.28** | 22.59    | **APS**   |
+| 透传     | **4.90** | 14.32    | **OpenProxy**   |
+| 参数修改 | **5.28** | 22.59    | **OpenProxy**   |
 
-**要点：** APS 透传与参数修改比 CGLib 快约 3–4×。空操作（拦截器不调用 `invokeSuper`）两者都很快。
+**要点：** OpenProxy 透传与参数修改比 CGLib 快约 3–4×。空操作（拦截器不调用 `invokeSuper`）两者都很快。
 
 ## 接口代理
 
-对比 APS 与 `java.lang.reflect.Proxy` 在返回值类型、参数数量和标准场景下的表现。目标接口：`RetOps`、`ParamCount`、`Echo`。
+对比 OpenProxy 与 `java.lang.reflect.Proxy` 在返回值类型、参数数量和标准场景下的表现。目标接口：`RetOps`、`ParamCount`、`Echo`。
 
-| 场景           | APS      | Java Proxy | 最优           |
+| 场景           | OpenProxy      | Java Proxy | 最优           |
 |----------------|----------|------------|----------------|
 | int 返回值     | 2.76     | **1.05**   | **Java Proxy** |
 | String 返回值  | 8.22     | **5.16**   | **Java Proxy** |
@@ -77,20 +77,20 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 | 8 参数         | 15.45    | **13.33**  | **Java Proxy** |
 | 空操作         | 1.35     | **1.04**   | **Java Proxy** |
 | 透传           | 4.75     | **4.51**   | **Java Proxy** |
-| 参数修改       | **5.68** | 6.12       | **APS**        |
+| 参数修改       | **5.68** | 6.12       | **OpenProxy**        |
 
-**要点：** `java.lang.reflect.Proxy` 在轻量级场景（空操作、原始返回）靠 HotSpot 内在优化胜出； APS 在拦截器工作占主导的场景中具有竞争力，并在参数修改上反超 Java Proxy。（单 fork，字符串密集行的噪声最大。）
+**要点：** `java.lang.reflect.Proxy` 在轻量级场景（空操作、原始返回）靠 HotSpot 内在优化胜出； OpenProxy 在拦截器工作占主导的场景中具有竞争力，并在参数修改上反超 Java Proxy。（单 fork，字符串密集行的噪声最大。）
 
 ## 接口默认方法调用（第三阶段）
 
-对比 APS `invokeSuper` 默认方法透传与 JDK `InvocationHandler.invokeDefault`。目标接口：`DefaultGreeter`。
+对比 OpenProxy `invokeSuper` 默认方法透传与 JDK `InvocationHandler.invokeDefault`。目标接口：`DefaultGreeter`。
 
-| 场景             | APS      | Java Proxy | 最优    |
+| 场景             | OpenProxy      | Java Proxy | 最优    |
 |------------------|----------|------------|---------|
-| default（greet） | **3.06** | 20.67      | **APS** |
-| 继承 default     | **3.33** | 20.99      | **APS** |
+| default（greet） | **3.06** | 20.67      | **OpenProxy** |
+| 继承 default     | **3.33** | 20.99      | **OpenProxy** |
 
-**要点：** APS 调用接口默认方法比 JDK `Proxy.invokeDefault` 快约 6×，全程无 `MethodHandle` 开销。
+**要点：** OpenProxy 调用接口默认方法比 JDK `Proxy.invokeDefault` 快约 6×，全程无 `MethodHandle` 开销。
 
 ## 多拦截器（第二阶段）
 
@@ -154,7 +154,7 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 | 代理（拦截）         | 16.103 |
 | 代理（MethodHandle） | 13.434 |
 
-**要点：** `proxyPassthrough` ≈ `reflectionFloor`——APS 的遮蔽调度相对调用方已选择的反射入口无可测额外开销。`proxyIntercepted` 增加 APS 的装箱 + 一次 `intercept` 调用 + 拦截器内的反射 `method.invoke` + 拆箱。
+**要点：** `proxyPassthrough` ≈ `reflectionFloor`——OpenProxy 的遮蔽调度相对调用方已选择的反射入口无可测额外开销。`proxyIntercepted` 增加 OpenProxy 的装箱 + 一次 `intercept` 调用 + 拦截器内的反射 `method.invoke` + 拆箱。
 
 ## 热加载 / 热替换（第三阶段）
 
@@ -166,7 +166,7 @@ JVM 参数: `--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=
 
 ## 总结
 
-- **类代理** 是同类最优路径：APS 在有实际工作的场景中比 CGLib 快约 **3–5×**（透传 4.90 vs 14.32，参数修改 5.28 vs 22.59），未匹配方法达到直接调用速度。
+- **类代理** 是同类最优路径：OpenProxy 在有实际工作的场景中比 CGLib 快约 **3–5×**（透传 4.90 vs 14.32，参数修改 5.28 vs 22.59），未匹配方法达到直接调用速度。
 - **接口代理** 与 `java.lang.reflect.Proxy` 具备竞争力，默认方法快约 **6×**。
 - **多拦截器（`Group`）**、 **多接口**、 **注解驱动** 路径相对单拦截器等价物零额外开销。
 

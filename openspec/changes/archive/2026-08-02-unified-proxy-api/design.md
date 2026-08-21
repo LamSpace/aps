@@ -1,6 +1,6 @@
 ## Context
 
-APS currently has two parallel proxy generation paths: `ClassGenerator` for class proxies and `InterfaceGenerator` for interface proxies, each using a different callback interface (`Callback` vs `InterfaceCallback`). The class proxy `invokeSuper` path goes through a type-erased `MethodHandle.invoke()` (via `_handles[index].invoke(this, args)` with `asSpreader` + `asType` erasure), which adds ~10ns of overhead compared to a direct `super.method(args)` call. The interface proxy path is already
+OpenProxy currently has two parallel proxy generation paths: `ClassGenerator` for class proxies and `InterfaceGenerator` for interface proxies, each using a different callback interface (`Callback` vs `InterfaceCallback`). The class proxy `invokeSuper` path goes through a type-erased `MethodHandle.invoke()` (via `_handles[index].invoke(this, args)` with `asSpreader` + `asType` erasure), which adds ~10ns of overhead compared to a direct `super.method(args)` call. The interface proxy path is already
 close to `java.lang.reflect.Proxy` performance.
 
 See proposal.md for full motivation and spec files for behavioral requirements.
@@ -38,7 +38,7 @@ Collision risk: within a single proxy class, two methods with the same name can 
 
 ### Decision 3: One `dispatch()` method vs per-method fields
 
-Newproxy uses per-method `volatile MethodHandle` fields with DCL lazy initialization for interface methods. For APS, the class proxy case only needs direct `super.method(args)` calls — no MethodHandle needed. A single `dispatch()` method with a hashCode switch handles all methods in one place, avoiding per-method field overhead and thread-safety concerns.
+Newproxy uses per-method `volatile MethodHandle` fields with DCL lazy initialization for interface methods. For OpenProxy, the class proxy case only needs direct `super.method(args)` calls — no MethodHandle needed. A single `dispatch()` method with a hashCode switch handles all methods in one place, avoiding per-method field overhead and thread-safety concerns.
 
 ### Decision 4: Interface proxy dispatch behavior
 
@@ -59,7 +59,7 @@ Cache key is `{targetClass, filter}`. The `ClassLoader` is also part of the key 
 1. Create new types (`Interceptor`, `DispatchTarget`) alongside old types
 2. Create `DispatchGenerator` and `WeakCache`
 3. Update generators (`ClassGenerator`, `InterfaceGenerator`, `MethodDispatcher`, `InterfaceDispatcher`)
-4. Update `APS.java` with `proxy()` entry point
+4. Update `OpenProxy.java` with `proxy()` entry point
 5. Remove old types (`Callback`, `InterfaceCallback`, `SuperDispatcher`, `HiddenClassLoader`)
 6. Update tests and benchmarks to new API
 7. Run full benchmark suite to verify performance improvements

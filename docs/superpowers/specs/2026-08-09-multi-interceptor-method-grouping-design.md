@@ -1,10 +1,10 @@
-# APS Phase 2: Multi-Interceptor / Method Grouping — Design Spec
+# OpenProxy Phase 2: Multi-Interceptor / Method Grouping — Design Spec
 
 **Date:** 2026-08-09 **Status:** Design approved **Phase:** 2 — Feature Extension
 
 ## 1. Motivation
 
-Currently APS uses a single `Interceptor` + `ClassFilter` (binary accept/reject) per proxy instance. All intercepted methods route through the same `Interceptor`, forcing users to write manual `if-else` chains inside `intercept()` to distinguish method families.
+Currently OpenProxy uses a single `Interceptor` + `ClassFilter` (binary accept/reject) per proxy instance. All intercepted methods route through the same `Interceptor`, forcing users to write manual `if-else` chains inside `intercept()` to distinguish method families.
 
 This feature addresses three goals with equal priority:
 

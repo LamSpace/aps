@@ -2,28 +2,28 @@
 
 ## Requirements
 
-- **Java 25+** (APS targets class-file version 24+ and uses
+- **Java 25+** (OpenProxy targets class-file version 24+ and uses
   `MethodHandles.Lookup.defineHiddenClass`, available since Java 15)
 - **ASM 9.7.1** (declared as a compile dependency — no extra setup needed)
 
 ## Build from source
 
 ```bash
-git clone https://github.com/lamspace/aps.git
-cd aps
+git clone https://github.com/lamspace/openproxy.git
+cd openproxy
 mvn install -DskipTests
 ```
 
-This installs the `aps` artifact into your local Maven repository.
+This installs the `openproxy` artifact into your local Maven repository.
 
 ## Maven dependency (coming soon)
 
-APS is not yet published to Maven Central. Until then, depend on it from your local repository:
+OpenProxy is not yet published to Maven Central. Until then, depend on it from your local repository:
 
 ```xml
 <dependency>
     <groupId>io.github.lamspace</groupId>
-    <artifactId>aps</artifactId>
+    <artifactId>openproxy</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 </dependency>
 ```

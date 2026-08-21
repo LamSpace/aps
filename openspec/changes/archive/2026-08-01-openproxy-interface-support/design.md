@@ -1,6 +1,6 @@
 ## Context
 
-APS currently generates subclasses of concrete classes using ASM bytecode generation with `ClassGenerator` (orchestration) and `MethodDispatcher` (method bodies). The generated class extends the target class, the constructor delegates to `super(args)`, and `<clinit>` pre-computes `findSpecial` MethodHandles for super-method invocation. Interface support requires a parallel but distinct generation path: the generated class extends `Object` and `implements` the interface, with no `super()` args
+OpenProxy currently generates subclasses of concrete classes using ASM bytecode generation with `ClassGenerator` (orchestration) and `MethodDispatcher` (method bodies). The generated class extends the target class, the constructor delegates to `super(args)`, and `<clinit>` pre-computes `findSpecial` MethodHandles for super-method invocation. Interface support requires a parallel but distinct generation path: the generated class extends `Object` and `implements` the interface, with no `super()` args
 and no MethodHandle binding in `<clinit>`.
 
 ## Goals / Non-Goals

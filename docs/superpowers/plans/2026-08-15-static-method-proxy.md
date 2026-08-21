@@ -776,9 +776,9 @@ import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Measures the marginal cost of APS static-method proxying on top of the
+ * Measures the marginal cost of OpenProxy static-method proxying on top of the
  * caller's chosen invocation mechanism (reflection or MethodHandle). Static
- * methods are compile-time bound, so the entry mechanism — not APS — dominates.
+ * methods are compile-time bound, so the entry mechanism — not OpenProxy — dominates.
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
@@ -873,11 +873,11 @@ git commit -m "bench: add static method proxy benchmark"
 ### Task 3: Documentation
 
 **Files:**
-- Modify: `docs/aps-future-roadmap.md`, `README.md`, `README_CN.md`, `docs/benchmark-results.md`, `docs/benchmark-results_cn.md`
+- Modify: `docs/openproxy-future-roadmap.md`, `README.md`, `README_CN.md`, `docs/benchmark-results.md`, `docs/benchmark-results_cn.md`
 
 - [ ] **Step 1: Update the roadmap**
 
-In `docs/aps-future-roadmap.md`, change Phase 3 row 5 from `**静态方法代理**` to `**静态方法代理**（已完成）`, and add a `### 静态方法代理（已完成）` subsection after the `### 构造器拦截（已完成）` block (before `### 静态方法代理挑战`):
+In `docs/openproxy-future-roadmap.md`, change Phase 3 row 5 from `**静态方法代理**` to `**静态方法代理**（已完成）`, and add a `### 静态方法代理（已完成）` subsection after the `### 构造器拦截（已完成）` block (before `### 静态方法代理挑战`):
 
 ```markdown
 ### 静态方法代理（已完成）
@@ -928,7 +928,7 @@ In `docs/benchmark-results.md` (and `docs/benchmark-results_cn.md`), add a "Stat
 ```markdown
 ## Static Method Proxy
 
-Static methods are compile-time bound, so the entry mechanism — not APS — dominates. `proxyReflection`/`proxyMethodHandle` add APS's box + `intercept` + `method.invoke` + unbox on top of the reflection/MethodHandle floor.
+Static methods are compile-time bound, so the entry mechanism — not OpenProxy — dominates. `proxyReflection`/`proxyMethodHandle` add OpenProxy's box + `intercept` + `method.invoke` + unbox on top of the reflection/MethodHandle floor.
 
 | Scenario            | ns/op                       |
 |---------------------|-----------------------------|
@@ -941,7 +941,7 @@ Static methods are compile-time bound, so the entry mechanism — not APS — do
 - [ ] **Step 4: Commit**
 
 ```bash
-git add docs/aps-future-roadmap.md README.md README_CN.md \
+git add docs/openproxy-future-roadmap.md README.md README_CN.md \
         docs/benchmark-results.md docs/benchmark-results_cn.md
 git commit -m "docs: document static method proxy"
 ```

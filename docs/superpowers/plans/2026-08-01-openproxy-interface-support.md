@@ -1,8 +1,8 @@
-# APS Interface Proxy Support — Implementation Plan
+# OpenProxy Interface Proxy Support — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add interface proxy support to APS via `AcceleratedProxy.createInterface()`, complementing the existing class proxy `AcceleratedProxy.create()`.
+**Goal:** Add interface proxy support to OpenProxy via `AcceleratedProxy.createInterface()`, complementing the existing class proxy `AcceleratedProxy.create()`.
 
 **Architecture:** New `InterfaceGenerator` and `InterfaceDispatcher` mirror the existing `ClassGenerator`/`MethodDispatcher` pair, generating bytecode for `class X extends Object implements Interface` instead of `class X extends TargetClass`. Shared bytecode utilities (`pushInt`, `boxPrimitive`, etc.) are extracted to a new `BytecodeUtils` class to avoid duplication. The existing `Callback` interface is unchanged; interface proxies use a new 3-arg `InterfaceCallback` without `superHandle`.
 
@@ -595,7 +595,7 @@ public class InterfaceGenerator {
         String simpleName = targetInternal.substring(
                 targetInternal.lastIndexOf('/') + 1);
         String generatedInternal = packagePrefix + simpleName
-                + "$$APS$$" + COUNTER.getAndIncrement();
+                + "$$OpenProxy$$" + COUNTER.getAndIncrement();
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 
@@ -702,11 +702,11 @@ git commit -m "feat: add InterfaceGenerator for interface proxy bytecode"
 
 ---
 
-### Task 5: Add createInterface () to APS
+### Task 5: Add createInterface () to OpenProxy
 
 **Files:**
 
-- Modify: `src/main/java/io/github/lamspace/APS.java` — add two `createInterface` overloads + `isInterface()` guard
+- Modify: `src/main/java/io/github/lamspace/OpenProxy.java` — add two `createInterface` overloads + `isInterface()` guard
 
 **Interfaces:**
 
@@ -715,7 +715,7 @@ git commit -m "feat: add InterfaceGenerator for interface proxy bytecode"
 - Produces: `AcceleratedProxy.createInterface(Class<T>, InterfaceCallback)` → `T`
 - Produces: `AcceleratedProxy.createInterface(Class<T>, InterfaceCallback, ClassFilter)` → `T`
 
-- [ ] **Step 1: Add createInterface methods to APS.java**
+- [ ] **Step 1: Add createInterface methods to OpenProxy.java**
 
 Insert after the existing `create(...)` methods and before the closing `}` of the class:
 
@@ -794,7 +794,7 @@ public static <T> T createInterface(Class<T> interfaceClass,
 }
 ```
 
-Add the import at the top of APS.java:
+Add the import at the top of OpenProxy.java:
 
 ```java
 import io.github.lamspace.generator.InterfaceGenerator;
@@ -808,7 +808,7 @@ Expected: All 16 tests pass, BUILD SUCCESS
 - [ ] **Step 3: Commit**
 
 ```bash
-git add src/main/java/io/github/lamspace/APS.java
+git add src/main/java/io/github/lamspace/OpenProxy.java
 git commit -m "feat: add AcceleratedProxy.createInterface() for interface proxies"
 ```
 

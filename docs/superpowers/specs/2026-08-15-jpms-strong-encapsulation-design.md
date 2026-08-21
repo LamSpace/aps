@@ -1,4 +1,4 @@
-# APS Phase 3: JPMS Strong Encapsulation — Design Spec
+# OpenProxy Phase 3: JPMS Strong Encapsulation — Design Spec
 
 **Date:** 2026-08-15 **Status:** Pending review **Phase:** 3 — Advanced Features
 
@@ -14,7 +14,7 @@ constructors/members.
 When the target class lives in a strongly encapsulated module — any package that
 is not `open`, including `java.base` packages such as `java.util` —
 `privateLookupIn` throws `IllegalAccessException`. The current code swallows that
-and silently falls back to `MethodHandles.lookup()` (the APS package
+and silently falls back to `MethodHandles.lookup()` (the OpenProxy package
 `io.github.lamspace.internal`). Because the generated class name is always
 `<target-package>.<SimpleName>$$AcceleratedProxy$$N`, `defineHiddenClass` then
 rejects the name-package mismatch, so the user sees:
@@ -58,7 +58,7 @@ misleading name-package error.
 
 1. `privateLookupIn(targetClass, MethodHandles.lookup())` — full private access.
 2. On `IllegalAccessException`: logs a warning, returns `MethodHandles.lookup()`
-   (APS package).
+   (OpenProxy package).
 3. On `IllegalArgumentException` (primitive/array): logs fine, returns
    `MethodHandles.lookup()`.
 
@@ -150,7 +150,7 @@ the denial branch, which previously produced a broken proxy anyway.
 
 ## 6. Documentation changes
 
-- `docs/aps-future-roadmap.md`: mark item 8 已完成 with a
+- `docs/openproxy-future-roadmap.md`: mark item 8 已完成 with a
   `### JPMS 强封装模块（已完成）` subsection; add item 10 `非 public 接口代理`
   (table row + short subsection) for the deferred interface-side work.
 - `README.md` / `README_CN.md`: add a "JPMS / Strong Encapsulation" section (the
@@ -178,7 +178,7 @@ the denial branch, which previously produced a broken proxy anyway.
 ## 8. Out of scope
 
 - Non-public interface proxying (deferred to roadmap item 10).
-- APS's own `module-info.java` / `Automatic-Module-Name` (belongs to the Maven
+- OpenProxy's own `module-info.java` / `Automatic-Module-Name` (belongs to the Maven
   Central release item).
 - Cross-ClassLoader hot deployment (a separate open concern, not addressed by
   `--add-opens`).

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add two runtime-lifecycle capabilities to APS: (1) deterministic cache eviction so a hot-deployed target class gets a fresh proxy while old instances keep working, and (2) in-place interceptor rebinding on a live proxy instance.
+**Goal:** Add two runtime-lifecycle capabilities to OpenProxy: (1) deterministic cache eviction so a hot-deployed target class gets a fresh proxy while old instances keep working, and (2) in-place interceptor rebinding on a live proxy instance.
 
 **Architecture:** Class hot-reload already works structurally (identity-keyed `WeakCache` + per-generation unique class names), so that half adds a `removeIf` on `WeakCache` plus two `AcceleratedProxy` entry points. Interceptor rebind drops `final` on the per-interceptor instance fields and emits a `rebind(Interceptor[])` method on every generated proxy (via a shared ASM helper), exposed through a new internal `Rebindable` interface and `AcceleratedProxy.rebind(...)` overloads. The dispatch/override emitters are untouched, so the hot path stays byte-identical.
 
@@ -18,7 +18,7 @@
 - Interceptor fields stay **plain** (non-`volatile`, non-`final` after this change). Rebind uses `VarHandle.fullFence()`, not `volatile`.
 - Generated field naming: `_interceptor$i`; the generated `rebind` method descriptor is `([Lio/github/lamspace/Interceptor;)V`.
 - Follow existing code style: Javadoc on every public method, `IllegalArgumentException` for bad arguments, ASL-2.0 header on new files.
-- `docs/aps-future-roadmap.md` already has uncommitted changes in the working tree — edit it in place, do not revert or `git checkout` it.
+- `docs/openproxy-future-roadmap.md` already has uncommitted changes in the working tree — edit it in place, do not revert or `git checkout` it.
 
 ---
 
@@ -494,12 +494,12 @@ In `AcceleratedProxy.java`, add `import io.github.lamspace.internal.Rebindable;`
 /**
  * Replaces the interceptor on an existing proxy instance with {@code
  * interceptor}, without recreating the instance. The proxy must be an
- * APS-generated single-interceptor proxy.
+ * OpenProxy-generated single-interceptor proxy.
  *
- * @param proxy       the APS proxy instance
+ * @param proxy       the OpenProxy proxy instance
  * @param interceptor the new interceptor; must not be null
  * @throws IllegalArgumentException if {@code interceptor} is null or
- *                                  {@code proxy} is not an APS proxy
+ *                                  {@code proxy} is not an OpenProxy proxy
  */
 public static void rebind(Object proxy, Interceptor interceptor) {
     if (interceptor == null) {
@@ -519,15 +519,15 @@ public static void rebind(Object proxy, Interceptor interceptor) {
  * on another must establish its own happens-before edge (a lock, thread
  * start, latch, or volatile flag).
  *
- * @param proxy        the APS proxy instance
+ * @param proxy        the OpenProxy proxy instance
  * @param interceptors the new interceptors, index-aligned with the generated
  *                     class's interceptor fields
- * @throws IllegalArgumentException if {@code proxy} is not an APS proxy or
+ * @throws IllegalArgumentException if {@code proxy} is not an OpenProxy proxy or
  *                                  {@code interceptors} is null/ill-sized
  */
 public static void rebind(Object proxy, Interceptor[] interceptors) {
     if (!(proxy instanceof Rebindable rebindable)) {
-        throw new IllegalArgumentException("not an APS-generated proxy");
+        throw new IllegalArgumentException("not an OpenProxy-generated proxy");
     }
     rebindable.rebind(interceptors);
 }
@@ -904,7 +904,7 @@ git commit -m "bench: add rebind benchmark"
 ### Task 6: Documentation
 
 **Files:**
-- Modify: `docs/aps-future-roadmap.md`
+- Modify: `docs/openproxy-future-roadmap.md`
 - Modify: `README.md`
 - Modify: `README_CN.md`
 - Modify: `docs/migration-guide.md`
@@ -914,7 +914,7 @@ git commit -m "bench: add rebind benchmark"
 
 - [ ] **Step 1: Update the roadmap**
 
-In `docs/aps-future-roadmap.md` (edit the current working-tree version; preserve its pre-existing uncommitted changes):
+In `docs/openproxy-future-roadmap.md` (edit the current working-tree version; preserve its pre-existing uncommitted changes):
 
 (a) Change the Phase 3 item 6 row from:
 
@@ -978,7 +978,7 @@ Add the `RebindBenchmark` `rebind` ns/op number to `docs/benchmark-results.md` a
 - [ ] **Step 5: Commit**
 
 ```bash
-git add docs/aps-future-roadmap.md README.md README_CN.md \
+git add docs/openproxy-future-roadmap.md README.md README_CN.md \
         docs/migration-guide.md docs/benchmark-results.md docs/benchmark-results_cn.md
 git commit -m "docs: document hot reload / hot swap"
 ```
@@ -990,4 +990,4 @@ git commit -m "docs: document hot reload / hot swap"
 - [ ] `mvn -s /home/lam/repo/settings.xml -q test` — all green.
 - [ ] JMH `ProxyBenchmark`, `ConstructorInterceptionBenchmark`, `StaticMethodProxyBenchmark` unchanged within noise (hot path byte-identical).
 - [ ] `evict`/`evictClassLoader`/`rebind` all exercised by passing tests.
-- [ ] `docs/aps-future-roadmap.md` item 6 marked 已完成.
+- [ ] `docs/openproxy-future-roadmap.md` item 6 marked 已完成.

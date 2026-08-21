@@ -1,6 +1,6 @@
 ## Why
 
-APS can intercept every non-final instance method but has no hook at object *creation* time. Frameworks that need to register a newly-created instance, inject a back-reference, or validate/veto constructor arguments currently wrap every `proxy()` call in a manual factory — boilerplate this change removes by adding a constructor interception hook analogous to CGLib's `Enhancer` constructor callback.
+OpenProxy can intercept every non-final instance method but has no hook at object *creation* time. Frameworks that need to register a newly-created instance, inject a back-reference, or validate/veto constructor arguments currently wrap every `proxy()` call in a manual factory — boilerplate this change removes by adding a constructor interception hook analogous to CGLib's `Enhancer` constructor callback.
 
 ## What Changes
 
@@ -25,4 +25,4 @@ APS can intercept every non-final instance method but has no hook at object *cre
 - **Code:** new `io.github.lamspace.ConstructorInterceptor`; changes to `io.github.lamspace.AcceleratedProxy` (overloads, cache key, instantiation path) and `io.github.lamspace.generator.ClassGenerator` (hook bytecode, `<clinit>` constructor lookup).
 - **API:** three new additive `proxy()` overloads; no breaking changes to existing signatures.
 - **Tests / benchmarks:** new `ConstructorInterceptionTest` and a JMH `ConstructorInterceptionBenchmark`; existing class/interface proxy numbers must not regress.
-- **Docs:** `README.md`/`README_CN.md`, `docs/aps-future-roadmap.md`, `docs/benchmark-results.md`/`_cn`.
+- **Docs:** `README.md`/`README_CN.md`, `docs/openproxy-future-roadmap.md`, `docs/benchmark-results.md`/`_cn`.

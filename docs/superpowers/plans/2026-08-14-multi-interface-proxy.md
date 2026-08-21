@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Let one APS-generated proxy class implement multiple interfaces, with cross-interface method merging and deterministic conflict rejection.
+**Goal:** Let one OpenProxy-generated proxy class implement multiple interfaces, with cross-interface method merging and deterministic conflict rejection.
 
 **Architecture:** The interface path is unified internally to `Class<?>[]` (single-interface is the `N == 1` case). A new `InterfaceMethodResolver` merges each interface's `getMethods()` by signature, dedups, and rejects ambiguity. `InterfaceGenerator`/`InterfaceDispatcher` generate from the resolved (sorted, deduped) method list; `DispatchGenerator` routes each distinct `Method` object's hash to the same handler, using the resolved default owner for `INVOKESPECIAL`. The class path (`ClassGenerator`) is untouched.
 
@@ -32,7 +32,7 @@
 - `src/main/java/io/github/lamspace/generator/MethodInfo.java` — add `defaultOwner` component.
 - `src/main/java/io/github/lamspace/generator/DispatchGenerator.java` — per-method default owner; drop `interfaceInternalName` param.
 - `src/main/java/io/github/lamspace/generator/ClassGenerator.java` — update the `generateDispatch` call site (drop the `null` arg).
-- Docs: `docs/aps-future-roadmap.md`, `README.md`, `README_CN.md`, `docs/migration-guide.md`.
+- Docs: `docs/openproxy-future-roadmap.md`, `README.md`, `README_CN.md`, `docs/migration-guide.md`.
 
 **Boundaries:** `InterfaceMethodResolver` is the single source of truth for "which methods does an interface array expose, in what order, with which default." Both `AcceleratedProxy.matchMethods` and `InterfaceGenerator.generate` call it, which is what guarantees `mapping.indices()` stays aligned with the emitted methods.
 
@@ -970,14 +970,14 @@ git commit -m "feat: add multi-interface proxy API"
 ## Task 4: Documentation and benchmark verification
 
 **Files:**
-- Modify: `docs/aps-future-roadmap.md`
+- Modify: `docs/openproxy-future-roadmap.md`
 - Modify: `README.md`
 - Modify: `README_CN.md`
 - Modify: `docs/migration-guide.md`
 
 - [ ] **Step 1: Mark roadmap item complete and add a subsection**
 
-In `docs/aps-future-roadmap.md`:
+In `docs/openproxy-future-roadmap.md`:
 1. Change the Phase 3 table row 2 from `| 2 | P3 | **多接口代理** | 一个代理类实现多个接口 |` to `| 2 | P3 | **多接口代理**（已完成） | 一个代理类实现多个接口 |`.
 2. Replace the existing `### 多接口代理` bullet list with a `### 多接口代理（已完成）` section that states the API and conflict rules, mirroring the existing `### 接口默认方法调用（已完成）` section:
 
@@ -1014,7 +1014,7 @@ Make the matching additions to `README_CN.md` in Chinese.
 
 - [ ] **Step 3: Update migration guide**
 
-In `docs/migration-guide.md`, in the `java.lang.reflect.Proxy` → APS section, add a short multi-interface mapping note:
+In `docs/migration-guide.md`, in the `java.lang.reflect.Proxy` → OpenProxy section, add a short multi-interface mapping note:
 
 ```markdown
 `java.lang.reflect.Proxy.newProxyInstance(loader, new Class<?>[]{A.class, B.class}, handler)`
@@ -1028,7 +1028,7 @@ Run the existing JMH suite and confirm the interface- and class-proxy numbers ar
 - [ ] **Step 5: Commit**
 
 ```bash
-git add docs/aps-future-roadmap.md README.md README_CN.md docs/migration-guide.md
+git add docs/openproxy-future-roadmap.md README.md README_CN.md docs/migration-guide.md
 git commit -m "docs: document multi-interface proxy"
 ```
 

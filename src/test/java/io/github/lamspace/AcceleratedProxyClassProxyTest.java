@@ -106,7 +106,7 @@ class AcceleratedProxyClassProxyTest {
         Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
                 (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
 
-        assertEquals("Hello, APS", proxy.hello("APS"));
+        assertEquals("Hello, OpenProxy", proxy.hello("OpenProxy"));
     }
 
     @Test
@@ -291,7 +291,7 @@ class AcceleratedProxyClassProxyTest {
         assertEquals("Hello, World", proxy.greet("World"));
         assertEquals("Count: 42", proxy.greet(42));
         assertEquals("Value: 3.1", proxy.greet(3.1));
-        assertEquals("APS x3", proxy.greet("APS", 3));
+        assertEquals("OpenProxy x3", proxy.greet("OpenProxy", 3));
     }
 
     // ---- Cache behavior ----
@@ -332,8 +332,8 @@ class AcceleratedProxyClassProxyTest {
         Method greetStringInt = OverloadedTarget.class.getMethod("greet", String.class, int.class);
 
         // Verify that each overloaded method dispatches to the correct branch
-        assertEquals("Hello, APS",
-                ((DispatchTarget) proxy).dispatch(greetString, new Object[]{"APS"}));
+        assertEquals("Hello, OpenProxy",
+                ((DispatchTarget) proxy).dispatch(greetString, new Object[]{"OpenProxy"}));
         assertEquals("Count: 7",
                 ((DispatchTarget) proxy).dispatch(greetInt, new Object[]{7}));
         assertEquals("Value: 2.7",

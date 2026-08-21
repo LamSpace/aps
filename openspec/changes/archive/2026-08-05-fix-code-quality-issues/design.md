@@ -1,8 +1,8 @@
 ## Context
 
-The APS codebase has 17 source files with a clean architecture: public API (`AcceleratedProxy`, `Interceptor`, `ClassFilter`), bytecode generators (`ClassGenerator`, `InterfaceGenerator`, `MethodDispatcher`, `InterfaceDispatcher`, `DispatchGenerator`), utilities (`BytecodeUtils`, `ClinitRegistry`, `WeakCache`), and internal infrastructure (`LookupManager`, `DispatchTarget`). The core dispatch mechanism (hashCode switch + INVOKESPECIAL) is well-tested with 41 passing integration tests and JMH benchmarks. See proposal.md for motivation.
+The OpenProxy codebase has 17 source files with a clean architecture: public API (`AcceleratedProxy`, `Interceptor`, `ClassFilter`), bytecode generators (`ClassGenerator`, `InterfaceGenerator`, `MethodDispatcher`, `InterfaceDispatcher`, `DispatchGenerator`), utilities (`BytecodeUtils`, `ClinitRegistry`, `WeakCache`), and internal infrastructure (`LookupManager`, `DispatchTarget`). The core dispatch mechanism (hashCode switch + INVOKESPECIAL) is well-tested with 41 passing integration tests and JMH benchmarks. See proposal.md for motivation.
 
-Two specs (`aps-core`, `aps-unified-proxy`) both require "Proxy class caching: SHALL cache generated proxy classes keyed by `{targetClass, filter}`." `WeakCache` is fully implemented but not wired into `AcceleratedProxy.proxy()`.
+Two specs (`openproxy-core`, `openproxy-unified-proxy`) both require "Proxy class caching: SHALL cache generated proxy classes keyed by `{targetClass, filter}`." `WeakCache` is fully implemented but not wired into `AcceleratedProxy.proxy()`.
 
 ## Goals / Non-Goals
 

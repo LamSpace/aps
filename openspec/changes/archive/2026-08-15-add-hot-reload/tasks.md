@@ -29,7 +29,7 @@
 
 ## 6. Documentation
 
-- [x] 6.1 Update `docs/aps-future-roadmap.md` — mark item 6 已完成, add 类热重载 / 拦截器热替换 subsections, rewrite the 热加载挑战 note
+- [x] 6.1 Update `docs/openproxy-future-roadmap.md` — mark item 6 已完成, add 类热重载 / 拦截器热替换 subsections, rewrite the 热加载挑战 note
 - [x] 6.2 Update `README.md` and `README_CN.md` — feature bullets + Quick Start snippet
 - [x] 6.3 Update `docs/migration-guide.md` — note the additive nature and CGLib comparison
 - [x] 6.4 Update `docs/benchmark-results.md` (+ `_cn`) — add the `RebindBenchmark` number

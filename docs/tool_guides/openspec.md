@@ -335,7 +335,7 @@ skip_specs: true
 ```markdown
 ## Context
 
-APS 项目有 13 个主源文件，部分 package-private 方法缺少 Javadoc。
+OpenProxy 项目有 13 个主源文件，部分 package-private 方法缺少 Javadoc。
 
 ## Decisions
 

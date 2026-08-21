@@ -16,7 +16,7 @@ Auditable a = (Auditable) p;
 
 ## Method merging and conflicts
 
-Interfaces often share methods (e.g. a common `getName()`). APS resolves the merged, deduplicated method set at creation time:
+Interfaces often share methods (e.g. a common `getName()`). OpenProxy resolves the merged, deduplicated method set at creation time:
 
 - Same signature + same return type → **merged** into one implementation.
 - Same signature + **different** return types → `IllegalArgumentException`.

@@ -1,4 +1,4 @@
-# APS Phase 3: Annotation-Driven API — Design Spec
+# OpenProxy Phase 3: Annotation-Driven API — Design Spec
 
 **Date:** 2026-08-15 **Status:** Design approved **Phase:** 3 — Advanced Features
 
@@ -221,7 +221,7 @@ existing single-fork measurement range).
 
 ## 6. Documentation changes
 
-- `docs/aps-future-roadmap.md`: mark Phase 3 item 3 **注解驱动 API** as 已完成
+- `docs/openproxy-future-roadmap.md`: mark Phase 3 item 3 **注解驱动 API** as 已完成
   and add a `### 注解驱动 API（已完成）` subsection (API example + the three match
   dimensions + the fixed `@Around` signature).
 - `README.md` and `README_CN.md`: add an "Annotation-Driven API" feature bullet

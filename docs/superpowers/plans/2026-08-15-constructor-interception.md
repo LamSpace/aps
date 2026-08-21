@@ -1088,7 +1088,7 @@ git commit -m "bench: add constructor interception benchmark"
 ## Task 6: Documentation
 
 **Files:**
-- Modify: `docs/aps-future-roadmap.md`
+- Modify: `docs/openproxy-future-roadmap.md`
 - Modify: `README.md`
 - Modify: `README_CN.md`
 - Modify: `docs/benchmark-results.md`
@@ -1099,7 +1099,7 @@ git commit -m "bench: add constructor interception benchmark"
 
 - [ ] **Step 1: Update the roadmap**
 
-In `docs/aps-future-roadmap.md`, change the row 4 of the Phase 3 table from `| 4 | P3 | **构造器拦截** | 对象创建时的 hook，类似 CGLib 的 \`Enhancer\` 构造器回调 |` to `| 4 | P3 | **构造器拦截**（已完成） | 对象创建时的 hook，类似 CGLib 的 \`Enhancer\` 构造器回调 |`, and add a subsection after `### 注解驱动 API（已完成）`:
+In `docs/openproxy-future-roadmap.md`, change the row 4 of the Phase 3 table from `| 4 | P3 | **构造器拦截** | 对象创建时的 hook，类似 CGLib 的 \`Enhancer\` 构造器回调 |` to `| 4 | P3 | **构造器拦截**（已完成） | 对象创建时的 hook，类似 CGLib 的 \`Enhancer\` 构造器回调 |`, and add a subsection after `### 注解驱动 API（已完成）`:
 
 ```markdown
 ### 构造器拦截（已完成）
@@ -1128,7 +1128,7 @@ In `README_CN.md`, add the equivalent Chinese bullet and example.
 
 In `docs/benchmark-results.md`, add a `## Constructor Interception` section with a table using the three numbers from Task 5 Step 3:
 
-| Scenario              | Direct | APS (plain) | APS (intercepted) |
+| Scenario              | Direct | OpenProxy (plain) | OpenProxy (intercepted) |
 |-----------------------|--------|-------------|-------------------|
 | `new Target(1, 2)`    | *n*    | —           | —                 |
 | `proxy(Target)`       | —      | *n*         | —                 |
@@ -1139,7 +1139,7 @@ Replace the `*n*` placeholders with the actual measured ns/op, and add one sente
 - [ ] **Step 4: Commit**
 
 ```bash
-git add docs/aps-future-roadmap.md README.md README_CN.md \
+git add docs/openproxy-future-roadmap.md README.md README_CN.md \
         docs/benchmark-results.md docs/benchmark-results_cn.md
 git commit -m "docs: document constructor interception"
 ```

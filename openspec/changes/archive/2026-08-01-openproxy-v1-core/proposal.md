@@ -5,7 +5,7 @@ alternative that matches CGLib's capability set while delivering significantly b
 
 ## What Changes
 
-- Introduce a new dynamic proxy library (APS) capable of proxying concrete classes (not just interfaces)
+- Introduce a new dynamic proxy library (OpenProxy) capable of proxying concrete classes (not just interfaces)
 - Replace CGLib's `Method.invoke` dispatch with pre-computed MethodHandle super-call bindings
 - Use `Lookup.defineHiddenClass()` for class loading instead of custom ClassLoaders
 - Provide a simple, familiar API: a single functional-interface `Callback` (matching the `InvocationHandler` /
@@ -17,7 +17,7 @@ alternative that matches CGLib's capability set while delivering significantly b
 
 ### New Capabilities
 
-- `aps-core`: MethodHandle-powered class-based dynamic proxy engine — subclass generation via ASM, hidden-class loading via `Lookup.defineHiddenClass()`, single-Callback interception model with MethodHandle super-call binding
+- `openproxy-core`: MethodHandle-powered class-based dynamic proxy engine — subclass generation via ASM, hidden-class loading via `Lookup.defineHiddenClass()`, single-Callback interception model with MethodHandle super-call binding
 
 ### Modified Capabilities
 

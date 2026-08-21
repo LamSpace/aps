@@ -1,18 +1,18 @@
-# APS v1 Implementation Plan
+# OpenProxy v1 Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:
 > executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build APS Core — a MethodHandle-powered dynamic proxy library capable of proxying classes with performance exceeding CGLib.
+**Goal:** Build OpenProxy Core — a MethodHandle-powered dynamic proxy library capable of proxying classes with performance exceeding CGLib.
 
-**Architecture:** Three-layer design: Public API (`APS` with static factories), Bytecode Engine (ASM subclass generation + MethodHandle super-call binding), and Class Definition (`Lookup.defineHiddenClass` wrapper). Single Callback model matching CGLib/Proxy semantics.
+**Architecture:** Three-layer design: Public API (`OpenProxy` with static factories), Bytecode Engine (ASM subclass generation + MethodHandle super-call binding), and Class Definition (`Lookup.defineHiddenClass` wrapper). Single Callback model matching CGLib/Proxy semantics.
 
 **Tech Stack:** Java 25, Maven, ASM 9.7.1, JUnit 5.11, JMH 1.37
 
 ## Global Constraints
 
 - Java 25 source/target (per `pom.xml`)
-- Group ID: `io.github.lamspace`, artifact: `aps`
+- Group ID: `io.github.lamspace`, artifact: `openproxy`
 - Zero compile-time code generation — all proxies built at runtime
 - MethodHandle for superclass invocation — no `Method.invoke` in hot path
 - `MethodHandles.Lookup.defineHiddenClass()` for class loading — no custom ClassLoader
@@ -46,7 +46,7 @@ Replace the current `pom.xml` content:
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.lamspace</groupId>
-    <artifactId>aps</artifactId>
+    <artifactId>openproxy</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 
     <properties>
@@ -312,7 +312,7 @@ class HiddenClassLoaderTest {
 
         // Build a minimal valid subclass of Object via ASM
         byte[] bytecode = MinimalClassGenerator.generateSubclassBytecode(
-                Object.class, "Object$$APS$$Test");
+                Object.class, "Object$$OpenProxy$$Test");
 
         Class<?> defined = loader.defineClass(Object.class, bytecode);
 
@@ -326,7 +326,7 @@ class HiddenClassLoaderTest {
     void shouldCreateInstanceOfDefinedClass() throws Exception {
         HiddenClassLoader loader = new HiddenClassLoader();
         byte[] bytecode = MinimalClassGenerator.generateSubclassBytecode(
-                Object.class, "Object$$APS$$Test2");
+                Object.class, "Object$$OpenProxy$$Test2");
 
         Class<?> defined = loader.defineClass(Object.class, bytecode);
         Object instance = defined.getDeclaredConstructor().newInstance();
@@ -534,7 +534,7 @@ class MethodDispatcherTest {
     @Test
     void shouldGenerateOverridesForNonFinalInstanceMethods() {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-        String generatedInternal = "io/github/lamspace/generator/Bean$$APS$$0";
+        String generatedInternal = "io/github/lamspace/generator/Bean$$OpenProxy$$0";
         cw.visit(Opcodes.V25, Opcodes.ACC_PUBLIC, generatedInternal, null,
                 Type.getInternalName(Bean.class), null);
 
@@ -555,7 +555,7 @@ class MethodDispatcherTest {
 
     @Test
     void shouldDispatchedMethodsBeValidBytecode() throws Exception {
-        String generatedInternal = "io/github/lamspace/generator/Bean$$APS$$1";
+        String generatedInternal = "io/github/lamspace/generator/Bean$$OpenProxy$$1";
         byte[] bytecode = TestBytecodeBuilder.buildClassWithDispatcher(
                 Bean.class, generatedInternal);
         assertNotNull(bytecode);
@@ -1089,7 +1089,7 @@ public class ClassGenerator {
      */
     public byte[] generate() {
         String targetInternal = Type.getInternalName(targetClass);
-        String generatedInternal = targetInternal + "$$APS$$" + COUNTER.getAndIncrement();
+        String generatedInternal = targetInternal + "$$OpenProxy$$" + COUNTER.getAndIncrement();
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 
@@ -1231,11 +1231,11 @@ git commit -m "feat: add ClassGenerator — ASM subclass bytecode generation wit
 
 ---
 
-### Task 7: APS API — Public Entry Point
+### Task 7: OpenProxy API — Public Entry Point
 
 **Files:**
 
-- Create: `src/main/java/io/github/lamspace/APS.java`
+- Create: `src/main/java/io/github/lamspace/OpenProxy.java`
 - Create: `src/test/java/io/github/lamspace/APSFunctionalTest.java`
 
 **Interfaces:**
@@ -1290,7 +1290,7 @@ class APSFunctionalTest {
         Greeter proxy = AcceleratedProxy.create(Greeter.class, (obj, method, superHandle, args) ->
                 superHandle.invoke(args));
 
-        assertEquals("Hello, APS", proxy.hello("APS"));
+        assertEquals("Hello, OpenProxy", proxy.hello("OpenProxy"));
     }
 
     @Test
@@ -1350,9 +1350,9 @@ class APSFunctionalTest {
 mvn test -pl . -Dtest=APSFunctionalTest -q
 ```
 
-Expected: COMPILATION ERROR (APS doesn't exist yet)
+Expected: COMPILATION ERROR (OpenProxy doesn't exist yet)
 
-- [ ] **Step 3: Write APS implementation**
+- [ ] **Step 3: Write OpenProxy implementation**
 
 ```java
 package io.github.lamspace;
@@ -1372,9 +1372,9 @@ import java.lang.reflect.Constructor;
  *   });
  * }</pre>
  */
-public final class APS {
+public final class OpenProxy {
 
-    private APS() {
+    private OpenProxy() {
         // static factory, no instances
     }
 
@@ -1461,9 +1461,9 @@ Expected: BUILD SUCCESS, all tests pass
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/main/java/io/github/lamspace/APS.java \
+git add src/main/java/io/github/lamspace/OpenProxy.java \
         src/test/java/io/github/lamspace/APSFunctionalTest.java
-git commit -m "feat: add APS public API — create() factory methods"
+git commit -m "feat: add OpenProxy public API — create() factory methods"
 ```
 
 ---
@@ -1473,7 +1473,7 @@ git commit -m "feat: add APS public API — create() factory methods"
 **Files:**
 
 - Modify: `src/main/java/io/github/lamspace/generator/ClassGenerator.java`
-- Modify: `src/main/java/io/github/lamspace/APS.java`
+- Modify: `src/main/java/io/github/lamspace/OpenProxy.java`
 - Modify: `src/test/java/io/github/lamspace/APSFunctionalTest.java`
 
 **Interfaces:**
@@ -1688,7 +1688,7 @@ Expected: BUILD SUCCESS
 
 ```bash
 git add src/main/java/io/github/lamspace/generator/ClassGenerator.java \
-        src/main/java/io/github/lamspace/APS.java \
+        src/main/java/io/github/lamspace/OpenProxy.java \
         src/test/java/io/github/lamspace/APSFunctionalTest.java
 git commit -m "feat: support proxying classes without default constructors"
 ```
@@ -1710,7 +1710,7 @@ git commit -m "feat: support proxying classes without default constructors"
 ```java
 package io.github.lamspace.benchmark;
 
-import io.github.lamspace.APS;
+import io.github.lamspace.OpenProxy;
 import org.openjdk.jmh.annotations.*;
 
 import java.lang.reflect.Proxy;
@@ -1762,7 +1762,7 @@ public class ProxyBenchmark {
                 }
         );
 
-        // APS proxy (class-based)
+        // OpenProxy proxy (class-based)
         apsProxy = AcceleratedProxy.create(ConcreteGreeter.class,
                 (obj, method, superHandle, args) -> {
                     if (method.getName().equals("hello")) {
@@ -1817,7 +1817,7 @@ Expected: JMH runs, outputs timing results
 
 ```bash
 git add src/test/java/io/github/lamspace/benchmark/ProxyBenchmark.java
-git commit -m "bench: add JMH benchmark — APS vs Java Proxy vs direct call"
+git commit -m "bench: add JMH benchmark — OpenProxy vs Java Proxy vs direct call"
 ```
 
 ---

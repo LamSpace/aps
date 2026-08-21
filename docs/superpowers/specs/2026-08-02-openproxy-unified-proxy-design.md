@@ -1,10 +1,10 @@
-# APS Unified Proxy Design
+# OpenProxy Unified Proxy Design
 
 **Date**: 2026-08-02 | **Status**: approved
 
 ## Motivation
 
-APS currently has two parallel APIs for class and interface proxies:
+OpenProxy currently has two parallel APIs for class and interface proxies:
 
 |                  | Class Proxy                                        | Interface Proxy                                              |
 |------------------|----------------------------------------------------|--------------------------------------------------------------|
@@ -143,7 +143,7 @@ Cache key: `{targetClass, filter}` where `null` filter means "intercept all".
 
 ## Expected Performance Impact
 
-| Scenario                     | Before (APS) | After (expected) | Improvement |
+| Scenario                     | Before (OpenProxy) | After (expected) | Improvement |
 |------------------------------|--------------|------------------|-------------|
 | Class proxy passthrough      | 17.15 ns     | ~6 ns            | ~3x         |
 | Class proxy arg modify       | 22.85 ns     | ~12 ns           | ~2x         |
@@ -157,8 +157,8 @@ The interface proxy path is already at parity with `java.lang.reflect.Proxy` and
 
 ## Open Questions / Deferred
 
-- **Interface `default` method invocation**: Neither current APS nor this design supports calling an interface's default method from within an interceptor. This requires `MethodHandles.Lookup.findSpecial()` and is deferred to a future iteration.
-- **Static/final method interception**: Out of scope. APS does not intercept static or final methods.
+- **Interface `default` method invocation**: Neither current OpenProxy nor this design supports calling an interface's default method from within an interceptor. This requires `MethodHandles.Lookup.findSpecial()` and is deferred to a future iteration.
+- **Static/final method interception**: Out of scope. OpenProxy does not intercept static or final methods.
 
 ## Migration Path
 

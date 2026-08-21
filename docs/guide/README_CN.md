@@ -1,13 +1,13 @@
-# APS 用户指导
+# OpenProxy 用户指导
 
-**APS**（Accelerated Proxy Solution，加速代理解决方案）是一个高性能 Java 动态代理库： 它在运行时用 ASM 生成字节码，通过 hashCode 驱动的 `dispatch()` 开关直接 `INVOKESPECIAL`
+**OpenProxy**是一个高性能 Java 动态代理库： 它在运行时用 ASM 生成字节码，通过 hashCode 驱动的 `dispatch()` 开关直接 `INVOKESPECIAL`
 父类调用，实现近原生的调用性能。
 
 每一章都是独立的：一段简短说明、一个可运行的代码示例、预期输出，以及需要注意的限制。
 
 ## 章节
 
-1. [简介](01-introduction_cn.md) — APS 是什么、核心亮点，以及与 CGLib / `java.lang.reflect.Proxy` 的对比
+1. [简介](01-introduction_cn.md) — OpenProxy 是什么、核心亮点，以及与 CGLib / `java.lang.reflect.Proxy` 的对比
 2. [安装](02-installation_cn.md) — 源码构建与依赖声明
 3. [快速开始](03-quick-start_cn.md) — 第一个类代理与接口代理
 4. [拦截器 API](04-interceptor-api_cn.md) — `Interceptor` 契约、`invokeSuper`、返回值与异常

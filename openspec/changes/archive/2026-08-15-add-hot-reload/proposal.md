@@ -1,6 +1,6 @@
 ## Why
 
-Long-running framework scenarios (webapp/plugin/DI containers) need two runtime-lifecycle capabilities APS lacks today: a deterministic way to drop cached proxy classes when a target is hot-deployed under a new `ClassLoader`, and the ability to swap an interceptor on a live proxy instance without recreating it (the per-interceptor fields are currently `final`, so they cannot be rebound).
+Long-running framework scenarios (webapp/plugin/DI containers) need two runtime-lifecycle capabilities OpenProxy lacks today: a deterministic way to drop cached proxy classes when a target is hot-deployed under a new `ClassLoader`, and the ability to swap an interceptor on a live proxy instance without recreating it (the per-interceptor fields are currently `final`, so they cannot be rebound).
 
 ## What Changes
 
@@ -25,4 +25,4 @@ Long-running framework scenarios (webapp/plugin/DI containers) need two runtime-
 - **Code**: `WeakCache`, `AcceleratedProxy`, `ClassGenerator`, `InterfaceGenerator`, `BytecodeUtils`; new `internal/Rebindable`.
 - **Not touched**: `MethodDispatcher`, `InterfaceDispatcher`, `DispatchGenerator` (hot path unchanged), `DispatchTarget`, `Interceptor`, `Group`, `ConstructorInterceptor`, `LookupManager`.
 - **Tests**: new `HotReloadTest`, `RebindClassProxyTest`, `RebindInterfaceProxyTest`; `WeakCacheTest` extended; new JMH `RebindBenchmark`.
-- **Docs**: `docs/aps-future-roadmap.md`, `README.md`, `README_CN.md`, `docs/migration-guide.md`, `docs/benchmark-results.md` (+ `_cn`).
+- **Docs**: `docs/openproxy-future-roadmap.md`, `README.md`, `README_CN.md`, `docs/migration-guide.md`, `docs/benchmark-results.md` (+ `_cn`).

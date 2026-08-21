@@ -289,7 +289,7 @@ public final class AcceleratedProxy {
             if (params.interfaces() != null) {
                 Class<?>[] interfaces = params.interfaces();
                 Class<?> anchor = nonPublicAnchor(interfaces);
-                // All-public interfaces keep the historical APS package; a
+                // All-public interfaces keep the historical package; a
                 // non-public anchor places the class in that interface's
                 // package so it can implement a package-private interface.
                 String packagePrefix = "io/github/lamspace/";
@@ -328,7 +328,7 @@ public final class AcceleratedProxy {
      * dispatch. Convenience wrapper around the proxy's {@code dispatch}
      * method.
      *
-     * @param proxy  the proxy instance (must be an APS-generated proxy)
+     * @param proxy  the proxy instance (must be an OpenProxy-generated proxy)
      * @param method the intercepted method, used to identify the dispatch
      *               target
      * @param args   boxed arguments to pass to the superclass method
@@ -343,12 +343,12 @@ public final class AcceleratedProxy {
     /**
      * Replaces the interceptor on an existing proxy instance with {@code
      * interceptor}, without recreating the instance. The proxy must be an
-     * APS-generated single-interceptor proxy.
+     * OpenProxy-generated single-interceptor proxy.
      *
-     * @param proxy       the APS proxy instance
+     * @param proxy       the OpenProxy proxy instance
      * @param interceptor the new interceptor; must not be null
      * @throws IllegalArgumentException if {@code interceptor} is null or
-     *                                  {@code proxy} is not an APS proxy
+     *                                  {@code proxy} is not an OpenProxy proxy
      */
     public static void rebind(Object proxy, Interceptor interceptor) {
         if (interceptor == null) {
@@ -368,15 +368,15 @@ public final class AcceleratedProxy {
      * methods on another must establish its own happens-before edge (a lock,
      * thread start, latch, or volatile flag).
      *
-     * @param proxy        the APS proxy instance
+     * @param proxy        the OpenProxy proxy instance
      * @param interceptors the new interceptors, index-aligned with the
      *                     generated class's interceptor fields
-     * @throws IllegalArgumentException if {@code proxy} is not an APS proxy or
+     * @throws IllegalArgumentException if {@code proxy} is not an OpenProxy proxy or
      *                                  {@code interceptors} is null/ill-sized
      */
     public static void rebind(Object proxy, Interceptor[] interceptors) {
         if (!(proxy instanceof Rebindable rebindable)) {
-            throw new IllegalArgumentException("not an APS-generated proxy");
+            throw new IllegalArgumentException("not an OpenProxy-generated proxy");
         }
         rebindable.rebind(interceptors);
     }

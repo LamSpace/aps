@@ -1,4 +1,4 @@
-# APS Phase 3: Multi-Interface Proxy — Design Spec
+# OpenProxy Phase 3: Multi-Interface Proxy — Design Spec
 
 **Date:** 2026-08-14 **Status:** Design approved **Phase:** 3 — Advanced Features
 
@@ -136,9 +136,9 @@ pair that turns "interface count adds no per-call cost" into a measured fact.
 
 ## 6. Documentation changes
 
-- `docs/aps-future-roadmap.md`: mark Phase 3 item 2 **多接口代理** as 已完成 and add a `### 多接口代理（已完成）` subsection (API example + the conflict-rules table).
+- `docs/openproxy-future-roadmap.md`: mark Phase 3 item 2 **多接口代理** as 已完成 and add a `### 多接口代理（已完成）` subsection (API example + the conflict-rules table).
 - `README.md` and `README_CN.md`: add a "Multi-Interface Proxy" feature bullet and a Quick Start example.
-- `docs/migration-guide.md`: add a `java.lang.reflect.Proxy` → APS multi-interface mapping note (the `Class<?>[]` argument maps to `proxy(Class<?>[], ...)`).
+- `docs/migration-guide.md`: add a `java.lang.reflect.Proxy` → OpenProxy multi-interface mapping note (the `Class<?>[]` argument maps to `proxy(Class<?>[], ...)`).
 
 ## 7. Deliberate decisions
 

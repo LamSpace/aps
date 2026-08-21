@@ -1,4 +1,4 @@
-# APS Phase 3: Static Method Proxy — Design Spec
+# OpenProxy Phase 3: Static Method Proxy — Design Spec
 
 **Date:** 2026-08-15 **Status:** Awaiting review **Phase:** 3 — Advanced Features
 
@@ -89,7 +89,7 @@ class io.github.lamspace.StaticProxy$$AcceleratedProxy$$<n> extends Object {
 - **No `DispatchTarget`, no `dispatch` method.** Static dispatch has no
   instance to dispatch on, and the interceptor calls the original itself via
   `method.invoke`, so the hashCode super-dispatch machinery is unused.
-- The class is defined in `io.github.lamspace` (APS's own package) with
+- The class is defined in `io.github.lamspace` (OpenProxy's own package) with
   `MethodHandles.lookup().defineHiddenClass(bytecode, true)`. It targets only
   `public` static methods, so no `LookupManager` / in-target-package access is
   needed.
@@ -230,18 +230,18 @@ the *reflection floor*, not a direct call:
 2. **Reflection floor** `Method.invoke(null, …)` on the target's own `Method`
    (no proxy) — the minimum cost of reflective static invocation.
 3. **Proxy + reflection** `proxyClass.getMethod("foo").invoke(null, …)` with a
-   passthrough (no-op interceptor) — isolates APS's marginal overhead over (2).
+   passthrough (no-op interceptor) — isolates OpenProxy's marginal overhead over (2).
 4. **Proxy + MethodHandle** `findStatic(proxyClass, "foo", …).invoke(…)` — the
-   JIT-friendly path; APS overhead should be near the box/unbox/intercept cost.
+   JIT-friendly path; OpenProxy overhead should be near the box/unbox/intercept cost.
 
 Report ns/op and ratios in `docs/benchmark-results.md` (and `_cn`). Interpret
-the result as "APS adds one box, one interface call, one unbox on top of the
+the result as "OpenProxy adds one box, one interface call, one unbox on top of the
 invocation mechanism the caller already chose" — the caller's entry mechanism
-(2/3/4), not APS, dominates.
+(2/3/4), not OpenProxy, dominates.
 
 ## 6. Documentation changes
 
-- `docs/aps-future-roadmap.md`: mark Phase 3 item 5 **静态方法代理** as
+- `docs/openproxy-future-roadmap.md`: mark Phase 3 item 5 **静态方法代理** as
   已完成; add a `### 静态方法代理（已完成）` subsection with the API example
   and the compile-time-binding limitation (why `Target.staticMethod()` is not
   interceptable).
@@ -258,13 +258,13 @@ invocation mechanism the caller already chose" — the caller's entry mechanism
 
 1. **`proxyStatic` returns `Class<?>`, not a wrapper or `MethodHandle`.**
    Minimal API; the caller already chooses reflection or `MethodHandle`, and
-   APS should not add an indirection layer whose performance ceiling is set by
+   OpenProxy should not add an indirection layer whose performance ceiling is set by
    the entry mechanism anyway.
 2. **Static proxy is uncached.** Static interceptor state is class-global, so
    sharing a generated class across interceptor instances would race; the
    existing instance-agnostic `WeakCache` is the wrong tool. Per-call
    generation is a startup cost, and hidden classes stay GC-eligible.
-3. **`extends Object`, defined in APS's package, no `LookupManager`.** The
+3. **`extends Object`, defined in OpenProxy's package, no `LookupManager`.** The
    feature targets `public` static methods only, so no in-target-package
    access or JPMS `--add-opens` is needed; that complexity belongs to the
    separate JPMS roadmap item (item 8).
@@ -278,7 +278,7 @@ invocation mechanism the caller already chose" — the caller's entry mechanism
    / opens for the interceptor's `method.invoke`, which overlaps the JPMS item;
    deferred rather than half-implemented here.
 7. **No caching of `MethodHandle`s.** The caller owns invocation handles;
-   APS adds no global handle cache.
+   OpenProxy adds no global handle cache.
 
 ## 8. Out of scope
 

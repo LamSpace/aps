@@ -1,6 +1,6 @@
 # 5. 方法分组
 
-单个拦截器往往不够：你可能希望 getter 一套行为、setter 另一套、其余方法完全不拦截。 APS 用 `Group` 来建模。
+单个拦截器往往不够：你可能希望 getter 一套行为、setter 另一套、其余方法完全不拦截。 OpenProxy 用 `Group` 来建模。
 
 ## `Group.of` 与 `Group.otherwise`
 
@@ -43,6 +43,6 @@ Group.of(m -> m.isAnnotationPresent(Tx.class), txInterceptor)
 
 ## 关于歧义匹配
 
-若某方法匹配了多个组，第一个组胜出，APS 会记录一条 `WARNING`（便于排查重叠谓词）。
+若某方法匹配了多个组，第一个组胜出，OpenProxy 会记录一条 `WARNING`（便于排查重叠谓词）。
 
 下一章：[注解驱动 API](06-annotation-api_cn.md)。

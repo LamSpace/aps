@@ -1,4 +1,4 @@
-# APS Phase 3: Hot Reload / Hot Swap — Design Spec
+# OpenProxy Phase 3: Hot Reload / Hot Swap — Design Spec
 
 **Date:** 2026-08-15 **Status:** Awaiting review **Phase:** 3 — Advanced Features
 
@@ -56,7 +56,7 @@ void removeIf(Predicate<? super K> predicate)
 ```
 
 - `expungeStaleEntries()` first, then iterate the outer `map.keySet()`.
-- For each key: skip the `NULL_KEY` sentinel (APS never caches a null key); unwrap the weak `CacheKey` to the raw `K`; if `predicate.test(key)`, call
+- For each key: skip the `NULL_KEY` sentinel (OpenProxy never caches a null key); unwrap the weak `CacheKey` to the raw `K`; if `predicate.test(key)`, call
   `CacheKey.expungeFrom(map, reverseMap)` (which already removes the
   `valuesMap` and its reverse-map entries).
 - `ConcurrentHashMap`'s weakly-consistent iterator makes this safe under concurrent `get`.
@@ -117,7 +117,7 @@ public static void rebind(Object proxy, Interceptor[] interceptors)
 - The single-interceptor overload delegates
   `rebind(proxy, new Interceptor[]{interceptor})` after a null check.
 - Both: if `proxy` is not an `instanceof Rebindable`, throw
-  `IllegalArgumentException("not an APS-generated proxy")`.
+  `IllegalArgumentException("not an OpenProxy-generated proxy")`.
 - Length mismatch is thrown from the generated `rebind` body (only the class knows `N`).
 - `ConstructorInterceptor` is deliberately **not** rebindable: it runs only during construction (`before`/`after` around `super()`) and is never stored as an instance field (see `ClassGenerator.generateInterceptedConstructor`), so there is nothing to swap once the instance exists.
 
@@ -149,8 +149,8 @@ No change to `MethodDispatcher`, `InterfaceDispatcher`, `DispatchGenerator`,
 
 1. `evict(null)`, `evictClassLoader(null)`, `rebind(proxy, null)`,
    `rebind(null, …)` → `IllegalArgumentException`.
-2. `rebind` on a non-APS object → `IllegalArgumentException("not an
-   APS-generated proxy")`.
+2. `rebind` on a non-OpenProxy object → `IllegalArgumentException("not an
+   OpenProxy-generated proxy")`.
 3. `rebind` with a wrong-length `Interceptor[]` →
    `IllegalArgumentException("interceptor count mismatch: expected N")` thrown from the generated body.
 4. A `null` *element* inside a correctly-sized array is not validated: the array length, not element nullity, is checked. A `null` slot `NPE`s on the next call — consistent with `proxy()`'s non-null interceptor discipline but documented as caller responsibility.
@@ -175,7 +175,7 @@ New `src/test/java/io/github/lamspace/HotReloadTest.java`,
 | 9  | Single interface-proxy rebind | same as #8 on an interface proxy                                                                                                   |
 | 10 | Multi-interceptor rebind      | `rebind(proxy, Interceptor[])` with correct length replaces each index (class and interface proxies)                              |
 | 11 | Length mismatch               | wrong-length array → `IllegalArgumentException`                                                                                    |
-| 12 | Null / non-proxy              | null array, null proxy → `IllegalArgumentException`; non-APS object → `IllegalArgumentException`                                   |
+| 12 | Null / non-proxy              | null array, null proxy → `IllegalArgumentException`; non-OpenProxy object → `IllegalArgumentException`                                   |
 | 13 | `invokeSuper` after rebind    | super-method dispatch still works with the new interceptor                                                                         |
 | 14 | Passthrough unaffected        | a method matched by no `Group` never touches interceptors, rebind or not                                                           |
 | 15 | Per-instance isolation        | rebind one of two instances of the same class; the other is unaffected                                                             |
@@ -199,7 +199,7 @@ Verification is therefore procedural:
 
 ## 6. Documentation changes
 
-- `docs/aps-future-roadmap.md`: mark Phase 3 item 6 `热加载/热替换` as 已完成; add `### 类热重载（已完成）` and `### 拦截器热替换（已完成）` subsections with API examples; rewrite the `### 热加载挑战` note to state the resolution (identity-keyed cache + per-generation class names + the evict/rebind API).
+- `docs/openproxy-future-roadmap.md`: mark Phase 3 item 6 `热加载/热替换` as 已完成; add `### 类热重载（已完成）` and `### 拦截器热替换（已完成）` subsections with API examples; rewrite the `### 热加载挑战` note to state the resolution (identity-keyed cache + per-generation class names + the evict/rebind API).
 - `README.md` / `README_CN.md`: add "Hot reload / hot swap" feature bullets and a Quick Start example (`evict` for classloader reload; `rebind` for swapping an interceptor on a live instance).
 - Javadoc on `evict`, `evictClassLoader`, `rebind` (both overloads) and
   `Rebindable`, matching the existing detailed style, including the §2.5 concurrency contract and the §2.2 cache-key asymmetry.

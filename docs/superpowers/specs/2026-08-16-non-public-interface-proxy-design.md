@@ -1,11 +1,11 @@
-# APS Phase 3: Non-Public Interface Proxy — Design Spec
+# OpenProxy Phase 3: Non-Public Interface Proxy — Design Spec
 
 **Date:** 2026-08-16 **Status:** Awaiting review **Phase:** 3 — Advanced Features
 
 ## 1. Motivation
 
 Interface proxying currently defines the generated hidden class with
-`MethodHandles.lookup()` and hardcodes the class name in APS's own package
+`MethodHandles.lookup()` and hardcodes the class name in OpenProxy's own package
 (`io.github.lamspace`). A JVM class can implement a package-private interface
 only if it lives in that interface's package, so today's proxy can implement
 **public** interfaces only — the same restriction as `java.lang.reflect.Proxy`.
@@ -191,7 +191,7 @@ package-private interface. So method collection, the `intercept` `Method`
 argument, and `<clinit>` resolution need **no change**. Likewise, `INVOKESPECIAL`
 to a package-private `default` method is legal once the proxy lives in the same
 package. The generated class's `extends Object` + `implements DispatchTarget,
-Rebindable` remain valid: both APS interfaces are `public`.
+Rebindable` remain valid: both OpenProxy interfaces are `public`.
 
 ## 3. Error handling
 
@@ -261,7 +261,7 @@ file changed) and needs no update.
 
 ## 5. Documentation changes
 
-- `docs/aps-future-roadmap.md`: mark Phase 3 item 10 **非 public 接口代理** as
+- `docs/openproxy-future-roadmap.md`: mark Phase 3 item 10 **非 public 接口代理** as
   已完成; add a `### 非 public 接口代理（已完成）` subsection describing the
   anchor-package rule, the different-package conflict, and that the all-public
   path is unchanged; fold in the resolved "缓存键语义" note.

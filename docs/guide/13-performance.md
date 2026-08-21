@@ -1,6 +1,6 @@
 # 13. Performance & Benchmarking
 
-APS's whole design — hashCode dispatch + direct `INVOKESPECIAL` — exists to make the hot path as cheap as a direct call. This chapter summarizes what the JMH benchmarks show and how to reproduce them.
+OpenProxy's whole design — hashCode dispatch + direct `INVOKESPECIAL` — exists to make the hot path as cheap as a direct call. This chapter summarizes what the JMH benchmarks show and how to reproduce them.
 
 ## Headline results
 

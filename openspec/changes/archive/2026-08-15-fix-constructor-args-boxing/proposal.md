@@ -15,7 +15,7 @@
 
 ### Modified Capabilities
 
-- `aps-core`: the **No-default-constructor support** requirement now explicitly covers unboxing boxed primitive arguments and `null`/reference arguments, and its scenario uses the current `proxy(Class, Object[], Group...)` API.
+- `openproxy-core`: the **No-default-constructor support** requirement now explicitly covers unboxing boxed primitive arguments and `null`/reference arguments, and its scenario uses the current `proxy(Class, Object[], Group...)` API.
 
 ## Impact
 

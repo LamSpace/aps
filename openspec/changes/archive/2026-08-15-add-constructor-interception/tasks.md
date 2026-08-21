@@ -33,6 +33,6 @@
 
 ## 6. Documentation
 
-- [x] 6.1 Update `docs/aps-future-roadmap.md` (mark 构造器拦截 已完成 + subsection)
+- [x] 6.1 Update `docs/openproxy-future-roadmap.md` (mark 构造器拦截 已完成 + subsection)
 - [x] 6.2 Update `README.md` and `README_CN.md` (feature bullet + Quick Start)
 - [x] 6.3 Record benchmark numbers in `docs/benchmark-results.md` and `_cn`

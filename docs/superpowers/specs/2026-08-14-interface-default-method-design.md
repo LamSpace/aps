@@ -1,4 +1,4 @@
-# APS Phase 3: Interface Default Method Invocation — Design Spec
+# OpenProxy Phase 3: Interface Default Method Invocation — Design Spec
 
 **Date:** 2026-08-14 **Status:** Design approved (simplified during implementation) **Phase:** 3 — Advanced Features
 
@@ -106,8 +106,8 @@ Extend `src/test/java/io/github/lamspace/benchmark/ProxyBenchmark.java` with a
 
 | Benchmark | Measures |
 |-----------|----------|
-| `i_default_greet` | APS interface-proxy default fast path (`INVOKESPECIAL`) |
-| `i_default_inherited` | APS inherited-default (same fast path) |
+| `i_default_greet` | OpenProxy interface-proxy default fast path (`INVOKESPECIAL`) |
+| `i_default_inherited` | OpenProxy inherited-default (same fast path) |
 | `i_jp_default_greet` | JDK `java.lang.reflect.Proxy` + `InvocationHandler.invokeDefault` reference |
 | `i_jp_default_inherited` | JDK inherited-default reference |
 

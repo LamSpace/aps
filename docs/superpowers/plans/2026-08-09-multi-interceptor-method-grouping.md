@@ -1986,18 +1986,18 @@ git commit -m "fix: ensure full test suite passes with Group model"
 
 **Files:**
 - Modify: `CLAUDE.md` (project instructions)
-- Modify: `docs/aps-future-roadmap.md` (mark Phase 2 as in-progress or completed)
+- Modify: `docs/openproxy-future-roadmap.md` (mark Phase 2 as in-progress or completed)
 
 - [ ] **Step 1: Update roadmap status**
 
-In `docs/aps-future-roadmap.md`, update the Phase 2 row to reflect implementation status.
+In `docs/openproxy-future-roadmap.md`, update the Phase 2 row to reflect implementation status.
 
 - [ ] **Step 2: Update CLAUDE.md** if needed (architecture overview changes)
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add docs/aps-future-roadmap.md
+git add docs/openproxy-future-roadmap.md
 git commit -m "docs: update roadmap for Phase 2 multi-interceptor implementation"
 ```
 

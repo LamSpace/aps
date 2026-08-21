@@ -1,4 +1,4 @@
-# APS Phase 3: Constructor Interception — Design Spec
+# OpenProxy Phase 3: Constructor Interception — Design Spec
 
 **Date:** 2026-08-15 **Status:** Design approved **Phase:** 3 — Advanced Features
 
@@ -180,7 +180,7 @@ Report the per-instance overhead and ratio vs. baseline in
 
 ## 6. Documentation changes
 
-- `docs/aps-future-roadmap.md`: mark Phase 3 item 4 **构造器拦截** as 已完成 and add a `### 构造器拦截（已完成）` subsection (API example + the
+- `docs/openproxy-future-roadmap.md`: mark Phase 3 item 4 **构造器拦截** as 已完成 and add a `### 构造器拦截（已完成）` subsection (API example + the
   `this`-before-`super()` constraint + rewrite/veto semantics).
 - `README.md` and `README_CN.md`: add a "Constructor Interception" feature bullet and a Quick Start example.
 - Javadoc on `ConstructorInterceptor` and the new `proxy()` overloads (matching the existing detailed style).

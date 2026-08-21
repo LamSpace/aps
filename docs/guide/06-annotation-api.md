@@ -1,6 +1,6 @@
 # 6. Annotation-Driven API
 
-For a more declarative style, APS can derive the method matching from annotations instead of hand-written `Group` predicates.
+For a more declarative style, OpenProxy can derive the method matching from annotations instead of hand-written `Group` predicates.
 
 ## `@Intercept` + `@Around`
 

@@ -1,6 +1,6 @@
 # 8. 静态方法代理
 
-静态方法在编译期绑定，子类无法重写。APS 因此生成一个 **遮蔽类**，其 `public static` 方法 镜像目标类的静态方法，并把它们路由到同一个 `Interceptor`。
+静态方法在编译期绑定，子类无法重写。OpenProxy 因此生成一个 **遮蔽类**，其 `public static` 方法 镜像目标类的静态方法，并把它们路由到同一个 `Interceptor`。
 
 ## `AcceleratedProxy.proxyStatic`
 

@@ -15,5 +15,5 @@
 
 ## 3. Documentation
 
-- [x] 3.1 Update `docs/aps-future-roadmap.md`: mark item 8 done with a `### JPMS 强封装模块（已完成）` subsection, add item 10 `非 public 接口代理`, and fix the item 6 cross-reference (`跨 ClassLoader 热部署待 item 8` → `跨 ClassLoader 热部署（独立待办）`)
+- [x] 3.1 Update `docs/openproxy-future-roadmap.md`: mark item 8 done with a `### JPMS 强封装模块（已完成）` subsection, add item 10 `非 public 接口代理`, and fix the item 6 cross-reference (`跨 ClassLoader 热部署待 item 8` → `跨 ClassLoader 热部署（独立待办）`)
 - [x] 3.2 Add a "JPMS / Strong Encapsulation" section to `README.md` and its Chinese equivalent to `README_CN.md` (the `--add-opens` requirement + an example error)

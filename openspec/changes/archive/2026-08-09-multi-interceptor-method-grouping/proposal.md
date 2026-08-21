@@ -1,6 +1,6 @@
 ## Why
 
-Currently APS proxies route ALL intercepted methods through a single `Interceptor` instance. Users must write manual `if-else` chains inside `intercept()` to distinguish method families (getters vs setters vs business logic). This is boilerplate, error-prone, and forces heavyweight interceptors onto lightweight methods. CGLib's `CallbackFilter` + `Callback[]` proves the "method group → interceptor" pattern is both mature and useful — APS should offer a cleaner, zero-overhead version.
+Currently OpenProxy proxies route ALL intercepted methods through a single `Interceptor` instance. Users must write manual `if-else` chains inside `intercept()` to distinguish method families (getters vs setters vs business logic). This is boilerplate, error-prone, and forces heavyweight interceptors onto lightweight methods. CGLib's `CallbackFilter` + `Callback[]` proves the "method group → interceptor" pattern is both mature and useful — OpenProxy should offer a cleaner, zero-overhead version.
 
 ## What Changes
 
@@ -22,7 +22,7 @@ Currently APS proxies route ALL intercepted methods through a single `Intercepto
 
 ### Modified Capabilities
 
-- `aps-unified-proxy`: The proxy class caching key changes from `{targetClass, filter}` to `{targetClass, interceptors[], mapping}`. The `ClassFilter` interface is removed; method filtering moves to `MethodPredicate` within `Group` declarations. `AcceleratedProxy.proxy()` internals perform Group chain matching before cache lookup.
+- `openproxy-unified-proxy`: The proxy class caching key changes from `{targetClass, filter}` to `{targetClass, interceptors[], mapping}`. The `ClassFilter` interface is removed; method filtering moves to `MethodPredicate` within `Group` declarations. `AcceleratedProxy.proxy()` internals perform Group chain matching before cache lookup.
 
 ## Impact
 

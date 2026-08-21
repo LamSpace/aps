@@ -21,6 +21,6 @@
 
 ## 4. Documentation
 
-- [x] 4.1 Update `docs/aps-future-roadmap.md` (mark 静态方法代理 已完成 + subsection)
+- [x] 4.1 Update `docs/openproxy-future-roadmap.md` (mark 静态方法代理 已完成 + subsection)
 - [x] 4.2 Update `README.md` and `README_CN.md` (feature bullet + Quick Start)
 - [x] 4.3 Record benchmark numbers in `docs/benchmark-results.md` and `_cn`

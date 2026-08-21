@@ -1,4 +1,4 @@
-# 🚀 APS — Accelerated Proxy Solution
+# 🚀 OpenProxy
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/java-25%2B-orange)](https://jdk.java.net/)
@@ -6,11 +6,11 @@
 
 [中文版](README_CN.md) | [User Guide](docs/guide/README.md) | [Benchmark Results](docs/benchmark-results.md)
 
-A high-performance dynamic proxy library for Java. APS generates proxy classes at runtime with ASM and dispatches every intercepted call through a **hashCode-driven switch with a direct `INVOKESPECIAL` super call** — no reflection, no
+A high-performance dynamic proxy library for Java. OpenProxy generates proxy classes at runtime with ASM and dispatches every intercepted call through a **hashCode-driven switch with a direct `INVOKESPECIAL` super call** — no reflection, no
 `MethodHandle`, JIT-inlinable. Interface proxies run at `java.lang.reflect.Proxy`
 parity; default methods are ~6.5× faster.
 
-## ✨ Why APS
+## ✨ Why OpenProxy
 
 - **Direct `super` dispatch** — `invokeSuper` compiles to a direct
   `super.method(args)`; no reflection, no `MethodHandle`, JIT-inlinable.
@@ -131,8 +131,8 @@ Class proxies are defined in the target's package via `MethodHandles.privateLook
 ## 📦 Installation
 
 ```bash
-git clone https://github.com/lamspace/aps.git
-cd aps
+git clone https://github.com/lamspace/openproxy.git
+cd openproxy
 mvn install -DskipTests
 ```
 
@@ -142,14 +142,14 @@ Maven Central publishing is in progress; until then, depend on the artifact from
 
 <dependency>
     <groupId>io.github.lamspace</groupId>
-    <artifactId>aps</artifactId>
+    <artifactId>openproxy</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 </dependency>
 ```
 
-## 🆚 APS vs the alternatives
+## 🆚 OpenProxy vs the alternatives
 
-| Feature                  | APS                    | CGLib                       | `java.lang.reflect.Proxy` |
+| Feature                  | OpenProxy                    | CGLib                       | `java.lang.reflect.Proxy` |
 |--------------------------|------------------------|-----------------------------|---------------------------|
 | Proxies concrete classes | ✅                     | ✅                          | ❌                        |
 | Super-call mechanism     | direct `INVOKESPECIAL` | `MethodProxy` + `FastClass` | N/A                       |

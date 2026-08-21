@@ -15,7 +15,7 @@
  */
 
 /**
- * APS (Accelerated Proxy Solution) — a high-performance dynamic proxy
+ * OpenProxy — a high-performance dynamic proxy
  * library for Java, using hashCode-based dispatch with direct
  * {@code INVOKESPECIAL} super calls.
  *

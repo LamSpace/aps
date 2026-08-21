@@ -84,7 +84,7 @@ class VirtualThreadCompatibilityTest {
                 recording.stop();
             }
 
-            Path dump = Files.createTempFile("aps-pinning", ".jfr");
+            Path dump = Files.createTempFile("openproxy-pinning", ".jfr");
             try {
                 recording.dump(dump);
                 long pinned = 0;

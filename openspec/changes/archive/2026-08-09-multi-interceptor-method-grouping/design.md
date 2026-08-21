@@ -1,6 +1,6 @@
 ## Context
 
-APS currently uses a single `Interceptor` field (`_callback`) in every generated proxy class. A `ClassFilter` (binary accept/reject) controls which methods route through the interceptor versus calling super directly. The matching decision happens inside `generateProxyClass` — after the cache lookup determines no cached class exists.
+OpenProxy currently uses a single `Interceptor` field (`_callback`) in every generated proxy class. A `ClassFilter` (binary accept/reject) controls which methods route through the interceptor versus calling super directly. The matching decision happens inside `generateProxyClass` — after the cache lookup determines no cached class exists.
 
 The change introduces multiple `Interceptor` instances per proxy, each bound to a subset of methods via `Group` declarations. This requires changes across the API layer (matching engine, cache key), the generator layer (field layout, constructor), and the dispatcher layer (per-method field references).
 

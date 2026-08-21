@@ -1,6 +1,6 @@
 # 12. Migration
 
-This chapter shows the shortest path from CGLib and `java.lang.reflect.Proxy` to APS. A more detailed guide lives at [docs/migration-guide.md](../migration-guide.md).
+This chapter shows the shortest path from CGLib and `java.lang.reflect.Proxy` to OpenProxy. A more detailed guide lives at [docs/migration-guide.md](../migration-guide.md).
 
 ## From CGLib
 
@@ -23,7 +23,7 @@ MyService proxy = AcceleratedProxy.proxy(MyService.class,
 
 Differences:
 
-| CGLib                          | APS                                               |
+| CGLib                          | OpenProxy                                               |
 |--------------------------------|---------------------------------------------------|
 | `Enhancer` builder             | `AcceleratedProxy.proxy()` factory                |
 | `MethodInterceptor` (4 args)   | `Interceptor` (3 args)                            |
@@ -49,11 +49,11 @@ ServiceImpl proxy = AcceleratedProxy.proxy(ServiceImpl.class,
         (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
 ```
 
-The main win: APS proxies the **implementation class**, so the interceptor calls the real method via `invokeSuper` instead of you hand-rolling a delegate.
+The main win: OpenProxy proxies the **implementation class**, so the interceptor calls the real method via `invokeSuper` instead of you hand-rolling a delegate.
 
 ## Feature comparison
 
-| Feature                  | APS           | CGLib               | Java Proxy |
+| Feature                  | OpenProxy           | CGLib               | Java Proxy |
 |--------------------------|---------------|---------------------|------------|
 | Proxies concrete classes | ✅            | ✅                  | ❌         |
 | Selective interception   | ✅ `Group.of` | ✅ `CallbackFilter` | ❌         |

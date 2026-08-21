@@ -1,6 +1,6 @@
 ## Why
 
-APS can intercept every non-final *instance* method, but static methods are invisible to it: `MethodDispatcher` skips `static` members and the generated subclass's dispatch machinery is instance-bound. A small but real set of consumers — reflective test harnesses, plugin/DI frameworks that look up a class and invoke its static methods, and log-injection wrappers obtained via `MethodHandle` — need to route static calls through the same `Interceptor` contract. Static methods are compile-time bound (`INVOKESTATIC`), so this change returns a decorated `Class` the caller invokes reflectively or via `MethodHandle` rather than transparently intercepting `Target.staticMethod()`.
+OpenProxy can intercept every non-final *instance* method, but static methods are invisible to it: `MethodDispatcher` skips `static` members and the generated subclass's dispatch machinery is instance-bound. A small but real set of consumers — reflective test harnesses, plugin/DI frameworks that look up a class and invoke its static methods, and log-injection wrappers obtained via `MethodHandle` — need to route static calls through the same `Interceptor` contract. Static methods are compile-time bound (`INVOKESTATIC`), so this change returns a decorated `Class` the caller invokes reflectively or via `MethodHandle` rather than transparently intercepting `Target.staticMethod()`.
 
 ## What Changes
 
@@ -25,4 +25,4 @@ APS can intercept every non-final *instance* method, but static methods are invi
 - **Code:** new `io.github.lamspace.generator.StaticMethodGenerator`; changes to `io.github.lamspace.AcceleratedProxy` (two `proxyStatic` overloads, `collectStaticMethods`). No change to the existing generators, dispatchers, cache, or `invokeSuper`.
 - **API:** two new additive `proxyStatic(...)` entry points returning `Class<?>`; no breaking changes to existing signatures.
 - **Tests / benchmarks:** new `StaticMethodProxyTest` and a JMH `StaticMethodProxyBenchmark`; existing class/interface proxy numbers must not regress (procedural guard — no instance-path file is touched).
-- **Docs:** `README.md`/`README_CN.md`, `docs/aps-future-roadmap.md`, `docs/benchmark-results.md`/`_cn`.
+- **Docs:** `README.md`/`README_CN.md`, `docs/openproxy-future-roadmap.md`, `docs/benchmark-results.md`/`_cn`.

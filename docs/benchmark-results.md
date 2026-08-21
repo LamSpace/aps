@@ -1,4 +1,4 @@
-# APS Benchmark Results
+# OpenProxy Benchmark Results
 
 [中文版](benchmark-results_cn.md)
 
@@ -17,9 +17,9 @@ All scores in ns/op (lower is better). Best per row **bolded**.
 
 ## Class Proxy — Return Type Coverage
 
-Compares APS, CGLib, and direct call across all primitive return types, wrapper types, String, and void. Target: `RetOpsImpl` implementing `RetOps`.
+Compares OpenProxy, CGLib, and direct call across all primitive return types, wrapper types, String, and void. Target: `RetOpsImpl` implementing `RetOps`.
 
-| Scenario (method)               | Direct   | APS      | CGLib | Best       |
+| Scenario (method)               | Direct   | OpenProxy      | CGLib | Best       |
 |---------------------------------|----------|----------|-------|------------|
 | `int add(int, int)`             | **0.70** | 2.99     | 12.66 | **Direct** |
 | `long add(long, long)`          | **0.69** | 3.52     | —     | **Direct** |
@@ -33,39 +33,39 @@ Compares APS, CGLib, and direct call across all primitive return types, wrapper 
 | `Integer add(Integer, Integer)` | —        | **3.52** | —     | —          |
 | `String concat(String, String)` | **4.83** | 6.41     | 20.13 | **Direct** |
 
-**Key takeaway:** APS beats CGLib by ~3–5× across every return type with actual work (`int` 2.99 vs 12.66, `String` 6.41 vs 20.13). The wrapper type (`Integer`) has slightly more overhead than primitives due to boxing in the dispatch path.
+**Key takeaway:** OpenProxy beats CGLib by ~3–5× across every return type with actual work (`int` 2.99 vs 12.66, `String` 6.41 vs 20.13). The wrapper type (`Integer`) has slightly more overhead than primitives due to boxing in the dispatch path.
 
 ## Class Proxy — Parameter Count Coverage
 
 Varying parameter counts from 0 to 8. Target: `ParamCountImpl`.
 
-| Scenario        | Direct    | APS      | CGLib | Best             |
+| Scenario        | Direct    | OpenProxy      | CGLib | Best             |
 |-----------------|-----------|----------|-------|------------------|
 | 0 args → String | **0.68**  | 2.96     | 4.22  | **Direct**       |
 | 1 arg → String  | —         | **2.47** | —     | —                |
 | 2 args → int    | **0.69**  | 2.48     | 13.30 | **Direct**       |
-| 4 args → String | **55.67** | 61.99    | 75.32 | **Direct ≈ APS** |
+| 4 args → String | **55.67** | 61.99    | 75.32 | **Direct ≈ OpenProxy** |
 | 8 args → int    | **0.76**  | 1.89     | —     | **Direct**       |
 
-**Key takeaway:** APS dispatch overhead stays flat (~2–3 ns) regardless of parameter count. CGLib degrades sharply (2 args 13.30 ns vs 4 args 75.32 ns). With 4 mixed-type args APS is close to direct speed (61.99 vs 55.67).
+**Key takeaway:** OpenProxy dispatch overhead stays flat (~2–3 ns) regardless of parameter count. CGLib degrades sharply (2 args 13.30 ns vs 4 args 75.32 ns). With 4 mixed-type args OpenProxy is close to direct speed (61.99 vs 55.67).
 
 ## Class Proxy — Standard Scenarios
 
 No-op, passthrough, and argument modification. Target: `EchoImpl`.
 
-| Scenario    | APS      | CGLib    | Best      |
+| Scenario    | OpenProxy      | CGLib    | Best      |
 |-------------|----------|----------|-----------|
 | No-op       | 1.35     | **1.08** | **CGLib** |
-| Passthrough | **4.90** | 14.32    | **APS**   |
-| Arg modify  | **5.28** | 22.59    | **APS**   |
+| Passthrough | **4.90** | 14.32    | **OpenProxy**   |
+| Arg modify  | **5.28** | 22.59    | **OpenProxy**   |
 
-**Key takeaway:** APS passthrough and arg-modify are ~3–4× faster than CGLib. The no-op case (interceptor returns without `invokeSuper`) is cheap in both.
+**Key takeaway:** OpenProxy passthrough and arg-modify are ~3–4× faster than CGLib. The no-op case (interceptor returns without `invokeSuper`) is cheap in both.
 
 ## Interface Proxy
 
-Interface proxies compare APS against `java.lang.reflect.Proxy` across return types, parameter counts, and standard scenarios. Target: `RetOps`, `ParamCount`, `Echo`.
+Interface proxies compare OpenProxy against `java.lang.reflect.Proxy` across return types, parameter counts, and standard scenarios. Target: `RetOps`, `ParamCount`, `Echo`.
 
-| Scenario       | APS      | Java Proxy | Best           |
+| Scenario       | OpenProxy      | Java Proxy | Best           |
 |----------------|----------|------------|----------------|
 | int return     | 2.76     | **1.05**   | **Java Proxy** |
 | String return  | 8.22     | **5.16**   | **Java Proxy** |
@@ -77,20 +77,20 @@ Interface proxies compare APS against `java.lang.reflect.Proxy` across return ty
 | 8 args         | 15.45    | **13.33**  | **Java Proxy** |
 | No-op          | 1.35     | **1.04**   | **Java Proxy** |
 | Passthrough    | 4.75     | **4.51**   | **Java Proxy** |
-| Arg modify     | **5.68** | 6.12       | **APS**        |
+| Arg modify     | **5.68** | 6.12       | **OpenProxy**        |
 
-**Key takeaway:** `java.lang.reflect.Proxy` wins lightweight scenarios (no-op, primitive returns) via HotSpot intrinsics. APS is competitive where the interceptor work dominates and edges out Java Proxy on arg-modify. (Single-fork; string-heavy rows carry the most noise.)
+**Key takeaway:** `java.lang.reflect.Proxy` wins lightweight scenarios (no-op, primitive returns) via HotSpot intrinsics. OpenProxy is competitive where the interceptor work dominates and edges out Java Proxy on arg-modify. (Single-fork; string-heavy rows carry the most noise.)
 
 ## Interface Default Method Invocation (Phase 3)
 
-Compares APS `invokeSuper` default-method passthrough against the JDK `InvocationHandler.invokeDefault`. Target: `DefaultGreeter`.
+Compares OpenProxy `invokeSuper` default-method passthrough against the JDK `InvocationHandler.invokeDefault`. Target: `DefaultGreeter`.
 
-| Scenario          | APS      | Java Proxy | Best    |
+| Scenario          | OpenProxy      | Java Proxy | Best    |
 |-------------------|----------|------------|---------|
-| default (`greet`) | **3.06** | 20.67      | **APS** |
-| inherited default | **3.33** | 20.99      | **APS** |
+| default (`greet`) | **3.06** | 20.67      | **OpenProxy** |
+| inherited default | **3.33** | 20.99      | **OpenProxy** |
 
-**Key takeaway:** APS invokes interface default methods ~6× faster than JDK `Proxy.invokeDefault`, with no `MethodHandle` overhead.
+**Key takeaway:** OpenProxy invokes interface default methods ~6× faster than JDK `Proxy.invokeDefault`, with no `MethodHandle` overhead.
 
 ## Multi-Interceptor (Phase 2)
 
@@ -154,7 +154,7 @@ Per-call cost of a shadowed `public static` method. Target: `Target.staticAdd(in
 | proxy intercepted  | 16.103 |
 | proxy MethodHandle | 13.434 |
 
-**Key takeaway:** `proxyPassthrough` ≈ `reflectionFloor` — APS's shadow dispatch adds no measurable cost over the reflective entry the caller already chose. `proxyIntercepted` adds APS's box + one `intercept` call + the interceptor's reflective `method.invoke` + unbox.
+**Key takeaway:** `proxyPassthrough` ≈ `reflectionFloor` — OpenProxy's shadow dispatch adds no measurable cost over the reflective entry the caller already chose. `proxyIntercepted` adds OpenProxy's box + one `intercept` call + the interceptor's reflective `method.invoke` + unbox.
 
 ## Hot Reload / Hot Swap (Phase 3)
 
@@ -166,7 +166,7 @@ Per-call cost of a shadowed `public static` method. Target: `Target.staticAdd(in
 
 ## Summary
 
-- **Class proxies** are the best-in-class path: APS beats CGLib by **~3–5×** across scenarios with actual work (passthrough 4.90 vs 14.32, arg-modify 5.28 vs 22.59), and unmatched methods run at direct-call speed.
+- **Class proxies** are the best-in-class path: OpenProxy beats CGLib by **~3–5×** across scenarios with actual work (passthrough 4.90 vs 14.32, arg-modify 5.28 vs 22.59), and unmatched methods run at direct-call speed.
 - **Interface proxies** are competitive with `java.lang.reflect.Proxy` and **~6× faster**
   on default methods.
 - **Multi-interceptor (`Group`)**, **multi-interface**, and **annotation-driven** paths add zero overhead over their single-interceptor equivalents.

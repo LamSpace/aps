@@ -1,8 +1,8 @@
-# APS Phase 1 — Documentation & Performance Validation Implementation Plan
+# OpenProxy Phase 1 — Documentation & Performance Validation Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make APS credible — complete README, Javadoc, migration guide, and multi-dimensional JMH benchmarks with real data.
+**Goal:** Make OpenProxy credible — complete README, Javadoc, migration guide, and multi-dimensional JMH benchmarks with real data.
 
 **Architecture:** Seven sequential tasks. First add CGLib dependency, then rewrite benchmark (4 implementations × 6 scenarios), run JMH to collect data, write README with embedded results, complete Javadoc on all public classes, write migration guide, and final verification.
 
@@ -80,7 +80,7 @@ git commit -m "build: add CGLib 3.3.0 test dependency for benchmarks"
 - Consumes: CGLib 3.3.0 (from Task 1), AcceleratedProxy.create (), Callback
 - Produces: 6 inner @State classes × 4 @Benchmark methods = 24 measured operations
 
-**Design:** Six inner `@State(Scope.Thread)` classes, one per scenario. Each sets up all 4 implementations (Direct, APS, CGLib, JavaProxy) for its target bean. Each has 4 `@Benchmark` methods.
+**Design:** Six inner `@State(Scope.Thread)` classes, one per scenario. Each sets up all 4 implementations (Direct, OpenProxy, CGLib, JavaProxy) for its target bean. Each has 4 `@Benchmark` methods.
 
 **Target beans shared across scenarios:**
 
@@ -133,7 +133,7 @@ Replace `src/test/java/io/github/lamspace/benchmark/ProxyBenchmark.java` with:
 ```java
 package io.github.lamspace.benchmark;
 
-import io.github.lamspace.APS;
+import io.github.lamspace.OpenProxy;
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import org.openjdk.jmh.annotations.*;
@@ -212,7 +212,7 @@ public class ProxyBenchmark {
                     (proxy, method, args1) -> "fixed"
             );
 
-            // APS — no superHandle call
+            // OpenProxy — no superHandle call
             apsProxy = AcceleratedProxy.create(StringOpImpl.class,
                     (obj, method, superHandle, args) -> "fixed");
 
@@ -268,7 +268,7 @@ public class ProxyBenchmark {
                     }
             );
 
-            // APS — superHandle.invoke(args) to call original method
+            // OpenProxy — superHandle.invoke(args) to call original method
             apsProxy = AcceleratedProxy.create(StringOpImpl.class,
                     (obj, method, superHandle, args) -> superHandle.invoke(args));
 
@@ -529,7 +529,7 @@ public class ProxyBenchmark {
 Run: `mvn compile`
 Expected: BUILD SUCCESS
 
-- [ ] **Step 3: Verify existing APS tests still pass**
+- [ ] **Step 3: Verify existing OpenProxy tests still pass**
 
 Run: `mvn test -Dtest=APSFunctionalTest`
 Expected: All tests green
@@ -566,7 +566,7 @@ Run: `mvn test -Dtest=ProxyBenchmark -Djmh.ignoreLock=true`
 If JMH doesn't produce JSON by default, run with explicit format:
 
 ```bash
-mvn test -Dtest=ProxyBenchmark -Djmh.ignoreLock=true 2>&1 | tee /tmp/aps-jmh-output.txt
+mvn test -Dtest=ProxyBenchmark -Djmh.ignoreLock=true 2>&1 | tee /tmp/openproxy-jmh-output.txt
 ```
 
 - [ ] **Step 2: Extract the score table from JMH output**
@@ -588,8 +588,8 @@ From the output, collect benchmark scores. Format them into a table:
 For each scenario, compute:
 
 ```
-APS vs CGLib speedup  = cglib_score / aps_score
-APS vs JavaProxy speedup = javaProxy_score / aps_score
+OpenProxy vs CGLib speedup  = cglib_score / aps_score
+OpenProxy vs JavaProxy speedup = javaProxy_score / aps_score
 ```
 
 - [ ] **Step 4: Write `docs/benchmark-results.md`**
@@ -597,14 +597,14 @@ APS vs JavaProxy speedup = javaProxy_score / aps_score
 Create the file with:
 
 ```markdown
-# APS JMH Benchmark Results
+# OpenProxy JMH Benchmark Results
 
 Date: 2026-08-01 Hardware: <from lscpu / proc/cpuinfo>
 JDK: <java -version>
 
 ## Summary Table
 
-| Scenario      | Direct (ns/op) | APS (ns/op) | CGLib (ns/op) | JavaProxy (ns/op) | APS vs CGLib |
+| Scenario      | Direct (ns/op) | OpenProxy (ns/op) | CGLib (ns/op) | JavaProxy (ns/op) | OpenProxy vs CGLib |
 |---------------|----------------|-------------|---------------|-------------------|--------------|
 | No-op         |                |             |               |                   |              |
 | Passthrough   |                |             |               |                   |              |
@@ -624,7 +624,7 @@ Fill in all actual numbers from the JMH run.
 
 ```bash
 git add docs/benchmark-results.md
-git commit -m "docs: add JMH benchmark results — APS vs CGLib vs JavaProxy vs Direct"
+git commit -m "docs: add JMH benchmark results — OpenProxy vs CGLib vs JavaProxy vs Direct"
 ```
 
 ---
@@ -647,7 +647,7 @@ git commit -m "docs: add JMH benchmark results — APS vs CGLib vs JavaProxy vs 
 Replace `README.md` with:
 
 ```markdown
-# APS — Accelerated Proxy Solution
+# OpenProxy
 
 A high-performance, MethodHandle-powered dynamic proxy library for Java, designed as a drop-in replacement for CGLib.
 
@@ -679,7 +679,7 @@ String greeting = proxy.hello("World");
 
 JMH benchmarks on Java 25, 4 implementations × 6 scenarios:
 
-| Scenario    | Direct  | APS     | CGLib   | JavaProxy | APS vs CGLib |
+| Scenario    | Direct  | OpenProxy     | CGLib   | JavaProxy | OpenProxy vs CGLib |
 |-------------|---------|---------|---------|-----------|--------------|
 | No-op       | X ns/op | X ns/op | X ns/op | X ns/op   | X.X× faster  |
 | Passthrough | X ns/op | X ns/op | X ns/op | X ns/op   | X.X× faster  |
@@ -690,7 +690,7 @@ JMH benchmarks on Java 25, 4 implementations × 6 scenarios:
 
 *Lower is better. Full results: [docs/benchmark-results.md](docs/benchmark-results.md)*
 
-**Key takeaway:** APS outperforms CGLib by X–Y× across all real-world scenarios because MethodHandle dispatch avoids the `Method.invoke()` reflection penalty.
+**Key takeaway:** OpenProxy outperforms CGLib by X–Y× across all real-world scenarios because MethodHandle dispatch avoids the `Method.invoke()` reflection penalty.
 
 ## Requirements
 
@@ -708,7 +708,7 @@ JMH benchmarks on Java 25, 4 implementations × 6 scenarios:
 
 <dependency>
     <groupId>io.github.lamspace</groupId>
-    <artifactId>aps</artifactId>
+    <artifactId>openproxy</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 </dependency>
 ```
@@ -716,14 +716,14 @@ JMH benchmarks on Java 25, 4 implementations × 6 scenarios:
 ### Build from source
 
 ```bash
-git clone https://github.com/lamspace/aps.git
-cd aps
+git clone https://github.com/lamspace/openproxy.git
+cd openproxy
 mvn install -DskipTests
 ```
 
-## APS vs CGLib
+## OpenProxy vs CGLib
 
-| Feature                        | APS                             | CGLib                          |
+| Feature                        | OpenProxy                             | CGLib                          |
 |--------------------------------|---------------------------------|--------------------------------|
 | Dispatch mechanism             | MethodHandle (JVM-native)       | `Method.invoke()` (reflection) |
 | Class loading                  | `defineHiddenClass()` (GC-safe) | Custom ClassLoader             |
@@ -741,10 +741,10 @@ See [docs/migration-guide.md](docs/migration-guide.md) for step-by-step migratio
 
 ## Documentation
 
-- [API Javadoc](https://lamspace.github.io/aps/) *(coming soon)*
+- [API Javadoc](https://lamspace.github.io/openproxy/) *(coming soon)*
 - [Migration Guide](docs/migration-guide.md)
-- [Design Spec](docs/superpowers/specs/2026-08-01-aps-design.md)
-- [Future Roadmap](docs/aps-future-roadmap.md)
+- [Design Spec](docs/superpowers/specs/2026-08-01-openproxy-design.md)
+- [Future Roadmap](docs/openproxy-future-roadmap.md)
 
 ## License
 
@@ -758,7 +758,7 @@ Verify README contains all required sections:
 - 5 秒上手 (Quick Start) ✓
 - 性能数据 (Performance table) ✓ — fill in actual numbers
 - 安装说明 (Installation) ✓
-- CGLib 对比 (APS vs CGLib) ✓
+- CGLib 对比 (OpenProxy vs CGLib) ✓
 
 - [ ] **Step 3: Commit**
 
@@ -773,7 +773,7 @@ git commit -m "docs: write README with quick start, benchmarks, and CGLib compar
 
 **Files:**
 
-- Modify: `src/main/java/io/github/lamspace/APS.java`
+- Modify: `src/main/java/io/github/lamspace/OpenProxy.java`
 - Modify: `src/main/java/io/github/lamspace/generator/ClassGenerator.java`
 - Modify: `src/main/java/io/github/lamspace/generator/MethodDispatcher.java`
 - Modify: `src/main/java/io/github/lamspace/generator/ClinitRegistry.java`
@@ -799,7 +799,7 @@ Create four files:
 
 ```java
 /**
- * APS (Accelerated Proxy Solution) — a high-performance, MethodHandle-based
+ * OpenProxy — a high-performance, MethodHandle-based
  * dynamic proxy library for Java.
  *
  * <h2>Quick start</h2>
@@ -810,7 +810,7 @@ Create four files:
  *   });
  * }</pre>
  *
- * @see io.github.lamspace.APS
+ * @see io.github.lamspace.OpenProxy
  * @see io.github.lamspace.Callback
  * @see io.github.lamspace.ClassFilter
  */
@@ -857,9 +857,9 @@ package io.github.lamspace.loader;
 package io.github.lamspace.internal;
 ```
 
-- [ ] **Step 2: Enhance APS.java Javadoc**
+- [ ] **Step 2: Enhance OpenProxy.java Javadoc**
 
-In `APS.java`, add `@throws` detail to the `create(Class<T>, Callback, ClassFilter, Object...)` method:
+In `OpenProxy.java`, add `@throws` detail to the `create(Class<T>, Callback, ClassFilter, Object...)` method:
 
 Replace the existing class-level javadoc (lines 10-18) with:
 
@@ -934,8 +934,8 @@ git add src/main/java/io/github/lamspace/package-info.java \
         src/main/java/io/github/lamspace/generator/package-info.java \
         src/main/java/io/github/lamspace/loader/package-info.java \
         src/main/java/io/github/lamspace/internal/package-info.java \
-        src/main/java/io/github/lamspace/APS.java
-git commit -m "docs: add package-info files and enhance APS Javadoc"
+        src/main/java/io/github/lamspace/OpenProxy.java
+git commit -m "docs: add package-info files and enhance OpenProxy Javadoc"
 ```
 
 ---
@@ -948,7 +948,7 @@ git commit -m "docs: add package-info files and enhance APS Javadoc"
 
 **Interfaces:**
 
-- Consumes: APS public API, CGLib API, Java Proxy API
+- Consumes: OpenProxy public API, CGLib API, Java Proxy API
 - Produces: complete migration guide with code examples and feature comparison table
 
 - [ ] **Step 1: Write docs/migration-guide.md**
@@ -956,11 +956,11 @@ git commit -m "docs: add package-info files and enhance APS Javadoc"
 Create `docs/migration-guide.md` with:
 
 ```markdown
-# APS Migration Guide
+# OpenProxy Migration Guide
 
-How to migrate from CGLib or `java.lang.reflect.Proxy` to APS.
+How to migrate from CGLib or `java.lang.reflect.Proxy` to OpenProxy.
 
-## CGLib → APS
+## CGLib → OpenProxy
 
 ### Before (CGLib)
 
@@ -980,10 +980,10 @@ enhancer.setCallback((MethodInterceptor) (obj, method, args, proxy) -> {
 MyService proxy = (MyService) enhancer.create();
 ```
 
-### After (APS)
+### After (OpenProxy)
 
 ```java
-import io.github.lamspace.APS;
+import io.github.lamspace.OpenProxy;
 
 MyService proxy = AcceleratedProxy.create(MyService.class, (obj, method, superHandle, args) -> {
     System.out.println("before " + method.getName());
@@ -996,7 +996,7 @@ MyService proxy = AcceleratedProxy.create(MyService.class, (obj, method, superHa
 
 ### Key differences
 
-| CGLib                          | APS                                        |
+| CGLib                          | OpenProxy                                        |
 |--------------------------------|--------------------------------------------|
 | `Enhancer` builder             | `AcceleratedProxy.create()` static factory |
 | `MethodInterceptor` (3 args)   | `Callback` (4 args, includes proxy)        |
@@ -1004,7 +1004,7 @@ MyService proxy = AcceleratedProxy.create(MyService.class, (obj, method, superHa
 | Requires explicit cast         | Generic inference, no cast                 |
 | Custom ClassLoader             | Hidden class, GC-safe                      |
 
-### Method filtering (CGLib CallbackFilter → APS ClassFilter)
+### Method filtering (CGLib CallbackFilter → OpenProxy ClassFilter)
 
 **CGLib:**
 
@@ -1022,7 +1022,7 @@ getName().
 startsWith("get") ?0:1);
 ```
 
-**APS:**
+**OpenProxy:**
 
 ```java
 MyService proxy = AcceleratedProxy.create(MyService.class, interceptor,
@@ -1040,7 +1040,7 @@ enhancer.create(new Class[] {
 },new Object[]{"arg"});
 ```
 
-**APS:**
+**OpenProxy:**
 
 ```java
 AcceleratedProxy.create(MyService .class, callback, null,"arg");
@@ -1048,7 +1048,7 @@ AcceleratedProxy.create(MyService .class, callback, null,"arg");
 
 ---
 
-## Java Proxy → APS
+## Java Proxy → OpenProxy
 
 ### Before (java.lang.reflect.Proxy)
 
@@ -1066,10 +1066,10 @@ Service proxy = (Service) Proxy.newProxyInstance(
 );
 ```
 
-### After (APS)
+### After (OpenProxy)
 
 ```java
-import io.github.lamspace.APS;
+import io.github.lamspace.OpenProxy;
 
 ServiceImpl proxy = AcceleratedProxy.create(ServiceImpl.class,
         (obj, method, superHandle, args) -> {
@@ -1081,7 +1081,7 @@ ServiceImpl proxy = AcceleratedProxy.create(ServiceImpl.class,
 
 ### Key differences
 
-| Java Proxy                    | APS                                        |
+| Java Proxy                    | OpenProxy                                        |
 |-------------------------------|--------------------------------------------|
 | Interface-based only          | Concrete class-based                       |
 | `InvocationHandler` (3 args)  | `Callback` (4 args, includes MethodHandle) |
@@ -1093,7 +1093,7 @@ ServiceImpl proxy = AcceleratedProxy.create(ServiceImpl.class,
 
 ## Feature Comparison
 
-| Feature                        | APS                           | CGLib                      | Java Proxy                    |
+| Feature                        | OpenProxy                           | CGLib                      | Java Proxy                    |
 |--------------------------------|-------------------------------|----------------------------|-------------------------------|
 | Proxies concrete classes       | Yes                           | Yes                        | No (interfaces only)          |
 | Dispatch mechanism             | MethodHandle                  | `Method.invoke`            | `Method.invoke`               |
@@ -1119,7 +1119,7 @@ Read: `docs/migration-guide.md` — check all code examples are correct, API nam
 
 ```bash
 git add docs/migration-guide.md
-git commit -m "docs: add migration guide — CGLib and Java Proxy to APS"
+git commit -m "docs: add migration guide — CGLib and Java Proxy to OpenProxy"
 ```
 
 ---
@@ -1192,4 +1192,4 @@ If no changes needed, skip this step.
 
 **2. Placeholder scan:** The only placeholders are the benchmark scores in Task 4 README — these are marked with placeholder comments and filled from Task 3 data. No TBDs, TODOs, or vague instructions.
 
-**3. Type consistency:** All Java code examples use correct APS API signatures (`Callback`, `ClassFilter`, `AcceleratedProxy.create()`), correct CGLib API (`Enhancer`, `MethodInterceptor`, `MethodProxy`), correct JMH annotations. Javadoc `@see` references match actual class names.
+**3. Type consistency:** All Java code examples use correct OpenProxy API signatures (`Callback`, `ClassFilter`, `AcceleratedProxy.create()`), correct CGLib API (`Enhancer`, `MethodInterceptor`, `MethodProxy`), correct JMH annotations. Javadoc `@see` references match actual class names.

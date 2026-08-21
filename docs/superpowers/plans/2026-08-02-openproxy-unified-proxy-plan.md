@@ -1,4 +1,4 @@
-# APS Unified Proxy Implementation Plan
+# OpenProxy Unified Proxy Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -30,7 +30,7 @@ Create (5 files):
   src/test/java/io/github/lamspace/APSUnifiedTest.java     — unified tests
 
 Modify (8 files):
-  src/main/java/io/github/lamspace/APS.java                — proxy() entry, invokeSuper
+  src/main/java/io/github/lamspace/OpenProxy.java                — proxy() entry, invokeSuper
   src/main/java/io/github/lamspace/generator/ClassGenerator.java  — remove MH[], add dispatch
   src/main/java/io/github/lamspace/generator/InterfaceGenerator.java — add DispatchTarget, dispatch
   src/main/java/io/github/lamspace/generator/MethodDispatcher.java  — change Callback→Interceptor, drop index
@@ -88,7 +88,7 @@ import java.lang.reflect.Method;
  * {@code InterfaceCallback}.
  *
  * <p>To invoke the original superclass method, use
- * {@link APS#invokeSuper(Object, Method, Object[])}.
+ * {@link OpenProxy#invokeSuper(Object, Method, Object[])}.
  *
  * <pre>{@code
  *   Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
@@ -165,7 +165,7 @@ import java.lang.reflect.Method;
  * Provides hashCode-based method dispatch for super-method invocation.
  *
  * <p>Not part of the public API — users call
- * {@link APS#invokeSuper(Object, Method, Object[])} instead.
+ * {@link OpenProxy#invokeSuper(Object, Method, Object[])} instead.
  */
 interface DispatchTarget {
 
@@ -657,11 +657,11 @@ git commit -m "refactor: add DispatchTarget and hashCode dispatch to InterfaceGe
 
 ---
 
-### Task 9: Update `APS.java` — unified `proxy()` entry point
+### Task 9: Update `OpenProxy.java` — unified `proxy()` entry point
 
 **Files:**
 
-- Modify: `src/main/java/io/github/lamspace/APS.java`
+- Modify: `src/main/java/io/github/lamspace/OpenProxy.java`
 
 **Interfaces:**
 
@@ -745,7 +745,7 @@ Delete `create()`, `createInterface()`, `invokeSuper(int, Object[])` overloads.
 
 - [ ] **Step 4: Handle the `LookupManager` import**
 
-`APS.java` already imports from `io.github.lamspace.internal.LookupManager` and `io.github.lamspace.loader.HiddenClassLoader`. The `LookupManager.getLookup(target).defineHiddenClass(bytecode, true)` call replaces both the old `HiddenClassLoader` path (class proxies) and the inline `MethodHandles.lookup()` path (interface proxies).
+`OpenProxy.java` already imports from `io.github.lamspace.internal.LookupManager` and `io.github.lamspace.loader.HiddenClassLoader`. The `LookupManager.getLookup(target).defineHiddenClass(bytecode, true)` call replaces both the old `HiddenClassLoader` path (class proxies) and the inline `MethodHandles.lookup()` path (interface proxies).
 
 This means `HiddenClassLoader` is no longer used and can be deleted (in Task 11).
 
@@ -757,7 +757,7 @@ Expected: compilation errors in test files (old API usage) — expected at this 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/main/java/io/github/lamspace/APS.java
+git add src/main/java/io/github/lamspace/OpenProxy.java
 git commit -m "feat: add unified proxy() entry point and invokeSuper"
 ```
 
@@ -782,7 +782,7 @@ Key adaptation: the `CacheKey.valueOf()` method needs to create keys from `{targ
 
 - [ ] **Step 2: Wire cache into `AcceleratedProxy.proxy()`**
 
-Add cache field to `APS.java`:
+Add cache field to `OpenProxy.java`:
 
 ```java
 private static final WeakCache<ClassLoader, CacheKey, Class<?>> proxyClassCache =
@@ -800,7 +800,7 @@ Expected: BUILD SUCCESS
 
 ```bash
 git add src/main/java/io/github/lamspace/WeakCache.java
-git add src/main/java/io/github/lamspace/APS.java
+git add src/main/java/io/github/lamspace/OpenProxy.java
 git commit -m "feat: add WeakCache for proxy class caching"
 ```
 
@@ -910,17 +910,17 @@ The `int index` parameter is gone — benchmarks that used it for `invokeSuper` 
 
 ```java
 // Before:
-apsProxy =APS.
+apsProxy =OpenProxy.
 
 create(StringOpImpl .class,
-    (obj, method, index, args) ->APS.
+    (obj, method, index, args) ->OpenProxy.
 
 invokeSuper(obj, index, args));
 // After:
-apsProxy =APS.
+apsProxy =OpenProxy.
 
 proxy(StringOpImpl .class,
-    (obj, method, args) ->APS.
+    (obj, method, args) ->OpenProxy.
 
 invokeSuper(obj, method, args));
 ```
@@ -951,7 +951,7 @@ git commit -m "bench: update ProxyBenchmark for unified API"
 - Update API examples from `AcceleratedProxy.create/createInterface` to `AcceleratedProxy.proxy`
 - Update callback examples from `Callback/InterfaceCallback` to `Interceptor`
 - Update `invokeSuper` examples
-- Update the APS vs JavaProxy comparison table (simpler API column)
+- Update the OpenProxy vs JavaProxy comparison table (simpler API column)
 - Update benchmark results table with new numbers
 
 - [ ] **Step 2: Update benchmark results doc**

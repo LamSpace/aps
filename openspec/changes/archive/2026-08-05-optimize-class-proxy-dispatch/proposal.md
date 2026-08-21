@@ -1,6 +1,6 @@
 ## Why
 
-APS class proxy is 3-30× slower than CGLib. The root cause is `bindTo(this)` on every method invocation, which allocates a `BoundMethodHandle` (~10-20ns) and adds one level of indirection to the super-method dispatch path. Replacing `bindTo` with an index-based MethodHandle dispatch table eliminates this allocation entirely, bringing APS closer to CGLib while retaining the MethodHandle architecture.
+OpenProxy class proxy is 3-30× slower than CGLib. The root cause is `bindTo(this)` on every method invocation, which allocates a `BoundMethodHandle` (~10-20ns) and adds one level of indirection to the super-method dispatch path. Replacing `bindTo` with an index-based MethodHandle dispatch table eliminates this allocation entirely, bringing OpenProxy closer to CGLib while retaining the MethodHandle architecture.
 
 ## What Changes
 
@@ -17,7 +17,7 @@ APS class proxy is 3-30× slower than CGLib. The root cause is `bindTo(this)` on
 
 ### Modified Capabilities
 
-- `aps-core`: Change `Callback.intercept` signature from `(Object, Method, MethodHandle, Object[])` to `(Object, Method, int, Object[])`; generated proxies must provide `invokeSuper(int, Object[])` for super method dispatch
+- `openproxy-core`: Change `Callback.intercept` signature from `(Object, Method, MethodHandle, Object[])` to `(Object, Method, int, Object[])`; generated proxies must provide `invokeSuper(int, Object[])` for super method dispatch
 
 ## Impact
 
@@ -25,6 +25,6 @@ APS class proxy is 3-30× slower than CGLib. The root cause is `bindTo(this)` on
 - `MethodDispatcher.java` — override bytecode generation: pass index instead of bound handle
 - `ClassGenerator.java` — add `invokeSuper()` method generation and `MethodHandle[]` static field
 - `ClinitRegistry.java` — update to track index assignments
-- `APS.java` — API surface unchanged (`AcceleratedProxy.create()` signature stays the same)
+- `OpenProxy.java` — API surface unchanged (`AcceleratedProxy.create()` signature stays the same)
 - `APSFunctionalTest.java`, `ProxyBenchmark.java` — update to new Callback API
 - `docs/benchmark-results.md` — re-run and update benchmarks

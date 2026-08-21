@@ -1,6 +1,6 @@
 # 10. Hot Reload / Hot Swap
 
-APS gives you two levers for long-running applications: evicting cached proxy classes (for hot-deployed classes) and swapping interceptors on a live instance.
+OpenProxy gives you two levers for long-running applications: evicting cached proxy classes (for hot-deployed classes) and swapping interceptors on a live instance.
 
 ## Evicting cached proxy classes
 

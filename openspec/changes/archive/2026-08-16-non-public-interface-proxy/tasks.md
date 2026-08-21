@@ -19,7 +19,7 @@
 
 ## 4. Documentation
 
-- [x] 4.1 Update `docs/aps-future-roadmap.md` (mark item 10 已完成 + add a detailed section)
+- [x] 4.1 Update `docs/openproxy-future-roadmap.md` (mark item 10 已完成 + add a detailed section)
 - [x] 4.2 Update `README.md` and `README_CN.md` (feature bullet + example)
 - [x] 4.3 Delta spec already written at propose time; main `openspec/specs/` sync is handled by `openspec archive` / `/openspec-sync-specs`
 - [x] 4.4 Update the `proxy(Class<?>[], …)` Javadoc

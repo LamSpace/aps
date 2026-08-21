@@ -1,6 +1,6 @@
 ## Why
 
-`AcceleratedProxy.proxy()` accepts a single target — one class or one interface — so a single proxy object cannot be used through multiple interfaces. `java.lang.reflect.Proxy.newProxyInstance` supports this via its `Class<?>[]` parameter, and users migrating from it (or wanting one object that is simultaneously a `Greeter` and an `Auditable`) have no equivalent in APS.
+`AcceleratedProxy.proxy()` accepts a single target — one class or one interface — so a single proxy object cannot be used through multiple interfaces. `java.lang.reflect.Proxy.newProxyInstance` supports this via its `Class<?>[]` parameter, and users migrating from it (or wanting one object that is simultaneously a `Greeter` and an `Auditable`) have no equivalent in OpenProxy.
 
 ## What Changes
 

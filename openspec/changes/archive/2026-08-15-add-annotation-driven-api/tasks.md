@@ -44,5 +44,5 @@ tracks the same work at the task level.
 
 ## 7. Documentation
 
-- [x] 7.1 Mark Phase 3 item 3 as 已完成 in `docs/aps-future-roadmap.md` and replace its section
+- [x] 7.1 Mark Phase 3 item 3 as 已完成 in `docs/openproxy-future-roadmap.md` and replace its section
 - [x] 7.2 Add feature bullet + Quick Start + spec link to `README.md` and `README_CN.md`

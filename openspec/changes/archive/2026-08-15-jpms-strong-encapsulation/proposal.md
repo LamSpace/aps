@@ -17,12 +17,12 @@ Proxying a class in a strongly encapsulated module (any package not `open`, incl
 
 ### Modified Capabilities
 
-- `aps-core`: The "Access control with graceful degradation" requirement changes from graceful fallback to fail-fast with an actionable `--add-opens` error for strongly encapsulated modules.
+- `openproxy-core`: The "Access control with graceful degradation" requirement changes from graceful fallback to fail-fast with an actionable `--add-opens` error for strongly encapsulated modules.
 
 ## Impact
 
 - `src/main/java/io/github/lamspace/internal/LookupManager.java` — fail-fast on `IllegalAccessException`; Javadoc updated.
 - `src/main/java/io/github/lamspace/AcceleratedProxy.java` — re-throw `IllegalArgumentException` in `generateProxyClass`.
 - Tests: `internal/LookupManagerTest.java` (correct the `String.class` premise + add a fail-fast test), new `JpmsStrongEncapsulationTest.java`.
-- Docs: `docs/aps-future-roadmap.md`, `README.md`, `README_CN.md`.
+- Docs: `docs/openproxy-future-roadmap.md`, `README.md`, `README_CN.md`.
 - No public API change, no hot-path change. Behavior change only for strongly encapsulated module targets (which previously always failed with a confusing error anyway).

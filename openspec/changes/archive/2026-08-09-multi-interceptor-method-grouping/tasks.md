@@ -31,5 +31,5 @@
 
 ## 6. Documentation
 
-- [x] 6.1 Update `docs/aps-future-roadmap.md` — mark Phase 2 as completed
+- [x] 6.1 Update `docs/openproxy-future-roadmap.md` — mark Phase 2 as completed
 - [x] 6.2 Update Javadoc on `AcceleratedProxy` — replace `ClassFilter` references with `Group`

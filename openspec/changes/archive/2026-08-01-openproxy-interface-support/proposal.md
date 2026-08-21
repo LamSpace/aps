@@ -1,6 +1,6 @@
 ## Why
 
-APS currently only supports proxying concrete classes (generating subclasses). Users needing interface proxies must fall back to JDK's `java.lang.reflect.Proxy` — which uses reflection-based dispatch, undermining APS's core value of MethodHandle-based performance. Adding interface support makes APS a unified alternative to both JDK Proxy and CGLib in a single API.
+OpenProxy currently only supports proxying concrete classes (generating subclasses). Users needing interface proxies must fall back to JDK's `java.lang.reflect.Proxy` — which uses reflection-based dispatch, undermining OpenProxy's core value of MethodHandle-based performance. Adding interface support makes OpenProxy a unified alternative to both JDK Proxy and CGLib in a single API.
 
 ## What Changes
 
@@ -14,7 +14,7 @@ APS currently only supports proxying concrete classes (generating subclasses). U
 
 ### New Capabilities
 
-- `aps-interface-proxy`: Generate runtime proxy implementations for Java interfaces, routing all method calls through a user-provided `InterfaceCallback` handler backed by MethodHandle-based dispatch (not reflection)
+- `openproxy-interface-proxy`: Generate runtime proxy implementations for Java interfaces, routing all method calls through a user-provided `InterfaceCallback` handler backed by MethodHandle-based dispatch (not reflection)
 
 ### Modified Capabilities
 
@@ -23,6 +23,6 @@ APS currently only supports proxying concrete classes (generating subclasses). U
 ## Impact
 
 - **New files:** `InterfaceCallback.java`, `InterfaceDispatcher.java`, `InterfaceGenerator.java`, `BytecodeUtils.java`
-- **Modified files:** `APS.java` (add `createInterface()` overloads), `MethodDispatcher.java` (delegate to BytecodeUtils), `ClassGenerator.java` (delegate to BytecodeUtils)
+- **Modified files:** `OpenProxy.java` (add `createInterface()` overloads), `MethodDispatcher.java` (delegate to BytecodeUtils), `ClassGenerator.java` (delegate to BytecodeUtils)
 - **Dependencies:** No new external dependencies
 - **API surface:** Two new public types (`InterfaceCallback`, `AcceleratedProxy.createInterface()` overloads); existing API unchanged

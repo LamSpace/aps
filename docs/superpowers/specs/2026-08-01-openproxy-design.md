@@ -1,10 +1,10 @@
-# APS Design — Accelerated Proxy Solution
+# OpenProxy Design
 
 Date: 2026-08-01 Status: draft
 
 ## 1. 定位
 
-APS 是一个高性能 Java 运行时动态代理库，面向框架作者，目标是取代 CGLib 成为 Java 代理基础设施的事实标准。
+OpenProxy 是一个高性能 Java 运行时动态代理库，面向框架作者，目标是取代 CGLib 成为 Java 代理基础设施的事实标准。
 
 **差异化：** 与 CGLib 功能对齐，但用 `MethodHandle` + `MethodHandles.Lookup.defineHiddenClass()` 实现更快的方法调用。不做上层工具，只做底层引擎。
 
@@ -52,7 +52,7 @@ APS 是一个高性能 Java 运行时动态代理库，面向框架作者，目�
 
 | 层               | 组件                | 职责                                               |
 |------------------|---------------------|----------------------------------------------------|
-| Public API       | `APS`               | 单一入口，静态工厂方法                             |
+| Public API       | `OpenProxy`               | 单一入口，静态工厂方法                             |
 | Bytecode Engine  | `ClassGenerator`    | ASM 访问目标类元数据，生成子类字节码               |
 |                  | `MethodDispatcher`  | 生成每个重写方法的分派逻辑 + MethodHandle 超类绑定 |
 | Class Definition | `HiddenClassLoader` | 用 `defineHiddenClass` 装载字节码，管理类生命周期  |
@@ -66,7 +66,7 @@ user.method()  →  [生成的子类].method()
     →  superHandle.invoke(args) // MethodHandle 绑定到超类，零反射
 ```
 
-`superHandle` 是预先绑定到父类 `method` 的 MethodHandle，handler 可以直接调用，无需 `Method.invoke`。这是 APS 相比 CGLib 性能差异化的关键。
+`superHandle` 是预先绑定到父类 `method` 的 MethodHandle，handler 可以直接调用，无需 `Method.invoke`。这是 OpenProxy 相比 CGLib 性能差异化的关键。
 
 ## 4. API 设计
 
@@ -130,7 +130,7 @@ public interface ClassFilter {
 ### 尽量 (Nice to have)
 
 - Javadoc
-- 迁移指南（从 CGLib/Proxy 到 APS）
+- 迁移指南（从 CGLib/Proxy 到 OpenProxy）
 
 ### 不做 (Out of scope for v1)
 
@@ -148,7 +148,7 @@ public interface ClassFilter {
 | 层面     | 内容                                             | 工具    |
 |----------|--------------------------------------------------|---------|
 | 单元测试 | 代理类生成、方法拦截、参数传递、返回值、异常穿透 | JUnit 5 |
-| 性能基准 | APS vs CGLib vs Proxy 直调和代理调用的每操作延迟 | JMH     |
+| 性能基准 | OpenProxy vs CGLib vs Proxy 直调和代理调用的每操作延迟 | JMH     |
 | 正确性   | Public API 行为契约                              | JUnit 5 |
 
 ### v1 成功标准

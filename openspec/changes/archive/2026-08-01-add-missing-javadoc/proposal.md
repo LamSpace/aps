@@ -1,6 +1,6 @@
 ## Why
 
-Several public and protected methods, constructors, and fields across the APS codebase lack Javadoc documentation. This reduces code readability, makes the public API harder to understand for consumers, and undermines the professionalism of the library. Adding comprehensive Javadoc ensures that all public-facing API elements are self-documenting and consistent with the already-documented portions of the codebase.
+Several public and protected methods, constructors, and fields across the OpenProxy codebase lack Javadoc documentation. This reduces code readability, makes the public API harder to understand for consumers, and undermines the professionalism of the library. Adding comprehensive Javadoc ensures that all public-facing API elements are self-documenting and consistent with the already-documented portions of the codebase.
 
 ## What Changes
 

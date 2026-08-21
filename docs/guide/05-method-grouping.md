@@ -1,6 +1,6 @@
 # 5. Method Grouping
 
-A single interceptor is often not enough: you may want one behaviour for getters, another for setters, and none for everything else. APS models this with `Group`.
+A single interceptor is often not enough: you may want one behaviour for getters, another for setters, and none for everything else. OpenProxy models this with `Group`.
 
 ## `Group.of` and `Group.otherwise`
 
@@ -43,7 +43,7 @@ Any method that matches **no** group is not intercepted at all: its override is 
 
 ## A note on ambiguous matches
 
-If a method matches several groups, the first one wins and APS logs a `WARNING`
+If a method matches several groups, the first one wins and OpenProxy logs a `WARNING`
 (helpful for debugging overlapping predicates).
 
 Next: [Annotation-Driven API](06-annotation-api.md).

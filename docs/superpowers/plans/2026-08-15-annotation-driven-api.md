@@ -929,7 +929,7 @@ git commit -m "bench: add annotation-driven vs programmatic benchmark"
 ### Task 7: documentation
 
 **Files:**
-- Modify: `docs/aps-future-roadmap.md`
+- Modify: `docs/openproxy-future-roadmap.md`
 - Modify: `README.md`
 - Modify: `README_CN.md`
 
@@ -939,7 +939,7 @@ git commit -m "bench: add annotation-driven vs programmatic benchmark"
 
 - [x] **Step 1: Update the roadmap**
 
-In `docs/aps-future-roadmap.md`, change the Phase 3 table row 3 from `**注解驱动 API**` to `**注解驱动 API**（已完成）`, and replace the existing `### 注解驱动 API` section (the one with the `@Around("get*")` example) with:
+In `docs/openproxy-future-roadmap.md`, change the Phase 3 table row 3 from `**注解驱动 API**` to `**注解驱动 API**（已完成）`, and replace the existing `### 注解驱动 API` section (the one with the `@Around("get*")` example) with:
 
 ```markdown
 ### 注解驱动 API（已完成）
@@ -1036,7 +1036,7 @@ String s = proxy.getGreeting(); // 经由 measure() 路由
 - [x] **Step 4: Commit**
 
 ```bash
-git add docs/aps-future-roadmap.md README.md README_CN.md
+git add docs/openproxy-future-roadmap.md README.md README_CN.md
 git commit -m "docs: document annotation-driven API in roadmap and READMEs"
 ```
 

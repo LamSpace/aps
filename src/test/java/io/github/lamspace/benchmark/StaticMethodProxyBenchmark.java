@@ -28,11 +28,11 @@ import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Measures the cost of APS static-method proxying on top of the caller's
+ * Measures the cost of OpenProxy static-method proxying on top of the caller's
  * chosen invocation mechanism (reflection or MethodHandle). Static methods
- * are compile-time bound, so the entry mechanism — not APS — dominates.
+ * are compile-time bound, so the entry mechanism — not OpenProxy — dominates.
  *
- * <p>{@code proxyPassthrough} isolates APS's shadow-dispatch overhead (a
+ * <p>{@code proxyPassthrough} isolates OpenProxy's shadow-dispatch overhead (a
  * non-matching shadow that direct-{@code INVOKESTATIC}s the original, with no
  * interceptor); {@code proxyIntercepted}/{@code proxyMethodHandle} measure the
  * full intercepted round trip (box + one {@code intercept} call + the

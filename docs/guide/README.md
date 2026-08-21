@@ -1,12 +1,12 @@
-# APS User Guide
+# OpenProxy User Guide
 
-A step-by-step guide to **APS** (Accelerated Proxy Solution) — a high-performance dynamic proxy library for Java that generates bytecode at runtime and dispatches super calls through a hashCode switch with direct `INVOKESPECIAL`, reaching near-native performance.
+A step-by-step guide to **OpenProxy** — a high-performance dynamic proxy library for Java that generates bytecode at runtime and dispatches super calls through a hashCode switch with direct `INVOKESPECIAL`, reaching near-native performance.
 
 Each chapter is self-contained: a short explanation, a runnable code example, the expected output, and the gotchas/limits you need to know.
 
 ## Chapters
 
-1. [Introduction](01-introduction.md) — what APS is, its highlights, and how it compares to CGLib and `java.lang.reflect.Proxy`
+1. [Introduction](01-introduction.md) — what OpenProxy is, its highlights, and how it compares to CGLib and `java.lang.reflect.Proxy`
 2. [Installation](02-installation.md) — build from source and declare the dependency
 3. [Quick Start](03-quick-start.md) — your first class and interface proxies
 4. [Interceptor API](04-interceptor-api.md) — the `Interceptor` contract, `invokeSuper`, return values, and exceptions

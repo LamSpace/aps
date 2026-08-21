@@ -1,6 +1,6 @@
 ## Why
 
-The `aps-unified-proxy` spec already requires hash collision detection at bytecode generation time ("Hash collision detection at generation time" scenario), but `DispatchGenerator.resolveHashes()` exists only as dead code — it is never called from `ClassGenerator.generate()` or `InterfaceGenerator.generate()`. Both generators use `computeHash()` directly with no collision check. Since `Method.hashCode()` equals `declaringClass.getName().hashCode() ^ methodName.hashCode()` (parameter types excluded), overloaded methods in the target class produce identical hashes, causing the if-else chain to silently route all colliding methods to the first matching branch and leave the rest unreachable.
+The `openproxy-unified-proxy` spec already requires hash collision detection at bytecode generation time ("Hash collision detection at generation time" scenario), but `DispatchGenerator.resolveHashes()` exists only as dead code — it is never called from `ClassGenerator.generate()` or `InterfaceGenerator.generate()`. Both generators use `computeHash()` directly with no collision check. Since `Method.hashCode()` equals `declaringClass.getName().hashCode() ^ methodName.hashCode()` (parameter types excluded), overloaded methods in the target class produce identical hashes, causing the if-else chain to silently route all colliding methods to the first matching branch and leave the rest unreachable.
 
 ## What Changes
 
@@ -17,7 +17,7 @@ The `aps-unified-proxy` spec already requires hash collision detection at byteco
 
 ### Modified Capabilities
 
-- `aps-unified-proxy`: The "Hash collision detection at generation time" scenario is already specified but the implementation does not deliver it. No spec change needed — this change brings the code into compliance with the existing requirement.
+- `openproxy-unified-proxy`: The "Hash collision detection at generation time" scenario is already specified but the implementation does not deliver it. No spec change needed — this change brings the code into compliance with the existing requirement.
 
 ## Impact
 

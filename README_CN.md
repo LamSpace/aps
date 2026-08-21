@@ -1,4 +1,4 @@
-# 🚀 APS — 加速代理解决方案
+# 🚀 OpenProxy
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/java-25%2B-orange)](https://jdk.java.net/)
@@ -6,9 +6,9 @@
 
 [English](README.md) | [用户指导](docs/guide/README_CN.md) | [基准测试报告](docs/benchmark-results_cn.md)
 
-一个高性能 Java 动态代理库。APS 在运行时用 ASM 生成代理类，通过 **hashCode 驱动的开关 + 直接 `INVOKESPECIAL` 父类调用** 分发每次拦截——无反射、无 `MethodHandle`、JIT 可内联。 接口代理与 `java.lang.reflect.Proxy` 持平，默认方法快约 6.5×。
+一个高性能 Java 动态代理库。OpenProxy 在运行时用 ASM 生成代理类，通过 **hashCode 驱动的开关 + 直接 `INVOKESPECIAL` 父类调用** 分发每次拦截——无反射、无 `MethodHandle`、JIT 可内联。 接口代理与 `java.lang.reflect.Proxy` 持平，默认方法快约 6.5×。
 
-## ✨ 为什么选择 APS
+## ✨ 为什么选择 OpenProxy
 
 - **直接 `super` 调度** — `invokeSuper` 编译为直接 `super.method(args)`；无反射、无
   `MethodHandle`、JIT 可内联。
@@ -131,8 +131,8 @@ JMH 基准测试 | Java 25（单位 ns/op，越低越好）。完整表格、方
 ## 📦 安装
 
 ```bash
-git clone https://github.com/lamspace/aps.git
-cd aps
+git clone https://github.com/lamspace/openproxy.git
+cd openproxy
 mvn install -DskipTests
 ```
 
@@ -142,14 +142,14 @@ Maven Central 发布进行中；在此之前，请从本地仓库引用：
 
 <dependency>
     <groupId>io.github.lamspace</groupId>
-    <artifactId>aps</artifactId>
+    <artifactId>openproxy</artifactId>
     <version>0.1.0-SNAPSHOT</version>
 </dependency>
 ```
 
-## 🆚 APS vs 其他方案
+## 🆚 OpenProxy vs 其他方案
 
-| 特性              | APS                  | CGLib                       | `java.lang.reflect.Proxy` |
+| 特性              | OpenProxy                  | CGLib                       | `java.lang.reflect.Proxy` |
 |-------------------|----------------------|-----------------------------|---------------------------|
 | 代理具体类        | ✅                   | ✅                          | ❌                        |
 | 父类调用机制      | 直接 `INVOKESPECIAL` | `MethodProxy` + `FastClass` | 不适用                    |

@@ -18,7 +18,7 @@ No public API changes: `AcceleratedProxy.invokeSuper`, `AcceleratedProxy.proxy`,
 
 ### Modified Capabilities
 
-- `aps-interface-proxy`: the "Super invocation on interface proxy" requirement changes — default methods now invoke their default implementation instead of throwing `AbstractMethodError`; non-default interface methods still throw.
+- `openproxy-interface-proxy`: the "Super invocation on interface proxy" requirement changes — default methods now invoke their default implementation instead of throwing `AbstractMethodError`; non-default interface methods still throw.
 
 ## Impact
 

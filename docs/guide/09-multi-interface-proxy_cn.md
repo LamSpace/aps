@@ -16,7 +16,7 @@ Auditable a = (Auditable) p;
 
 ## 方法合并与冲突
 
-接口之间常共享方法（如共有的 `getName()`）。APS 在创建时解析合并、去重后的方法集：
+接口之间常共享方法（如共有的 `getName()`）。OpenProxy 在创建时解析合并、去重后的方法集：
 
 - 相同签名 + 相同返回类型 → **合并**为一份实现。
 - 相同签名 + **不同**返回类型 → `IllegalArgumentException`。

@@ -1,6 +1,6 @@
 ## Why
 
-Interface proxying currently supports public interfaces only — the generated hidden class is defined in APS's own package (`io.github.lamspace`), so it cannot implement a package-private interface (the same restriction as `java.lang.reflect.Proxy`). This closes Phase 3 item 10 by defining the hidden class in the interface's own package when a non-public interface is present.
+Interface proxying currently supports public interfaces only — the generated hidden class is defined in OpenProxy's own package (`io.github.lamspace`), so it cannot implement a package-private interface (the same restriction as `java.lang.reflect.Proxy`). This closes Phase 3 item 10 by defining the hidden class in the interface's own package when a non-public interface is present.
 
 ## What Changes
 

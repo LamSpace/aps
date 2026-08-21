@@ -197,7 +197,7 @@ with:
             if (params.interfaces() != null) {
                 Class<?>[] interfaces = params.interfaces();
                 Class<?> anchor = nonPublicAnchor(interfaces);
-                // All-public interfaces keep the historical APS package; a
+                // All-public interfaces keep the historical OpenProxy package; a
                 // non-public anchor places the class in that interface's
                 // package so it can implement a package-private interface.
                 String packagePrefix = "io/github/lamspace/";
@@ -481,7 +481,7 @@ git commit -m "test: guard the all-public interface path against a private-looku
 ### Task 4: Documentation + final regression gate
 
 **Files:**
-- Modify: `docs/aps-future-roadmap.md`
+- Modify: `docs/openproxy-future-roadmap.md`
 - Modify: `README.md`
 - Modify: `README_CN.md`
 - Create: `openspec/specs/non-public-interface-proxy/spec.md`
@@ -492,7 +492,7 @@ git commit -m "test: guard the all-public interface path against a private-looku
 
 - [ ] **Step 1: Update the roadmap**
 
-In `docs/aps-future-roadmap.md`:
+In `docs/openproxy-future-roadmap.md`:
 
 1. Change item 10's row (line 47) from:
 
@@ -660,7 +660,7 @@ Expected: PASS — the entire suite (all prior feature tests plus the new `NonPu
 - [ ] **Step 7: Commit**
 
 ```bash
-git add docs/aps-future-roadmap.md README.md README_CN.md \
+git add docs/openproxy-future-roadmap.md README.md README_CN.md \
         openspec/specs/non-public-interface-proxy/spec.md \
         src/main/java/io/github/lamspace/AcceleratedProxy.java
 git commit -m "docs: document non-public interface proxy in roadmap, README, openspec, and Javadoc"

@@ -244,7 +244,7 @@ git commit -m "feat: surface module-access error through proxy() unchanged"
 ### Task 3: Documentation
 
 **Files:**
-- Modify: `docs/aps-future-roadmap.md`
+- Modify: `docs/openproxy-future-roadmap.md`
 - Modify: `README.md`
 - Modify: `README_CN.md`
 
@@ -252,7 +252,7 @@ git commit -m "feat: surface module-access error through proxy() unchanged"
 
 - [ ] **Step 1: Update the roadmap**
 
-In `docs/aps-future-roadmap.md`, make four edits:
+In `docs/openproxy-future-roadmap.md`, make four edits:
 
 (a) Mark item 8 done — change `**JPMS 强封装模块**` (in the Phase 3 table row) to `**JPMS 强封装模块**（已完成）`.
 
@@ -295,7 +295,7 @@ Insert a JPMS section between the Requirements and Installation sections (after 
 ```markdown
 ## 🧩 JPMS / Strong Encapsulation
 
-APS class proxies are defined in the target class's package via
+OpenProxy class proxies are defined in the target class's package via
 `MethodHandles.privateLookupIn`. When the target class lives in a
 strongly encapsulated module — any package that is not `open`, including
 `java.base` packages such as `java.util` — `privateLookupIn` is denied and
@@ -340,7 +340,7 @@ java.base/java.util=ALL-UNNAMED to the JVM arguments, ...
 - [ ] **Step 4: Commit**
 
 ```bash
-git add docs/aps-future-roadmap.md README.md README_CN.md
+git add docs/openproxy-future-roadmap.md README.md README_CN.md
 git commit -m "docs: document JPMS strong encapsulation handling"
 ```
 
@@ -351,5 +351,5 @@ git commit -m "docs: document JPMS strong encapsulation handling"
 - [ ] `mvn -s /home/lam/repo/settings.xml -q test` — all green.
 - [ ] `LookupManagerTest` has the fail-fast test and the corrected `String.class` → `LookupManager.class` test.
 - [ ] `JpmsStrongEncapsulationTest` passes (actionable `--add-opens` cause).
-- [ ] `docs/aps-future-roadmap.md` item 8 marked 已完成 and item 10 added.
+- [ ] `docs/openproxy-future-roadmap.md` item 8 marked 已完成 and item 10 added.
 - [ ] README (EN + CN) carry the JPMS section.

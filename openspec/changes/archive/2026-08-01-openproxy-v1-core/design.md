@@ -1,6 +1,6 @@
 ## Context
 
-This is a greenfield project — no existing code to integrate with. The project is a Maven-based Java 25 library (groupId: `io.github.lamspace`, artifactId: `aps`). The only constraint is the Java 25 runtime and the Maven build toolchain.
+This is a greenfield project — no existing code to integrate with. The project is a Maven-based Java 25 library (groupId: `io.github.lamspace`, artifactId: `openproxy`). The only constraint is the Java 25 runtime and the Maven build toolchain.
 
 See proposal.md for motivation.
 
@@ -83,11 +83,11 @@ See proposal.md for motivation.
 
 - **[Risk]** `Lookup.findSpecial` on a hidden class for a method in a different package may fail under strict module boundaries. **Mitigation:** The `NESTMATE` option (`true` parameter in `defineHiddenClass`) grants the hidden class access to the lookup class's nest — but for cross-package targets, `privateLookupIn` is needed. The graceful fallback covers this case.
 
-- **[Trade-off]** Single Callback model means no built-in support for per-method interceptors. Framework authors who need this must implement routing logic in their Callback. This is by design — it keeps APS simple and matches the existing mental model.
+- **[Trade-off]** Single Callback model means no built-in support for per-method interceptors. Framework authors who need this must implement routing logic in their Callback. This is by design — it keeps OpenProxy simple and matches the existing mental model.
 
 ## Migration Plan
 
-N/A — greenfield project. Migration guides from CGLib/Proxy to APS are a nice-to-have for v1 (documented in the design spec but not blocking).
+N/A — greenfield project. Migration guides from CGLib/Proxy to OpenProxy are a nice-to-have for v1 (documented in the design spec but not blocking).
 
 ## Open Questions
 

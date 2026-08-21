@@ -27,7 +27,7 @@
 
 ## 5. AcceleratedProxy.createInterface () Public API
 
-- [x] 5.1 Add `createInterface(Class<T>, InterfaceCallback)` and `createInterface(Class<T>, InterfaceCallback, ClassFilter)` methods to `APS.java` with `isInterface()` validation and `InterfaceGenerator` wiring
+- [x] 5.1 Add `createInterface(Class<T>, InterfaceCallback)` and `createInterface(Class<T>, InterfaceCallback, ClassFilter)` methods to `OpenProxy.java` with `isInterface()` validation and `InterfaceGenerator` wiring
 - [x] 5.2 Run `mvn -s /home/lam/repo/settings.xml test` — existing tests must still pass
 - [x] 5.3 Commit: `git commit -m "feat: add AcceleratedProxy.createInterface() for interface proxies"`
 

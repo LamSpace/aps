@@ -1,6 +1,6 @@
 # 8. Static Method Proxy
 
-Static methods are compile-time bound, so a subclass cannot override them. APS instead generates a **shadow class** whose `public static` methods mirror the target's, routing them through the same `Interceptor`.
+Static methods are compile-time bound, so a subclass cannot override them. OpenProxy instead generates a **shadow class** whose `public static` methods mirror the target's, routing them through the same `Interceptor`.
 
 ## `AcceleratedProxy.proxyStatic`
 

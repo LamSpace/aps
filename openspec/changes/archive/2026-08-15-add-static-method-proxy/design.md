@@ -19,7 +19,7 @@
 
 ## Decisions
 
-1. **`proxyStatic` returns `Class<?>`, not a wrapper or `MethodHandle`.** The caller already chooses reflection or `MethodHandle`; the performance ceiling is set by that entry mechanism, not by APS, so a bare `Class` is the minimal artifact and adds no indirection. Alternative (a `MethodHandle`-returning helper) was rejected as extra API surface for no measured gain.
+1. **`proxyStatic` returns `Class<?>`, not a wrapper or `MethodHandle`.** The caller already chooses reflection or `MethodHandle`; the performance ceiling is set by that entry mechanism, not by OpenProxy, so a bare `Class` is the minimal artifact and adds no indirection. Alternative (a `MethodHandle`-returning helper) was rejected as extra API surface for no measured gain.
 
 2. **Generated class `extends Object`, defined in `io.github.lamspace`, no `LookupManager`.** The feature targets `public` static methods only, so no in-target-package access or JPMS `--add-opens` is needed. Because the class is unrelated to the target (no inheritance), "shadowing" is just declaring same-signature statics — there is no method-hiding verifier constraint. Alternative (extend the target) was rejected: it drags in constructor/abstract/final-class concerns for no benefit.
 

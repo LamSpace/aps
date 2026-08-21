@@ -27,8 +27,8 @@
 
 ## 4. Documentation and benchmark verification
 
-- [x] 4.1 Mark Phase 3 item 2 (`多接口代理`) as 已完成 in `docs/aps-future-roadmap.md` and add a `### 多接口代理（已完成）` subsection
+- [x] 4.1 Mark Phase 3 item 2 (`多接口代理`) as 已完成 in `docs/openproxy-future-roadmap.md` and add a `### 多接口代理（已完成）` subsection
 - [x] 4.2 Add a "Multi-interface proxy" feature bullet and Quick Start example to `README.md` and `README_CN.md`
-- [x] 4.3 Add a `java.lang.reflect.Proxy` → APS multi-interface mapping note to `docs/migration-guide.md`
+- [x] 4.3 Add a `java.lang.reflect.Proxy` → OpenProxy multi-interface mapping note to `docs/migration-guide.md`
 - [x] 4.4 Run the existing JMH suite and confirm interface/class numbers are unchanged vs `docs/benchmark-results.md`
 - [x] 4.5 Commit

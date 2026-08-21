@@ -1,15 +1,15 @@
-# APS Interface Proxy Support — Design Spec
+# OpenProxy Interface Proxy Support — Design Spec
 
 Date: 2026-08-01 Status: draft
 
 ## Motivation
 
-APS v1 supports proxying concrete classes only (`ClassGenerator` generates a subclass that `extends TargetClass`). It cannot proxy interfaces because:
+OpenProxy v1 supports proxying concrete classes only (`ClassGenerator` generates a subclass that `extends TargetClass`). It cannot proxy interfaces because:
 
 1. JVM forbids a class from `extends` an interface
 2. `findSpecial` has no super implementation to bind for abstract methods
 
-Adding interface support makes APS a complete alternative to both JDK `java.lang.reflect.Proxy` (interfaces) and CGLib (classes) in a single API, with MethodHandle-based dispatch instead of reflection.
+Adding interface support makes OpenProxy a complete alternative to both JDK `java.lang.reflect.Proxy` (interfaces) and CGLib (classes) in a single API, with MethodHandle-based dispatch instead of reflection.
 
 ## Design
 
@@ -32,7 +32,7 @@ public interface InterfaceCallback {
 }
 ```
 
-New entry point on `APS`:
+New entry point on `OpenProxy`:
 
 ```java
 // Interface proxy (no constructorArgs — always extends Object)
@@ -61,7 +61,7 @@ invoke(args);
 });
 
 // Interface proxy (3 args, no superHandle)
-        APS.
+        OpenProxy.
 
 createInterface(Runnable .class, (proxy, method, args) ->{
         System.out.
@@ -76,7 +76,7 @@ println("running");
 Interface proxies generate a class that `extends Object implements TargetInterface`:
 
 ```
-class Target$$APS$$N extends java.lang.Object implements Target {
+class Target$$OpenProxy$$N extends java.lang.Object implements Target {
     private final InterfaceCallback _callback;
     private static Method _method$m$0, _method$m$1, ...
 
@@ -120,7 +120,7 @@ No MethodHandle fields or `<clinit>` MethodHandle setup — only `Method` object
 
 | File       | Change                                                       |
 |------------|--------------------------------------------------------------|
-| `APS.java` | Add `createInterface()` overloads with `isInterface()` guard |
+| `OpenProxy.java` | Add `createInterface()` overloads with `isInterface()` guard |
 
 **Untouched files:**
 

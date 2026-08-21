@@ -1,6 +1,6 @@
 ## Context
 
-The APS project has 13 main Java source files under `src/main/java/io/github/lamspace/`. Some public/protected members have Javadoc; others do not. The existing Javadoc follows standard conventions: brief description, `@param`, `@return`, `@throws` tags where applicable. Class-level Javadoc includes an `@author` tag.
+The OpenProxy project has 13 main Java source files under `src/main/java/io/github/lamspace/`. Some public/protected members have Javadoc; others do not. The existing Javadoc follows standard conventions: brief description, `@param`, `@return`, `@throws` tags where applicable. Class-level Javadoc includes an `@author` tag.
 
 No existing tooling enforces Javadoc presence (no Checkstyle or similar lint rules).
 

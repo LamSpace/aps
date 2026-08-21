@@ -1,6 +1,6 @@
 ## Why
 
-Code review identified 9 issues in the APS codebase: a critical functional gap (WeakCache implemented but not integrated, violating the `aps-core` and `aps-unified-proxy` caching specification), correctness edge cases (null constructor arguments break `findConstructor`, `ClinitRegistry` is not thread-safe), test hygiene problems (class names mismatching file names), and missing test coverage for internal components (`WeakCache`, `ClinitRegistry`, `LookupManager`, `BytecodeUtils`, `DispatchGenerator`). Fixing these ensures the codebase meets its own spec requirements and is production-ready.
+Code review identified 9 issues in the OpenProxy codebase: a critical functional gap (WeakCache implemented but not integrated, violating the `openproxy-core` and `openproxy-unified-proxy` caching specification), correctness edge cases (null constructor arguments break `findConstructor`, `ClinitRegistry` is not thread-safe), test hygiene problems (class names mismatching file names), and missing test coverage for internal components (`WeakCache`, `ClinitRegistry`, `LookupManager`, `BytecodeUtils`, `DispatchGenerator`). Fixing these ensures the codebase meets its own spec requirements and is production-ready.
 
 ## What Changes
 

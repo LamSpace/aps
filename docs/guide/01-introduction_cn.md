@@ -1,8 +1,8 @@
 # 1. 简介
 
-APS（ **Accelerated Proxy Solution**）是一个高性能 Java 动态代理库。它在运行时用 ASM 生成代理类，把每个被拦截的方法调用路由到一个 hashCode 驱动的 `dispatch()` 开关，开关里 直接生成 `INVOKESPECIAL super.method(args)` —— **热路径上零反射、零 MethodHandle**。
+OpenProxy是一个高性能 Java 动态代理库。它在运行时用 ASM 生成代理类，把每个被拦截的方法调用路由到一个 hashCode 驱动的 `dispatch()` 开关，开关里 直接生成 `INVOKESPECIAL super.method(args)` —— **热路径上零反射、零 MethodHandle**。
 
-APS 类代理在有实际工作的场景中比 CGLib 快约 3–5×，接口代理与 `java.lang.reflect.Proxy` 持平，默认方法比 JDK 快约 6×。
+OpenProxy 类代理在有实际工作的场景中比 CGLib 快约 3–5×，接口代理与 `java.lang.reflect.Proxy` 持平，默认方法比 JDK 快约 6×。
 
 ## 核心亮点
 
@@ -40,9 +40,9 @@ String greeting = proxy.hello("World");
 4. 每次调用时，重写方法装箱参数、调用 `Interceptor.intercept(proxy, method, args)`、拆箱返回值。 若拦截器调用 `invokeSuper`，则 `dispatch()` 按 `method.hashCode()` 分支，直接跳转
    `INVOKESPECIAL super.method(...)`。
 
-## APS vs 其他方案
+## OpenProxy vs 其他方案
 
-|                   | APS                  | CGLib                       | `java.lang.reflect.Proxy` |
+|                   | OpenProxy                  | CGLib                       | `java.lang.reflect.Proxy` |
 |-------------------|----------------------|-----------------------------|---------------------------|
 | 代理具体类        | ✅                   | ✅                          | ❌（仅接口）              |
 | 父类调用机制      | 直接 `INVOKESPECIAL` | `MethodProxy` + `FastClass` | 不适用                    |
