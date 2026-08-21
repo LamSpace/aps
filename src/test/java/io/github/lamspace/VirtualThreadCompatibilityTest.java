@@ -74,12 +74,18 @@ class VirtualThreadCompatibilityTest {
         // compilation fall outside the measured steady-state window.
         proxy.hello("warmup");
 
+        IntFunction<String> task = i -> proxy.hello("t" + i);
+
+        // Also warm the task lambda's string-concat invokedynamic: it is
+        // lazily linked on first use and would otherwise pin the carrier
+        // thread once inside the measured window.
+        task.apply(0);
+
         try (Recording recording = new Recording()) {
             recording.enable("jdk.VirtualThreadPinned").withStackTrace();
             recording.start();
             try {
-                runConcurrently(10_000, i -> proxy.hello("t" + i),
-                        i -> "Hello, t" + i);
+                runConcurrently(10_000, task, i -> "Hello, t" + i);
             } finally {
                 recording.stop();
             }
