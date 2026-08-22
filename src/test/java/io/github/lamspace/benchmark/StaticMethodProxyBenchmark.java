@@ -16,7 +16,7 @@
 
 package io.github.lamspace.benchmark;
 
-import io.github.lamspace.AcceleratedProxy;
+import io.github.lamspace.OpenProxy;
 import io.github.lamspace.Group;
 import io.github.lamspace.Interceptor;
 import org.openjdk.jmh.annotations.*;
@@ -65,12 +65,12 @@ public class StaticMethodProxyBenchmark {
         reflectionMethod = Target.class.getMethod("staticAdd",
                 int.class, int.class);
 
-        Class<?> passthroughClass = AcceleratedProxy.proxyStatic(Target.class,
+        Class<?> passthroughClass = OpenProxy.proxyStatic(Target.class,
                 Group.of(m -> false, (o, m, a) -> null));
         passthroughMethod = passthroughClass.getMethod("staticAdd",
                 int.class, int.class);
 
-        Class<?> interceptedClass = AcceleratedProxy.proxyStatic(Target.class,
+        Class<?> interceptedClass = OpenProxy.proxyStatic(Target.class,
                 Group.otherwise(CALL_ORIGINAL));
         interceptedMethod = interceptedClass.getMethod("staticAdd",
                 int.class, int.class);

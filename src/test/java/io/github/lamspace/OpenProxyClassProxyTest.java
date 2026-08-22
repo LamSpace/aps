@@ -22,7 +22,7 @@ import java.lang.reflect.Method;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class AcceleratedProxyClassProxyTest {
+class OpenProxyClassProxyTest {
 
     // ---- Target classes ----
 
@@ -93,8 +93,8 @@ class AcceleratedProxyClassProxyTest {
 
     @Test
     void shouldInterceptAndModifyReturn() {
-        Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
-            Object result = AcceleratedProxy.invokeSuper(obj, method, args);
+        Greeter proxy = OpenProxy.proxy(Greeter.class, (obj, method, args) -> {
+            Object result = OpenProxy.invokeSuper(obj, method, args);
             return "[" + result + "]";
         });
 
@@ -103,18 +103,28 @@ class AcceleratedProxyClassProxyTest {
 
     @Test
     void shouldPassThroughToSuper() {
-        Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
-                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+        Greeter proxy = OpenProxy.proxy(Greeter.class,
+                (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
 
         assertEquals("Hello, OpenProxy", proxy.hello("OpenProxy"));
     }
 
     @Test
+    void generatedClassNameShouldCarryOpenProxyMarker() {
+        Greeter proxy = OpenProxy.proxy(Greeter.class,
+                (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
+
+        assertTrue(proxy.getClass().getName().contains("$$OpenProxy$$"),
+                "generated class name should carry the $$OpenProxy$$ marker: "
+                        + proxy.getClass().getName());
+    }
+
+    @Test
     void shouldModifyArguments() {
-        Calculator proxy = AcceleratedProxy.proxy(Calculator.class, (obj, method, args) -> {
+        Calculator proxy = OpenProxy.proxy(Calculator.class, (obj, method, args) -> {
             args[0] = ((int) args[0]) * 10;
             args[1] = ((int) args[1]) * 10;
-            return AcceleratedProxy.invokeSuper(obj, method, args);
+            return OpenProxy.invokeSuper(obj, method, args);
         });
 
         assertEquals(70, proxy.add(3, 4));
@@ -124,58 +134,58 @@ class AcceleratedProxyClassProxyTest {
 
     @Test
     void shouldHandleIntReturn() {
-        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
-                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+        Calculator proxy = OpenProxy.proxy(Calculator.class,
+                (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
         assertEquals(7, proxy.add(3, 4));
     }
 
     @Test
     void shouldHandleLongReturn() {
-        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
-                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+        Calculator proxy = OpenProxy.proxy(Calculator.class,
+                (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
         assertEquals(12L, proxy.multiply(3L, 4L));
     }
 
     @Test
     void shouldHandleDoubleReturn() {
-        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
-                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+        Calculator proxy = OpenProxy.proxy(Calculator.class,
+                (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
         assertEquals(2.5, proxy.divide(5.0, 2.0), 0.001);
     }
 
     @Test
     void shouldHandleFloatReturn() {
-        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
-                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+        Calculator proxy = OpenProxy.proxy(Calculator.class,
+                (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
         assertEquals(7.0f, proxy.sum(3.0f, 4.0f), 0.001f);
     }
 
     @Test
     void shouldHandleBooleanReturn() {
-        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
-                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+        Calculator proxy = OpenProxy.proxy(Calculator.class,
+                (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
         assertTrue(proxy.isPositive(5));
         assertFalse(proxy.isPositive(-1));
     }
 
     @Test
     void shouldHandleByteReturn() {
-        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
-                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+        Calculator proxy = OpenProxy.proxy(Calculator.class,
+                (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
         assertEquals((byte) 6, proxy.nextByte((byte) 5));
     }
 
     @Test
     void shouldHandleCharReturn() {
-        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
-                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+        Calculator proxy = OpenProxy.proxy(Calculator.class,
+                (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
         assertEquals('A', proxy.toUpper('a'));
     }
 
     @Test
     void shouldHandleShortReturn() {
-        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
-                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+        Calculator proxy = OpenProxy.proxy(Calculator.class,
+                (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
         assertEquals((short) 20, proxy.doubleShort((short) 10));
     }
 
@@ -184,9 +194,9 @@ class AcceleratedProxyClassProxyTest {
     @Test
     void shouldHandleVoidMethod() {
         boolean[] called = {false};
-        VoidOps proxy = AcceleratedProxy.proxy(VoidOps.class, (obj, method, args) -> {
+        VoidOps proxy = OpenProxy.proxy(VoidOps.class, (obj, method, args) -> {
             called[0] = true;
-            return AcceleratedProxy.invokeSuper(obj, method, args);
+            return OpenProxy.invokeSuper(obj, method, args);
         });
 
         proxy.run();
@@ -197,8 +207,8 @@ class AcceleratedProxyClassProxyTest {
 
     @Test
     void shouldHandleStringReturn() {
-        StringOps proxy = AcceleratedProxy.proxy(StringOps.class,
-                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+        StringOps proxy = OpenProxy.proxy(StringOps.class,
+                (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
         assertEquals("ab", proxy.concat("a", "b"));
     }
 
@@ -206,10 +216,10 @@ class AcceleratedProxyClassProxyTest {
 
     @Test
     void shouldProxyClassWithoutDefaultConstructor() {
-        Bean proxy = AcceleratedProxy.proxy(Bean.class,
+        Bean proxy = OpenProxy.proxy(Bean.class,
                 new Object[]{"Bob"},
                 Group.otherwise((obj, method, args) ->
-                        AcceleratedProxy.invokeSuper(obj, method, args)));
+                        OpenProxy.invokeSuper(obj, method, args)));
 
         assertEquals("Bob", proxy.getName());
     }
@@ -218,7 +228,7 @@ class AcceleratedProxyClassProxyTest {
 
     @Test
     void shouldSkipFilteredMethods() {
-        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
+        Calculator proxy = OpenProxy.proxy(Calculator.class,
                 Group.of(m -> m.getName().startsWith("add"),
                         (obj, method, args) -> 999));
 
@@ -231,7 +241,7 @@ class AcceleratedProxyClassProxyTest {
 
     @Test
     void shouldPropagateRuntimeException() {
-        Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
+        Greeter proxy = OpenProxy.proxy(Greeter.class, (obj, method, args) -> {
             throw new RuntimeException("test error");
         });
 
@@ -240,7 +250,7 @@ class AcceleratedProxyClassProxyTest {
 
     @Test
     void shouldWrapCheckedException() {
-        Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
+        Greeter proxy = OpenProxy.proxy(Greeter.class, (obj, method, args) -> {
             throw new Exception("checked error");
         });
 
@@ -253,13 +263,13 @@ class AcceleratedProxyClassProxyTest {
     @Test
     void shouldRejectNullTarget() {
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.proxy((Class<?>) null, (obj, method, args) -> null));
+                () -> OpenProxy.proxy((Class<?>) null, (obj, method, args) -> null));
     }
 
     @Test
     void shouldRejectNullInterceptor() {
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.proxy(Greeter.class,
+                () -> OpenProxy.proxy(Greeter.class,
                         (Interceptor) null));
     }
 
@@ -285,8 +295,8 @@ class AcceleratedProxyClassProxyTest {
 
     @Test
     void shouldDispatchOverloadedMethodsCorrectly() throws Throwable {
-        OverloadedTarget proxy = AcceleratedProxy.proxy(OverloadedTarget.class,
-                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+        OverloadedTarget proxy = OpenProxy.proxy(OverloadedTarget.class,
+                (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
 
         assertEquals("Hello, World", proxy.greet("World"));
         assertEquals("Count: 42", proxy.greet(42));
@@ -298,10 +308,10 @@ class AcceleratedProxyClassProxyTest {
 
     @Test
     void shouldReuseCachedProxyClass() {
-        Greeter p1 = AcceleratedProxy.proxy(Greeter.class,
-                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
-        Greeter p2 = AcceleratedProxy.proxy(Greeter.class,
-                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+        Greeter p1 = OpenProxy.proxy(Greeter.class,
+                (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
+        Greeter p2 = OpenProxy.proxy(Greeter.class,
+                (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
 
         // Same target class + same filter (null) → same proxy class reused
         assertSame(p1.getClass(), p2.getClass(),
@@ -310,12 +320,12 @@ class AcceleratedProxyClassProxyTest {
 
     @Test
     void shouldUseDifferentClassesForDifferentFilters() {
-        Greeter p1 = AcceleratedProxy.proxy(Greeter.class,
+        Greeter p1 = OpenProxy.proxy(Greeter.class,
                 Group.of(m -> m.getName().startsWith("hello"),
-                        (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args)));
-        Greeter p2 = AcceleratedProxy.proxy(Greeter.class,
+                        (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args)));
+        Greeter p2 = OpenProxy.proxy(Greeter.class,
                 Group.of(m -> m.getName().startsWith("goodbye"),
-                        (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args)));
+                        (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args)));
 
         assertNotSame(p1.getClass(), p2.getClass(),
                 "Different filters should produce different proxy classes");
@@ -323,8 +333,8 @@ class AcceleratedProxyClassProxyTest {
 
     @Test
     void shouldDispatchOverloadedMethodsViaDispatchMethod() throws Throwable {
-        OverloadedTarget proxy = AcceleratedProxy.proxy(OverloadedTarget.class,
-                (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+        OverloadedTarget proxy = OpenProxy.proxy(OverloadedTarget.class,
+                (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
 
         Method greetString = OverloadedTarget.class.getMethod("greet", String.class);
         Method greetInt = OverloadedTarget.class.getMethod("greet", int.class);

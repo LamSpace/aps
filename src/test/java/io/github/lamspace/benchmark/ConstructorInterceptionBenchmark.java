@@ -16,7 +16,7 @@
 
 package io.github.lamspace.benchmark;
 
-import io.github.lamspace.AcceleratedProxy;
+import io.github.lamspace.OpenProxy;
 import io.github.lamspace.ConstructorInterceptor;
 import io.github.lamspace.Group;
 import io.github.lamspace.Interceptor;
@@ -50,7 +50,7 @@ public class ConstructorInterceptionBenchmark {
     }
 
     private static final Interceptor NOOP =
-            (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args);
+            (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args);
 
     private static final ConstructorInterceptor NOOP_CTOR =
             new ConstructorInterceptor() {
@@ -67,12 +67,12 @@ public class ConstructorInterceptionBenchmark {
 
     @Benchmark
     public Object plainProxy() {
-        return AcceleratedProxy.proxy(Target.class, NOOP);
+        return OpenProxy.proxy(Target.class, NOOP);
     }
 
     @Benchmark
     public Object interceptedProxy() {
-        return AcceleratedProxy.proxy(Target.class, NOOP_CTOR,
+        return OpenProxy.proxy(Target.class, NOOP_CTOR,
                 Group.otherwise(NOOP));
     }
 }

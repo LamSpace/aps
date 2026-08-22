@@ -16,7 +16,7 @@
 
 package io.github.lamspace.benchmark;
 
-import io.github.lamspace.AcceleratedProxy;
+import io.github.lamspace.OpenProxy;
 import io.github.lamspace.Interceptor;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -32,7 +32,7 @@ import org.openjdk.jmh.annotations.Warmup;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Measures the cost of a single {@link AcceleratedProxy#rebind} call on an
+ * Measures the cost of a single {@link OpenProxy#rebind} call on an
  * existing class proxy. This is a rare management operation, not the hot
  * path — the number is informational, not a comparison against
  * {@code reflect.Proxy}.
@@ -58,12 +58,12 @@ public class RebindBenchmark {
 
     @Setup
     public void setup() {
-        proxy = AcceleratedProxy.proxy(Target.class, NOOP_A);
+        proxy = OpenProxy.proxy(Target.class, NOOP_A);
     }
 
     @Benchmark
     public void rebind() {
-        AcceleratedProxy.rebind(proxy, NOOP_B);
+        OpenProxy.rebind(proxy, NOOP_B);
     }
 
     public static void main(String[] args) throws Exception {

@@ -16,7 +16,7 @@ parity; default methods are ~6.5× faster.
   `super.method(args)`; no reflection, no `MethodHandle`, JIT-inlinable.
 - **Beats CGLib by ~3–5×** on class proxies; interface proxies at
   `java.lang.reflect.Proxy` parity and ~6× faster on default methods.
-- **One API for classes and interfaces** — `AcceleratedProxy.proxy(...)` with generic type inference, no casts.
+- **One API for classes and interfaces** — `OpenProxy.proxy(...)` with generic type inference, no casts.
 - **GC-safe** — proxy classes use `Lookup.defineHiddenClass()`, so there is no
   `ClassLoader` leak.
 
@@ -24,7 +24,7 @@ parity; default methods are ~6.5× faster.
 
 **Core**
 
-- Unified `AcceleratedProxy.proxy(target, interceptor)` entry point for classes *and* interfaces
+- Unified `OpenProxy.proxy(target, interceptor)` entry point for classes *and* interfaces
 - Functional `Interceptor` API — a single-method interface, use a lambda
 - `invokeSuper(proxy, method, args)` for zero-overhead super dispatch
 - `WeakCache`-backed proxy-class caching keyed on the method-to-interceptor mapping
@@ -50,9 +50,9 @@ parity; default methods are ~6.5× faster.
 ### Class proxy
 
 ```java
-Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
+Greeter proxy = OpenProxy.proxy(Greeter.class, (obj, method, args) -> {
     System.out.println("before " + method.getName());
-    Object result = AcceleratedProxy.invokeSuper(obj, method, args);
+    Object result = OpenProxy.invokeSuper(obj, method, args);
     System.out.println("after " + method.getName());
     return result;
 });
@@ -66,7 +66,7 @@ String greeting = proxy.hello("World");
 ### Interface proxy
 
 ```java
-Calculator calc = AcceleratedProxy.proxy(Calculator.class, (obj, method, args) -> {
+Calculator calc = OpenProxy.proxy(Calculator.class, (obj, method, args) -> {
     System.out.println("calling " + method.getName());
     return (int) args[0] + (int) args[1];
 });
@@ -77,7 +77,7 @@ int result = calc.add(10, 20);   // 30
 ### Method grouping
 
 ```java
-Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
+Greeter proxy = OpenProxy.proxy(Greeter.class,
         Group.of(m -> m.getName().startsWith("get"), getterInterceptor),
         Group.of(m -> m.getName().startsWith("set"), setterInterceptor),
         Group.otherwise(fallbackInterceptor));
@@ -91,11 +91,11 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 class MetricsInterceptor {
     @Around("get*")
     Object measure(Object proxy, Method method, Object[] args) throws Throwable {
-        return AcceleratedProxy.invokeSuper(proxy, method, args);
+        return OpenProxy.invokeSuper(proxy, method, args);
     }
 }
 
-Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MetricsInterceptor());
+Greeter proxy = OpenProxy.intercept(Greeter.class, new MetricsInterceptor());
 ```
 
 ## 📊 Performance
@@ -109,7 +109,7 @@ JMH benchmarks on Java 25 (all scores in ns/op, lower is better). Full tables, m
 
 ## 🏗️ How it works
 
-1. `AcceleratedProxy.proxy(...)` matches each proxyable method to an interceptor via a `Group` chain.
+1. `OpenProxy.proxy(...)` matches each proxyable method to an interceptor via a `Group` chain.
 2. A generator emits bytecode: one `_interceptor$N` field per distinct interceptor, one override per method, and a `dispatch(Method, Object[])` method.
 3. On each call, the override boxes the arguments and calls `Interceptor.intercept(...)`. If the interceptor calls `invokeSuper`, `dispatch()` branches on `method.hashCode()` and jumps straight to `INVOKESPECIAL super.method(...)`.
 
@@ -149,7 +149,7 @@ Maven Central publishing is in progress; until then, depend on the artifact from
 
 ## 🆚 OpenProxy vs the alternatives
 
-| Feature                  | OpenProxy                    | CGLib                       | `java.lang.reflect.Proxy` |
+| Feature                  | OpenProxy              | CGLib                       | `java.lang.reflect.Proxy` |
 |--------------------------|------------------------|-----------------------------|---------------------------|
 | Proxies concrete classes | ✅                     | ✅                          | ❌                        |
 | Super-call mechanism     | direct `INVOKESPECIAL` | `MethodProxy` + `FastClass` | N/A                       |

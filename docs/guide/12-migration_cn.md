@@ -18,17 +18,17 @@ MyService proxy = (MyService) enhancer.create();
 **迁移后：**
 
 ```java
-MyService proxy = AcceleratedProxy.proxy(MyService.class,
-        (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+MyService proxy = OpenProxy.proxy(MyService.class,
+        (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
 ```
 
 差异：
 
 | CGLib                          | OpenProxy                                               |
 |--------------------------------|---------------------------------------------------|
-| `Enhancer` 构造器              | `AcceleratedProxy.proxy()` 工厂                   |
+| `Enhancer` 构造器              | `OpenProxy.proxy()` 工厂                   |
 | `MethodInterceptor`（4 参数）  | `Interceptor`（3 参数）                           |
-| `proxy.invokeSuper(obj, args)` | `AcceleratedProxy.invokeSuper(obj, method, args)` |
+| `proxy.invokeSuper(obj, args)` | `OpenProxy.invokeSuper(obj, method, args)` |
 | 需显式转型                     | 泛型推导，无需转型                                |
 | 自定义 ClassLoader             | 隐藏类，GC 安全                                   |
 
@@ -46,8 +46,8 @@ Service proxy = (Service) Proxy.newProxyInstance(
 **迁移后（直接代理具体类）：**
 
 ```java
-ServiceImpl proxy = AcceleratedProxy.proxy(ServiceImpl.class,
-        (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+ServiceImpl proxy = OpenProxy.proxy(ServiceImpl.class,
+        (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
 ```
 
 最大收益：OpenProxy 代理的是 **实现类**，拦截器通过 `invokeSuper` 调用真正的方法，而不用你手写委托。

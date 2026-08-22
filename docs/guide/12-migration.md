@@ -17,17 +17,17 @@ MyService proxy = (MyService) enhancer.create();
 **After:**
 
 ```java
-MyService proxy = AcceleratedProxy.proxy(MyService.class,
-        (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+MyService proxy = OpenProxy.proxy(MyService.class,
+        (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
 ```
 
 Differences:
 
 | CGLib                          | OpenProxy                                               |
 |--------------------------------|---------------------------------------------------|
-| `Enhancer` builder             | `AcceleratedProxy.proxy()` factory                |
+| `Enhancer` builder             | `OpenProxy.proxy()` factory                |
 | `MethodInterceptor` (4 args)   | `Interceptor` (3 args)                            |
-| `proxy.invokeSuper(obj, args)` | `AcceleratedProxy.invokeSuper(obj, method, args)` |
+| `proxy.invokeSuper(obj, args)` | `OpenProxy.invokeSuper(obj, method, args)` |
 | explicit cast                  | generic inference, no cast                        |
 | custom ClassLoader             | hidden class, GC-safe                             |
 
@@ -45,8 +45,8 @@ Service proxy = (Service) Proxy.newProxyInstance(
 **After (proxy the concrete class directly):**
 
 ```java
-ServiceImpl proxy = AcceleratedProxy.proxy(ServiceImpl.class,
-        (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+ServiceImpl proxy = OpenProxy.proxy(ServiceImpl.class,
+        (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
 ```
 
 The main win: OpenProxy proxies the **implementation class**, so the interceptor calls the real method via `invokeSuper` instead of you hand-rolling a delegate.

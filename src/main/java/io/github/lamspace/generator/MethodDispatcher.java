@@ -62,7 +62,7 @@ public class MethodDispatcher {
         int dispatched = 0;
 
         // Stable sort for cross-JVM determinism (must match
-        // AcceleratedProxy.matchMethods)
+        // OpenProxy.matchMethods)
         Method[] methods = targetClass.getDeclaredMethods();
         Arrays.sort(methods,
                 Comparator.comparing(Method::getName)

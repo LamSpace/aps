@@ -27,7 +27,7 @@ class GroupMatchingTest {
 
     @Test
     void firstMatchWins() {
-        Sample proxy = AcceleratedProxy.proxy(Sample.class,
+        Sample proxy = OpenProxy.proxy(Sample.class,
                 Group.of(m -> m.getName().startsWith("get"), a),
                 Group.of(m -> m.getName().startsWith("get"), b));
         assertNotNull(proxy);
@@ -38,7 +38,7 @@ class GroupMatchingTest {
     void noMatchDefaultsToPassthrough() {
         // Only match get* — setName is passthrough (throws
         // AbstractMethodError for interface proxy)
-        Sample proxy = AcceleratedProxy.proxy(Sample.class,
+        Sample proxy = OpenProxy.proxy(Sample.class,
                 Group.of(m -> m.getName().startsWith("get"), a));
 
         assertNotNull(proxy.getName());
@@ -47,7 +47,7 @@ class GroupMatchingTest {
 
     @Test
     void otherwiseFallback() {
-        Sample proxy = AcceleratedProxy.proxy(Sample.class,
+        Sample proxy = OpenProxy.proxy(Sample.class,
                 Group.of(m -> m.getName().equals("getName"), a),
                 Group.otherwise(b));
         assertNotNull(proxy);
@@ -56,13 +56,13 @@ class GroupMatchingTest {
     @Test
     void emptyGroupsRejected() {
         assertThrows(IllegalArgumentException.class, () ->
-                AcceleratedProxy.proxy(Sample.class, new Group[0]));
+                OpenProxy.proxy(Sample.class, new Group[0]));
     }
 
     @Test
     void nullGroupsRejected() {
         assertThrows(IllegalArgumentException.class, () ->
-                AcceleratedProxy.proxy(Sample.class, (Group[]) null));
+                OpenProxy.proxy(Sample.class, (Group[]) null));
     }
 
     @Test
@@ -86,7 +86,7 @@ class GroupMatchingTest {
     @Test
     void sharedInterceptorInstanceWorks() {
         Interceptor shared = (proxy, method, args) -> "shared";
-        Sample proxy = AcceleratedProxy.proxy(Sample.class,
+        Sample proxy = OpenProxy.proxy(Sample.class,
                 Group.of(m -> m.getName().startsWith("get"), shared),
                 Group.of(m -> m.getName().startsWith("set"), shared));
         assertNotNull(proxy);
@@ -94,7 +94,7 @@ class GroupMatchingTest {
 
     @Test
     void oldSingleInterceptorApiWorks() {
-        Sample proxy = AcceleratedProxy.proxy(Sample.class,
+        Sample proxy = OpenProxy.proxy(Sample.class,
                 (obj, method, args) -> {
                     if (method.getReturnType() == int.class) return 1;
                     return "legacy";

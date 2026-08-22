@@ -28,7 +28,7 @@ class MultiInterceptorInterfaceProxyTest {
         AtomicInteger addCount = new AtomicInteger(0);
         AtomicInteger mulCount = new AtomicInteger(0);
 
-        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
+        Calculator proxy = OpenProxy.proxy(Calculator.class,
                 Group.of(m -> m.getName().equals("add"),
                         (p, method, args) -> {
                             addCount.incrementAndGet();
@@ -51,7 +51,7 @@ class MultiInterceptorInterfaceProxyTest {
 
     @Test
     void passthroughMethodThrowsAbstractMethodError() {
-        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
+        Calculator proxy = OpenProxy.proxy(Calculator.class,
                 Group.of(m -> m.getName().equals("add"),
                         (p, method, args) -> 42));
 
@@ -64,7 +64,7 @@ class MultiInterceptorInterfaceProxyTest {
     void otherwiseCoversAllRemainingMethods() {
         AtomicInteger defaultCount = new AtomicInteger(0);
 
-        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
+        Calculator proxy = OpenProxy.proxy(Calculator.class,
                 Group.of(m -> m.getName().equals("add"),
                         (p, method, args) -> 42),
                 Group.otherwise((p, method, args) -> {
@@ -81,7 +81,7 @@ class MultiInterceptorInterfaceProxyTest {
     void oldApiStillWorksForInterfaces() {
         AtomicInteger calls = new AtomicInteger(0);
 
-        Calculator proxy = AcceleratedProxy.proxy(Calculator.class,
+        Calculator proxy = OpenProxy.proxy(Calculator.class,
                 (p, method, args) -> {
                     calls.incrementAndGet();
                     return 0;

@@ -5,7 +5,7 @@
 ## 类代理
 
 ```java
-import io.github.lamspace.AcceleratedProxy;
+import io.github.lamspace.OpenProxy;
 
 public class Greeter {
     private String greeting = "Hello";
@@ -15,9 +15,9 @@ public class Greeter {
     }
 }
 
-Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
+Greeter proxy = OpenProxy.proxy(Greeter.class, (obj, method, args) -> {
     System.out.println("调用前 " + method.getName());
-    Object result = AcceleratedProxy.invokeSuper(obj, method, args);
+    Object result = OpenProxy.invokeSuper(obj, method, args);
     System.out.println("调用后 " + method.getName());
     return result;
 });
@@ -42,7 +42,7 @@ public interface Calculator {
     int add(int a, int b);
 }
 
-Calculator calc = AcceleratedProxy.proxy(Calculator.class, (obj, method, args) -> {
+Calculator calc = OpenProxy.proxy(Calculator.class, (obj, method, args) -> {
     System.out.println("正在调用 " + method.getName());
     return (int) args[0] + (int) args[1];
 });
@@ -60,8 +60,8 @@ int result = calc.add(10, 20);
 
 ## 关键点
 
-- 同一个 `AcceleratedProxy.proxy(...)` 入口同时处理两种场景。
+- 同一个 `OpenProxy.proxy(...)` 入口同时处理两种场景。
 - 目标类型从参数自动推导—— **无需转型**。
-- 类代理场景下，调用 `AcceleratedProxy.invokeSuper(obj, method, args)` 执行原方法；省略它 即可短路。
+- 类代理场景下，调用 `OpenProxy.invokeSuper(obj, method, args)` 执行原方法；省略它 即可短路。
 
 下一章：[拦截器 API](04-interceptor-api_cn.md)。

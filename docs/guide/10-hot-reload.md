@@ -5,8 +5,8 @@ OpenProxy gives you two levers for long-running applications: evicting cached pr
 ## Evicting cached proxy classes
 
 ```java
-AcceleratedProxy.evict(MyClass.class);            // drop proxies keyed on MyClass
-AcceleratedProxy.evictClassLoader(pluginClassLoader); // drop proxies for a loader
+OpenProxy.evict(MyClass.class);            // drop proxies keyed on MyClass
+OpenProxy.evictClassLoader(pluginClassLoader); // drop proxies for a loader
 ```
 
 The next `proxy(...)` call regenerates a fresh class. Existing instances are unaffected (they hold a direct reference to their hidden class). Use this in frameworks that hot-deploy classes under a dedicated `ClassLoader`.
@@ -16,14 +16,14 @@ Cache-key note: class proxies key on the target class; interface proxies key on 
 ## Swapping interceptors on a live instance
 
 ```java
-Greeter proxy = AcceleratedProxy.proxy(Greeter.class, oldInterceptor);
-AcceleratedProxy.rebind(proxy, newInterceptor);   // no recreation
+Greeter proxy = OpenProxy.proxy(Greeter.class, oldInterceptor);
+OpenProxy.rebind(proxy, newInterceptor);   // no recreation
 ```
 
 `rebind` replaces the bound interceptors in place. The array form lets you swap several at once, index-aligned with the generated class's interceptor fields:
 
 ```java
-AcceleratedProxy.rebind(proxy, new Interceptor[]{a, b});
+OpenProxy.rebind(proxy, new Interceptor[]{a, b});
 ```
 
 - `ConstructorInterceptor` is **not** rebindable (it runs only at construction).

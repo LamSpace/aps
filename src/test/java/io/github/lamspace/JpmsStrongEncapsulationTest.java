@@ -27,7 +27,7 @@ class JpmsStrongEncapsulationTest {
     @Test
     void proxyStronglyEncapsulatedClassFailsWithActionableHint() {
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
-                AcceleratedProxy.proxy(ArrayList.class, (o, m, a) -> null));
+                OpenProxy.proxy(ArrayList.class, (o, m, a) -> null));
 
         Throwable cause = ex.getCause();
         assertTrue(cause instanceof IllegalArgumentException,

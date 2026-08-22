@@ -25,7 +25,7 @@ import java.lang.annotation.Target;
  * Marks a class as an annotation-driven interceptor container.
  *
  * <p>Methods of a {@code @Intercept} class annotated with {@link Around} are
- * bound as interceptors by {@link AcceleratedProxy#intercept(Class, Object)}.
+ * bound as interceptors by {@link OpenProxy#intercept(Class, Object)}.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

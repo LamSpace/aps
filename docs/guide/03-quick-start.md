@@ -5,7 +5,7 @@ This chapter gets you from zero to a working proxy in two examples: one for a co
 ## Class proxy
 
 ```java
-import io.github.lamspace.AcceleratedProxy;
+import io.github.lamspace.OpenProxy;
 
 public class Greeter {
     private String greeting = "Hello";
@@ -15,9 +15,9 @@ public class Greeter {
     }
 }
 
-Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
+Greeter proxy = OpenProxy.proxy(Greeter.class, (obj, method, args) -> {
     System.out.println("before " + method.getName());
-    Object result = AcceleratedProxy.invokeSuper(obj, method, args);
+    Object result = OpenProxy.invokeSuper(obj, method, args);
     System.out.println("after " + method.getName());
     return result;
 });
@@ -42,7 +42,7 @@ public interface Calculator {
     int add(int a, int b);
 }
 
-Calculator calc = AcceleratedProxy.proxy(Calculator.class, (obj, method, args) -> {
+Calculator calc = OpenProxy.proxy(Calculator.class, (obj, method, args) -> {
     System.out.println("calling " + method.getName());
     return (int) args[0] + (int) args[1];
 });
@@ -60,8 +60,8 @@ calling add
 
 ## Key points
 
-- The same `AcceleratedProxy.proxy(...)` entry point handles both cases.
+- The same `OpenProxy.proxy(...)` entry point handles both cases.
 - The target's type is inferred from the argument — **no cast**.
-- In the class case, call `AcceleratedProxy.invokeSuper(obj, method, args)` to run the original method; omit it to short-circuit.
+- In the class case, call `OpenProxy.invokeSuper(obj, method, args)` to run the original method; omit it to short-circuit.
 
 Next: [Interceptor API](04-interceptor-api.md).

@@ -115,7 +115,7 @@ public class ClassGenerator {
         String simpleName = targetInternal.substring(
                 targetInternal.lastIndexOf('/') + 1);
         String generatedInternal = packagePrefix + simpleName
-                + "$$AcceleratedProxy$$" + COUNTER.getAndIncrement();
+                + "$$OpenProxy$$" + COUNTER.getAndIncrement();
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 

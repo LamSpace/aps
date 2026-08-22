@@ -2,14 +2,14 @@
 
 Static methods are compile-time bound, so a subclass cannot override them. OpenProxy instead generates a **shadow class** whose `public static` methods mirror the target's, routing them through the same `Interceptor`.
 
-## `AcceleratedProxy.proxyStatic`
+## `OpenProxy.proxyStatic`
 
 ```java
 public class Utils {
     public static int add(int a, int b) { return a + b; }
 }
 
-Class<?> proxyClass = AcceleratedProxy.proxyStatic(Utils.class,
+Class<?> proxyClass = OpenProxy.proxyStatic(Utils.class,
         (proxy, method, args) -> {
             System.out.println("calling " + method.getName());
             return method.invoke(null, args);   // call the original static method
@@ -35,7 +35,7 @@ int result = (int) mh.invoke(2, 3);
 ## Group support
 
 ```java
-Class<?> cls = AcceleratedProxy.proxyStatic(Utils.class,
+Class<?> cls = OpenProxy.proxyStatic(Utils.class,
         Group.of(m -> m.getName().startsWith("get"), getterInterceptor),
         Group.otherwise(otherInterceptor));
 ```

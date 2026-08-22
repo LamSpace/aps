@@ -4,7 +4,7 @@ Provide runtime proxy classes that implement multiple Java interfaces at once, m
 
 ### Requirement: Multi-interface proxy creation
 
-The system SHALL generate a single runtime proxy class that implements all given interfaces. `AcceleratedProxy.proxy(Class<?>[] interfaces, Interceptor)` and `AcceleratedProxy.proxy(Class<?>[] interfaces, Group...)` SHALL return an `Object` that can be cast to each interface in `interfaces`, with every non-static, non-final method call routed through the interceptor.
+The system SHALL generate a single runtime proxy class that implements all given interfaces. `OpenProxy.proxy(Class<?>[] interfaces, Interceptor)` and `OpenProxy.proxy(Class<?>[] interfaces, Group...)` SHALL return an `Object` that can be cast to each interface in `interfaces`, with every non-static, non-final method call routed through the interceptor.
 
 #### Scenario: Proxy usable through each interface
 
@@ -42,7 +42,7 @@ The system SHALL reject ambiguous interface combinations at `proxy()` time by th
 
 ### Requirement: Super invocation on merged methods
 
-For a merged method, `AcceleratedProxy.invokeSuper(proxy, method, args)` SHALL resolve the correct super implementation: when exactly one interface provides a `default`, it invokes that default; when every declaration is abstract, it throws `AbstractMethodError`.
+For a merged method, `OpenProxy.invokeSuper(proxy, method, args)` SHALL resolve the correct super implementation: when exactly one interface provides a `default`, it invokes that default; when every declaration is abstract, it throws `AbstractMethodError`.
 
 #### Scenario: One default plus abstract invokes the default
 

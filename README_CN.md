@@ -13,14 +13,14 @@
 - **直接 `super` 调度** — `invokeSuper` 编译为直接 `super.method(args)`；无反射、无
   `MethodHandle`、JIT 可内联。
 - **类代理比 CGLib 快约 3–5×**；接口代理与 `java.lang.reflect.Proxy` 持平，默认方法快约 6×。
-- **类与接口统一 API** — `AcceleratedProxy.proxy(...)` 泛型自动推导，无需转型。
+- **类与接口统一 API** — `OpenProxy.proxy(...)` 泛型自动推导，无需转型。
 - **GC 安全** — 代理类使用 `Lookup.defineHiddenClass()`，无 `ClassLoader` 泄漏。
 
 ## 📋 特性
 
 **核心**
 
-- 统一入口 `AcceleratedProxy.proxy(target, interceptor)` 同时支持类和接口
+- 统一入口 `OpenProxy.proxy(target, interceptor)` 同时支持类和接口
 - 函数式 `Interceptor` API —— 单方法接口，直接用 lambda
 - `invokeSuper(proxy, method, args)` 实现零开销父类调度
 - `WeakCache` 代理类缓存，以「方法 → 拦截器」映射为键
@@ -46,9 +46,9 @@
 ### 类代理
 
 ```java
-Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
+Greeter proxy = OpenProxy.proxy(Greeter.class, (obj, method, args) -> {
     System.out.println("调用前 " + method.getName());
-    Object result = AcceleratedProxy.invokeSuper(obj, method, args);
+    Object result = OpenProxy.invokeSuper(obj, method, args);
     System.out.println("调用后 " + method.getName());
     return result;
 });
@@ -62,7 +62,7 @@ String greeting = proxy.hello("World");
 ### 接口代理
 
 ```java
-Calculator calc = AcceleratedProxy.proxy(Calculator.class, (obj, method, args) -> {
+Calculator calc = OpenProxy.proxy(Calculator.class, (obj, method, args) -> {
     System.out.println("正在调用 " + method.getName());
     return (int) args[0] + (int) args[1];
 });
@@ -73,7 +73,7 @@ int result = calc.add(10, 20);   // 30
 ### 方法分组
 
 ```java
-Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
+Greeter proxy = OpenProxy.proxy(Greeter.class,
         Group.of(m -> m.getName().startsWith("get"), getterInterceptor),
         Group.of(m -> m.getName().startsWith("set"), setterInterceptor),
         Group.otherwise(fallbackInterceptor));
@@ -87,11 +87,11 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
 class MetricsInterceptor {
     @Around("get*")
     Object measure(Object proxy, Method method, Object[] args) throws Throwable {
-        return AcceleratedProxy.invokeSuper(proxy, method, args);
+        return OpenProxy.invokeSuper(proxy, method, args);
     }
 }
 
-Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MetricsInterceptor());
+Greeter proxy = OpenProxy.intercept(Greeter.class, new MetricsInterceptor());
 ```
 
 ## 📊 性能
@@ -106,7 +106,7 @@ JMH 基准测试 | Java 25（单位 ns/op，越低越好）。完整表格、方
 
 ## 🏗️ 工作原理
 
-1. `AcceleratedProxy.proxy(...)` 通过 `Group` 链把每个可代理方法匹配到拦截器。
+1. `OpenProxy.proxy(...)` 通过 `Group` 链把每个可代理方法匹配到拦截器。
 2. 生成器生成字节码：每个去重拦截器一个 `_interceptor$N` 字段、每个方法一个重写、一个
    `dispatch(Method, Object[])` 方法。
 3. 每次调用时，重写方法装箱参数并调用 `Interceptor.intercept(...)`。若拦截器调用
@@ -149,7 +149,7 @@ Maven Central 发布进行中；在此之前，请从本地仓库引用：
 
 ## 🆚 OpenProxy vs 其他方案
 
-| 特性              | OpenProxy                  | CGLib                       | `java.lang.reflect.Proxy` |
+| 特性              | OpenProxy            | CGLib                       | `java.lang.reflect.Proxy` |
 |-------------------|----------------------|-----------------------------|---------------------------|
 | 代理具体类        | ✅                   | ✅                          | ❌                        |
 | 父类调用机制      | 直接 `INVOKESPECIAL` | `MethodProxy` + `FastClass` | 不适用                    |

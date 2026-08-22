@@ -21,11 +21,11 @@ public interface Interceptor {
 
 ## 调用原方法
 
-使用 `AcceleratedProxy.invokeSuper`：
+使用 `OpenProxy.invokeSuper`：
 
 ```java
-Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) ->
-        AcceleratedProxy.invokeSuper(obj, method, args));
+Greeter proxy = OpenProxy.proxy(Greeter.class, (obj, method, args) ->
+        OpenProxy.invokeSuper(obj, method, args));
 ```
 
 `invokeSuper` 让代理的 `dispatch()` 方法跳转到原始 `super.method(...)` —— 直接
@@ -39,9 +39,9 @@ Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) ->
 
 ```java
 // 在真正调用前改写参数
-Echo proxy = AcceleratedProxy.proxy(Echo.class, (obj, method, args) -> {
+Echo proxy = OpenProxy.proxy(Echo.class, (obj, method, args) -> {
     args[0] = "[" + args[0] + "]";
-    return AcceleratedProxy.invokeSuper(obj, method, args);
+    return OpenProxy.invokeSuper(obj, method, args);
 });
 ```
 

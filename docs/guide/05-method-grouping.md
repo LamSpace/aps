@@ -5,17 +5,17 @@ A single interceptor is often not enough: you may want one behaviour for getters
 ## `Group.of` and `Group.otherwise`
 
 ```java
-Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
+Greeter proxy = OpenProxy.proxy(Greeter.class,
         Group.of(m -> m.getName().startsWith("get"), (obj, method, args) -> {
             System.out.println("[GET] " + method.getName());
-            return AcceleratedProxy.invokeSuper(obj, method, args);
+            return OpenProxy.invokeSuper(obj, method, args);
         }),
         Group.of(m -> m.getName().startsWith("set"), (obj, method, args) -> {
             System.out.println("[SET] " + method.getName());
-            return AcceleratedProxy.invokeSuper(obj, method, args);
+            return OpenProxy.invokeSuper(obj, method, args);
         }),
         Group.otherwise((obj, method, args) ->
-                AcceleratedProxy.invokeSuper(obj, method, args)));
+                OpenProxy.invokeSuper(obj, method, args)));
 ```
 
 - `Group.of(predicate, interceptor)` binds `interceptor` to every method where

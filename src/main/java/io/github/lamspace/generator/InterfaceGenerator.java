@@ -82,7 +82,7 @@ public class InterfaceGenerator {
             baseName = "MultiInterface";
         }
         String generatedInternal = packagePrefix + baseName
-                + "$$AcceleratedProxy$$" + COUNTER.getAndIncrement();
+                + "$$OpenProxy$$" + COUNTER.getAndIncrement();
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 

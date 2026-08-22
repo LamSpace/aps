@@ -68,7 +68,7 @@ class MultiInterfaceProxyTest {
 
     @Test
     void proxiesMultipleInterfaces() {
-        Object p = AcceleratedProxy.proxy(
+        Object p = OpenProxy.proxy(
                 new Class<?>[]{Greeter.class, Auditable.class},
                 (obj, method, args) -> "[" + method.getName() + "]");
         Greeter g = (Greeter) p;
@@ -80,7 +80,7 @@ class MultiInterfaceProxyTest {
 
     @Test
     void mergesSharedMethod() {
-        Object p = AcceleratedProxy.proxy(
+        Object p = OpenProxy.proxy(
                 new Class<?>[]{Greeter.class, Named.class},
                 (obj, method, args) -> "[" + args[0] + "]");
         assertEquals("[World]", ((Greeter) p).hello("World"));
@@ -89,11 +89,11 @@ class MultiInterfaceProxyTest {
 
     @Test
     void oneDefaultPlusAbstractInvokesDefault() {
-        Object p = AcceleratedProxy.proxy(
+        Object p = OpenProxy.proxy(
                 new Class<?>[]{DefaultGreeter.class, AbstractGreeter.class},
                 (obj, method, args) -> {
                     if (method.isDefault()) {
-                        return AcceleratedProxy.invokeSuper(obj, method, args);
+                        return OpenProxy.invokeSuper(obj, method, args);
                     }
                     return null;
                 });
@@ -103,7 +103,7 @@ class MultiInterfaceProxyTest {
     @Test
     void twoDefaultsThrows() {
         assertThrows(IllegalArgumentException.class, () ->
-                AcceleratedProxy.proxy(new Class<?>[]{
+                OpenProxy.proxy(new Class<?>[]{
                                 DefaultGreeter.class, DefaultGreeter2.class},
                         (obj, method, args) -> null));
     }
@@ -111,14 +111,14 @@ class MultiInterfaceProxyTest {
     @Test
     void differentReturnTypeThrows() {
         assertThrows(IllegalArgumentException.class, () ->
-                AcceleratedProxy.proxy(new Class<?>[]{
+                OpenProxy.proxy(new Class<?>[]{
                                 Greeter.class, NumberGreeter.class},
                         (obj, method, args) -> null));
     }
 
     @Test
     void threeInterfaces() {
-        Object p = AcceleratedProxy.proxy(new Class<?>[]{
+        Object p = OpenProxy.proxy(new Class<?>[]{
                         Greeter.class, Auditable.class, Named.class},
                 (obj, method, args) -> method.getName());
         assertEquals("hello", ((Greeter) p).hello("x"));
@@ -127,7 +127,7 @@ class MultiInterfaceProxyTest {
 
     @Test
     void parentChildDedup() {
-        Object p = AcceleratedProxy.proxy(
+        Object p = OpenProxy.proxy(
                 new Class<?>[]{Child.class, Parent.class},
                 (obj, method, args) -> "[" + method.getName() + "]");
         assertEquals("[inherited]", ((Child) p).inherited());
@@ -136,7 +136,7 @@ class MultiInterfaceProxyTest {
 
     @Test
     void objectMethodsBehave() {
-        Object p = AcceleratedProxy.proxy(
+        Object p = OpenProxy.proxy(
                 new Class<?>[]{Greeter.class, Auditable.class},
                 (obj, method, args) -> null);
         assertTrue(p.equals(p));
@@ -146,7 +146,7 @@ class MultiInterfaceProxyTest {
 
     @Test
     void groupChainAcrossInterfaces() {
-        Object p = AcceleratedProxy.proxy(
+        Object p = OpenProxy.proxy(
                 new Class<?>[]{Greeter.class, Auditable.class},
                 Group.of(m -> m.getName().equals("hello"),
                         (obj, method, args) -> "[hello]"),
@@ -158,43 +158,43 @@ class MultiInterfaceProxyTest {
     @Test
     void cacheReusesGeneratedClass() {
         Interceptor i = (obj, method, args) -> null;
-        Object p1 = AcceleratedProxy.proxy(
+        Object p1 = OpenProxy.proxy(
                 new Class<?>[]{Greeter.class, Auditable.class}, i);
-        Object p2 = AcceleratedProxy.proxy(
+        Object p2 = OpenProxy.proxy(
                 new Class<?>[]{Greeter.class, Auditable.class}, i);
         assertEquals(p1.getClass(), p2.getClass());
     }
 
     @Test
     void invokeSuperRoutesBothHashesToSameDefault() throws Throwable {
-        Object p = AcceleratedProxy.proxy(
+        Object p = OpenProxy.proxy(
                 new Class<?>[]{DefaultGreeter.class, AbstractGreeter.class},
                 (obj, method, args) ->
-                        AcceleratedProxy.invokeSuper(obj, method, args));
+                        OpenProxy.invokeSuper(obj, method, args));
         Method viaDefault = DefaultGreeter.class.getMethod("greet");
         Method viaAbstract = AbstractGreeter.class.getMethod("greet");
         assertEquals("Hello, World",
-                AcceleratedProxy.invokeSuper(p, viaDefault, new Object[0]));
+                OpenProxy.invokeSuper(p, viaDefault, new Object[0]));
         assertEquals("Hello, World",
-                AcceleratedProxy.invokeSuper(p, viaAbstract, new Object[0]));
+                OpenProxy.invokeSuper(p, viaAbstract, new Object[0]));
     }
 
     @Test
     void invalidInputsThrow() {
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.proxy((Class<?>[]) null,
+                () -> OpenProxy.proxy((Class<?>[]) null,
                         (obj, m, a) -> null));
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.proxy(new Class<?>[0],
+                () -> OpenProxy.proxy(new Class<?>[0],
                         (obj, m, a) -> null));
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.proxy(new Class<?>[]{String.class},
+                () -> OpenProxy.proxy(new Class<?>[]{String.class},
                         (obj, m, a) -> null));
     }
 
     @Test
     void singleInterfaceStillWorks() {
-        Greeter g = AcceleratedProxy.proxy(Greeter.class,
+        Greeter g = OpenProxy.proxy(Greeter.class,
                 (obj, method, args) -> "[solo]");
         assertEquals("[solo]", g.hello("x"));
     }

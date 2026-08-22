@@ -5,7 +5,7 @@ Lets long-running frameworks deterministically drop cached OpenProxy proxy class
 ## Requirements
 ### Requirement: Deterministic proxy-class eviction
 
-The library SHALL provide `AcceleratedProxy.evict(Class<?>)` and `AcceleratedProxy.evictClassLoader(ClassLoader)`. Evicting a target SHALL remove its cached generated proxy classes so that the next `proxy(...)` call for that target generates a fresh class. Eviction MUST NOT affect proxy instances that were already created — they keep working on the class they were built from.
+The library SHALL provide `OpenProxy.evict(Class<?>)` and `OpenProxy.evictClassLoader(ClassLoader)`. Evicting a target SHALL remove its cached generated proxy classes so that the next `proxy(...)` call for that target generates a fresh class. Eviction MUST NOT affect proxy instances that were already created — they keep working on the class they were built from.
 
 #### Scenario: Evict forces regeneration
 
@@ -29,7 +29,7 @@ The library SHALL provide `AcceleratedProxy.evict(Class<?>)` and `AcceleratedPro
 
 ### Requirement: In-place interceptor rebinding
 
-The library SHALL provide `AcceleratedProxy.rebind(Object, Interceptor)` and `AcceleratedProxy.rebind(Object, Interceptor[])`. Rebinding MUST replace the interceptors bound to an existing proxy instance without recreating the instance or changing its generated class. The array form MUST require a length equal to the proxy's distinct interceptor count and SHALL reject a mismatched length with `IllegalArgumentException`. Rebinding a non-proxy object SHALL throw `IllegalArgumentException`. Rebinding is a single-writer operation: a caller that rebinds on one thread and invokes methods on another MUST establish its own happens-before edge for the swap to be visible.
+The library SHALL provide `OpenProxy.rebind(Object, Interceptor)` and `OpenProxy.rebind(Object, Interceptor[])`. Rebinding MUST replace the interceptors bound to an existing proxy instance without recreating the instance or changing its generated class. The array form MUST require a length equal to the proxy's distinct interceptor count and SHALL reject a mismatched length with `IllegalArgumentException`. Rebinding a non-proxy object SHALL throw `IllegalArgumentException`. Rebinding is a single-writer operation: a caller that rebinds on one thread and invokes methods on another MUST establish its own happens-before edge for the swap to be visible.
 
 #### Scenario: Rebind swaps the interceptor on a class proxy
 

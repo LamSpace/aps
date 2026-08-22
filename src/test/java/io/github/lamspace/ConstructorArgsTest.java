@@ -55,12 +55,12 @@ class ConstructorArgsTest {
 
     private static Group passthrough() {
         return Group.otherwise(
-                (o, m, a) -> AcceleratedProxy.invokeSuper(o, m, a));
+                (o, m, a) -> OpenProxy.invokeSuper(o, m, a));
     }
 
     @Test
     void boxedPrimitiveArgs() {
-        Primitives proxy = AcceleratedProxy.proxy(Primitives.class,
+        Primitives proxy = OpenProxy.proxy(Primitives.class,
                 new Object[]{1, 2L, 3.0d, 4.0f, true, (byte) 5, 'c',
                         (short) 6},
                 passthrough());
@@ -76,14 +76,14 @@ class ConstructorArgsTest {
 
     @Test
     void referenceArg() {
-        Named proxy = AcceleratedProxy.proxy(Named.class,
+        Named proxy = OpenProxy.proxy(Named.class,
                 new Object[]{"hello"}, passthrough());
         assertEquals("hello", proxy.name);
     }
 
     @Test
     void nullArg() {
-        Named proxy = AcceleratedProxy.proxy(Named.class,
+        Named proxy = OpenProxy.proxy(Named.class,
                 new Object[]{null}, passthrough());
         assertNull(proxy.name);
     }

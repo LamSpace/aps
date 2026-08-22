@@ -1,33 +1,33 @@
 ## Purpose
 
-Unified dynamic proxy API that creates proxies for both concrete classes and Java interfaces through a single entry point (`AcceleratedProxy.proxy()`) with a single `Interceptor` callback interface, using hashCode-based super-method dispatch for class proxies.
+Unified dynamic proxy API that creates proxies for both concrete classes and Java interfaces through a single entry point (`OpenProxy.proxy()`) with a single `Interceptor` callback interface, using hashCode-based super-method dispatch for class proxies.
 
 ## ADDED Requirements
 
 ### Requirement: Unified proxy creation entry point
 
-The system SHALL provide a single `AcceleratedProxy.proxy(Class<T> target, Interceptor interceptor)` method that auto-detects whether `target` is a class or interface and generates the appropriate proxy type.
+The system SHALL provide a single `OpenProxy.proxy(Class<T> target, Interceptor interceptor)` method that auto-detects whether `target` is a class or interface and generates the appropriate proxy type.
 
 #### Scenario: Class proxy via unified entry
 
-- **WHEN** user calls `AcceleratedProxy.proxy(TargetClass.class, interceptor)`
+- **WHEN** user calls `OpenProxy.proxy(TargetClass.class, interceptor)`
 - **THEN** system returns a proxy instance that extends `TargetClass` and implements `DispatchTarget`
 - **AND** all non-final instance method calls are routed through `interceptor.intercept(proxy, method, args)`
 
 #### Scenario: Interface proxy via unified entry
 
-- **WHEN** user calls `AcceleratedProxy.proxy(TargetInterface.class, interceptor)`
+- **WHEN** user calls `OpenProxy.proxy(TargetInterface.class, interceptor)`
 - **THEN** system returns a proxy instance that implements `TargetInterface` and `DispatchTarget`
 - **AND** all interface method calls are routed through `interceptor.intercept(proxy, method, args)`
 
 #### Scenario: Null target rejected
 
-- **WHEN** user calls `AcceleratedProxy.proxy(null, interceptor)`
+- **WHEN** user calls `OpenProxy.proxy(null, interceptor)`
 - **THEN** system throws `NullPointerException`
 
 #### Scenario: Null interceptor rejected
 
-- **WHEN** user calls `AcceleratedProxy.proxy(TargetClass.class, null)`
+- **WHEN** user calls `OpenProxy.proxy(TargetClass.class, null)`
 - **THEN** system throws `NullPointerException`
 
 ### Requirement: Unified Interceptor callback
@@ -48,24 +48,24 @@ The system SHALL use a single `Interceptor` functional interface for both class 
 
 ### Requirement: Method-based super invocation
 
-The system SHALL provide `AcceleratedProxy.invokeSuper(Object proxy, Method method, Object[] args)` that dispatches to the original superclass method through a hashCode-driven switch.
+The system SHALL provide `OpenProxy.invokeSuper(Object proxy, Method method, Object[] args)` that dispatches to the original superclass method through a hashCode-driven switch.
 
 #### Scenario: Invoke super on class method
 
-- **WHEN** user calls `AcceleratedProxy.invokeSuper(proxy, method, args)` on a class proxy
+- **WHEN** user calls `OpenProxy.invokeSuper(proxy, method, args)` on a class proxy
 - **AND** `method` corresponds to a method inherited from the target class
 - **THEN** the superclass method executes via direct `INVOKESPECIAL` (no reflection, no MethodHandle)
 - **AND** the result is returned to the caller
 
 #### Scenario: Invoke super on interface method throws error
 
-- **WHEN** user calls `AcceleratedProxy.invokeSuper(proxy, method, args)` on an interface proxy
+- **WHEN** user calls `OpenProxy.invokeSuper(proxy, method, args)` on an interface proxy
 - **AND** `method` corresponds to a non-Object interface method
 - **THEN** system throws `AbstractMethodError`
 
 #### Scenario: Invoke super on Object method from interface proxy
 
-- **WHEN** user calls `AcceleratedProxy.invokeSuper(proxy, method, args)` on an interface proxy
+- **WHEN** user calls `OpenProxy.invokeSuper(proxy, method, args)` on an interface proxy
 - **AND** `method` is `equals`, `hashCode`, or `toString` from `java.lang.Object`
 - **THEN** the Object method executes via direct `INVOKESPECIAL`
 
@@ -99,7 +99,7 @@ The system SHALL cache generated proxy classes keyed by the `{targetClass, mappi
 
 #### Scenario: Cache hit returns existing class
 
-- **WHEN** user calls `AcceleratedProxy.proxy(SomeClass.class, group1, group2)` twice with identical Group configurations and constructor arguments
+- **WHEN** user calls `OpenProxy.proxy(SomeClass.class, group1, group2)` twice with identical Group configurations and constructor arguments
 - **THEN** the system reuses the previously generated proxy class instead of generating new bytecode
 - **AND** both proxy instances use the same class
 

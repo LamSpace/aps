@@ -68,7 +68,7 @@ public class StaticMethodGenerator {
      */
     public byte[] generate() {
         String generatedInternal = "io/github/lamspace/StaticProxy"
-                + "$$AcceleratedProxy$$" + COUNTER.getAndIncrement();
+                + "$$OpenProxy$$" + COUNTER.getAndIncrement();
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
         cw.visit(Opcodes.V24, Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER,

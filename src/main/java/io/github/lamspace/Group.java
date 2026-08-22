@@ -28,7 +28,7 @@ import java.util.Objects;
  * {@link #otherwise(Interceptor)} to provide an explicit catch-all.
  *
  * <pre>{@code
- *   Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
+ *   Greeter proxy = OpenProxy.proxy(Greeter.class,
  *       Group.of(m -> m.getName().startsWith("get"), getterInterceptor),
  *       Group.of(m -> m.getName().startsWith("set"), setterInterceptor),
  *       Group.otherwise(fallbackInterceptor)

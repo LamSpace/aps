@@ -57,7 +57,7 @@ import java.util.regex.PatternSyntaxException;
  * bind different method families to different Interceptor instances:
  *
  * <pre>{@code
- *   Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
+ *   Greeter proxy = OpenProxy.proxy(Greeter.class,
  *       Group.of(m -> m.getName().startsWith("get"), getterInterceptor),
  *       Group.of(m -> m.getName().startsWith("set"), setterInterceptor),
  *       Group.otherwise(fallbackInterceptor)
@@ -76,12 +76,12 @@ import java.util.regex.PatternSyntaxException;
  * @see Group
  * @see MethodPredicate
  */
-public final class AcceleratedProxy {
+public final class OpenProxy {
 
     private static final Logger LOGGER =
-            Logger.getLogger(AcceleratedProxy.class.getName());
+            Logger.getLogger(OpenProxy.class.getName());
 
-    private AcceleratedProxy() {
+    private OpenProxy() {
     }
 
     /**
@@ -152,7 +152,7 @@ public final class AcceleratedProxy {
     private static final WeakCache<Class<?>, CacheParams, Class<?>>
             PROXY_CLASS_CACHE = new WeakCache<>(
             (key, params) -> params,
-            AcceleratedProxy::generateProxyClass
+            OpenProxy::generateProxyClass
     );
 
     /**

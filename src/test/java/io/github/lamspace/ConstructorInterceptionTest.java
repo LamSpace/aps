@@ -121,7 +121,7 @@ class ConstructorInterceptionTest {
 
     private static Group passthrough() {
         return Group.otherwise(
-                (o, m, a) -> AcceleratedProxy.invokeSuper(o, m, a));
+                (o, m, a) -> OpenProxy.invokeSuper(o, m, a));
     }
 
     // ---- Task 1: ordering, correct ctor/args, after, default after ----
@@ -141,7 +141,7 @@ class ConstructorInterceptionTest {
                 Ordered.EVENTS.add("after");
             }
         };
-        AcceleratedProxy.proxy(Ordered.class, ci, passthrough());
+        OpenProxy.proxy(Ordered.class, ci, passthrough());
         assertEquals(List.of("before", "super", "after"), Ordered.EVENTS);
     }
 
@@ -157,7 +157,7 @@ class ConstructorInterceptionTest {
                 return args;
             }
         };
-        Point proxy = AcceleratedProxy.proxy(Point.class, new Object[]{3, 4},
+        Point proxy = OpenProxy.proxy(Point.class, new Object[]{3, 4},
                 ci, passthrough());
         assertArrayEquals(new Class<?>[]{int.class, int.class}, ctorParams[0]);
         assertArrayEquals(new Object[]{3, 4}, received[0]);
@@ -178,7 +178,7 @@ class ConstructorInterceptionTest {
                 captured.set(proxy);
             }
         };
-        Greeter proxy = AcceleratedProxy.proxy(Greeter.class, ci,
+        Greeter proxy = OpenProxy.proxy(Greeter.class, ci,
                 passthrough());
         assertSame(proxy, captured.get());
     }
@@ -198,7 +198,7 @@ class ConstructorInterceptionTest {
                 ((SelfRegistering) proxy).register();
             }
         };
-        SelfRegistering proxy = AcceleratedProxy.proxy(SelfRegistering.class,
+        SelfRegistering proxy = OpenProxy.proxy(SelfRegistering.class,
                 ci, passthrough());
         assertSame(proxy, captured.get());
         assertEquals(List.of("registered"), proxy.events);
@@ -207,7 +207,7 @@ class ConstructorInterceptionTest {
     @Test
     void defaultAfterIsNoOp() {
         ConstructorInterceptor ci = (ctor, args) -> args;
-        Greeter proxy = AcceleratedProxy.proxy(Greeter.class, ci,
+        Greeter proxy = OpenProxy.proxy(Greeter.class, ci,
                 passthrough());
         assertNotNull(proxy);
         assertEquals("Hello, X", proxy.hello("X"));
@@ -223,7 +223,7 @@ class ConstructorInterceptionTest {
                 return new Object[]{20, 30L, 4.5d, true, "rewritten"};
             }
         };
-        Boxed proxy = AcceleratedProxy.proxy(Boxed.class,
+        Boxed proxy = OpenProxy.proxy(Boxed.class,
                 new Object[]{1, 2L, 3.0d, false, "orig"}, ci, passthrough());
         assertEquals(20, proxy.i);
         assertEquals(30L, proxy.l);
@@ -235,7 +235,7 @@ class ConstructorInterceptionTest {
     @Test
     void beforeMayReturnSameArray() {
         ConstructorInterceptor ci = (ctor, args) -> args;
-        Boxed proxy = AcceleratedProxy.proxy(Boxed.class,
+        Boxed proxy = OpenProxy.proxy(Boxed.class,
                 new Object[]{1, 2L, 3.0d, false, "orig"}, ci, passthrough());
         assertEquals(1, proxy.i);
         assertEquals(2L, proxy.l);
@@ -250,7 +250,7 @@ class ConstructorInterceptionTest {
                 return new Object[]{null};
             }
         };
-        Nullable proxy = AcceleratedProxy.proxy(Nullable.class,
+        Nullable proxy = OpenProxy.proxy(Nullable.class,
                 new Object[]{"orig"}, ci, passthrough());
         assertNull(proxy.name);
     }
@@ -265,12 +265,12 @@ class ConstructorInterceptionTest {
                 return args;
             }
         };
-        Overloaded two = AcceleratedProxy.proxy(Overloaded.class,
+        Overloaded two = OpenProxy.proxy(Overloaded.class,
                 new Object[]{1, 2}, ci, passthrough());
         assertArrayEquals(new Class<?>[]{int.class, int.class}, ctorParams[0]);
         assertEquals(3, two.value);
 
-        Overloaded str = AcceleratedProxy.proxy(Overloaded.class,
+        Overloaded str = OpenProxy.proxy(Overloaded.class,
                 new Object[]{"abcd"}, ci, passthrough());
         assertArrayEquals(new Class<?>[]{String.class}, ctorParams[0]);
         assertEquals(4, str.value);
@@ -284,7 +284,7 @@ class ConstructorInterceptionTest {
                 return new Object[]{2.5f, (byte) 7, 'z', (short) 9};
             }
         };
-        AllPrims proxy = AcceleratedProxy.proxy(AllPrims.class,
+        AllPrims proxy = OpenProxy.proxy(AllPrims.class,
                 new Object[]{1.0f, (byte) 1, 'a', (short) 2}, ci,
                 passthrough());
         assertEquals(2.5f, proxy.f);
@@ -304,7 +304,7 @@ class ConstructorInterceptionTest {
             }
         };
         assertThrows(IllegalStateException.class,
-                () -> AcceleratedProxy.proxy(Greeter.class, ci,
+                () -> OpenProxy.proxy(Greeter.class, ci,
                         passthrough()));
     }
 
@@ -319,7 +319,7 @@ class ConstructorInterceptionTest {
         };
         UndeclaredThrowableException ex =
                 assertThrows(UndeclaredThrowableException.class,
-                        () -> AcceleratedProxy.proxy(Greeter.class, ci,
+                        () -> OpenProxy.proxy(Greeter.class, ci,
                                 passthrough()));
         assertInstanceOf(Exception.class, ex.getCause());
         assertEquals("checked veto", ex.getCause().getMessage());
@@ -345,8 +345,8 @@ class ConstructorInterceptionTest {
                 return args;
             }
         };
-        Greeter pa = AcceleratedProxy.proxy(Greeter.class, a, passthrough());
-        Greeter pb = AcceleratedProxy.proxy(Greeter.class, b, passthrough());
+        Greeter pa = OpenProxy.proxy(Greeter.class, a, passthrough());
+        Greeter pb = OpenProxy.proxy(Greeter.class, b, passthrough());
         assertSame(pa.getClass(), pb.getClass());
         assertEquals(1, aCount.get());
         assertEquals(1, bCount.get());
@@ -354,9 +354,9 @@ class ConstructorInterceptionTest {
 
     @Test
     void interceptedAndNonInterceptedUseDistinctClasses() {
-        Greeter plain = AcceleratedProxy.proxy(Greeter.class,
-                (o, m, a) -> AcceleratedProxy.invokeSuper(o, m, a));
-        Greeter intercepted = AcceleratedProxy.proxy(Greeter.class,
+        Greeter plain = OpenProxy.proxy(Greeter.class,
+                (o, m, a) -> OpenProxy.invokeSuper(o, m, a));
+        Greeter intercepted = OpenProxy.proxy(Greeter.class,
                 (ConstructorInterceptor) (ctor, args) -> args, passthrough());
         assertNotSame(plain.getClass(), intercepted.getClass());
     }
@@ -371,8 +371,8 @@ class ConstructorInterceptionTest {
                 return args;
             }
         };
-        Interceptor in = (o, m, a) -> AcceleratedProxy.invokeSuper(o, m, a);
-        Greeter proxy = AcceleratedProxy.proxy(Greeter.class, in, ci);
+        Interceptor in = (o, m, a) -> OpenProxy.invokeSuper(o, m, a);
+        Greeter proxy = OpenProxy.proxy(Greeter.class, in, ci);
         assertEquals("Hello, X", proxy.hello("X"));
         assertEquals(1, count.get());
     }
@@ -380,14 +380,14 @@ class ConstructorInterceptionTest {
     @Test
     void nullCtorInterceptorThrows() {
         assertThrows(IllegalArgumentException.class, () ->
-                AcceleratedProxy.proxy(Greeter.class,
+                OpenProxy.proxy(Greeter.class,
                         (ConstructorInterceptor) null, passthrough()));
     }
 
     @Test
     void interfaceTargetRejected() {
         assertThrows(IllegalArgumentException.class, () ->
-                AcceleratedProxy.proxy(Runnable.class,
+                OpenProxy.proxy(Runnable.class,
                         (ConstructorInterceptor) (ctor, args) -> args,
                         passthrough()));
     }

@@ -52,14 +52,14 @@ class VirtualThreadCompatibilityTest {
     @Test
     void manyVirtualThreadsInvokeProxyCorrectly() throws Exception {
         // Interface proxy: interceptor computes the reply directly.
-        Greeter iface = AcceleratedProxy.proxy(Greeter.class,
+        Greeter iface = OpenProxy.proxy(Greeter.class,
                 (obj, method, args) -> "Hello, " + args[0]);
         runConcurrently(5_000, i -> iface.hello("t" + i), i -> "Hello, t" + i);
 
         // Class proxy: interceptor routes through the INVOKESPECIAL super path.
-        GreeterImpl impl = AcceleratedProxy.proxy(GreeterImpl.class,
+        GreeterImpl impl = OpenProxy.proxy(GreeterImpl.class,
                 (obj, method, args) ->
-                        AcceleratedProxy.invokeSuper(obj, method, args));
+                        OpenProxy.invokeSuper(obj, method, args));
         runConcurrently(5_000, i -> impl.hello("t" + i), i -> "Hello, t" + i);
     }
 
@@ -67,7 +67,7 @@ class VirtualThreadCompatibilityTest {
 
     @Test
     void noCarrierPinningOnHotPath() throws Exception {
-        Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
+        Greeter proxy = OpenProxy.proxy(Greeter.class,
                 (obj, method, args) -> "Hello, " + args[0]);
 
         // Warm the dispatch path so one-time class definition and JIT
@@ -118,7 +118,7 @@ class VirtualThreadCompatibilityTest {
         try (ExecutorService executor =
                      Executors.newVirtualThreadPerTaskExecutor()) {
             Future<String> future = executor.submit(() -> {
-                Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
+                Greeter proxy = OpenProxy.proxy(Greeter.class,
                         (obj, method, args) -> "Hello, " + args[0]);
                 return proxy.hello("vt");
             });

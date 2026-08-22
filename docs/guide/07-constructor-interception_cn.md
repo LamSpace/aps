@@ -29,7 +29,7 @@ ConstructorInterceptor ctorInterceptor = new ConstructorInterceptor() {
     }
 };
 
-Greeter proxy = AcceleratedProxy.proxy(Greeter.class, interceptor, ctorInterceptor);
+Greeter proxy = OpenProxy.proxy(Greeter.class, interceptor, ctorInterceptor);
 ```
 
 构造时输出：

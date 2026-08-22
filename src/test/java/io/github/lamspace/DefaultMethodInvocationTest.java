@@ -55,10 +55,10 @@ class DefaultMethodInvocationTest {
 
     @Test
     void invokeSuperOnDirectlyDeclaredDefaultReturnsDefaultImpl() {
-        DirectDefault proxy = AcceleratedProxy.proxy(DirectDefault.class,
+        DirectDefault proxy = OpenProxy.proxy(DirectDefault.class,
                 (obj, method, args) -> {
                     if (method.isDefault()) {
-                        return AcceleratedProxy.invokeSuper(obj, method, args);
+                        return OpenProxy.invokeSuper(obj, method, args);
                     }
                     return null;
                 });
@@ -67,10 +67,10 @@ class DefaultMethodInvocationTest {
 
     @Test
     void invokeSuperOnDirectDefaultWithArgsAndPrimitiveReturn() {
-        DirectDefault proxy = AcceleratedProxy.proxy(DirectDefault.class,
+        DirectDefault proxy = OpenProxy.proxy(DirectDefault.class,
                 (obj, method, args) -> {
                     if (method.getName().equals("add")) {
-                        return AcceleratedProxy.invokeSuper(obj, method, args);
+                        return OpenProxy.invokeSuper(obj, method, args);
                     }
                     return null;
                 });
@@ -79,10 +79,10 @@ class DefaultMethodInvocationTest {
 
     @Test
     void invokeSuperOnDirectVoidDefault() {
-        DirectDefault proxy = AcceleratedProxy.proxy(DirectDefault.class,
+        DirectDefault proxy = OpenProxy.proxy(DirectDefault.class,
                 (obj, method, args) -> {
                     if (method.getName().equals("run")) {
-                        return AcceleratedProxy.invokeSuper(obj, method, args);
+                        return OpenProxy.invokeSuper(obj, method, args);
                     }
                     return null;
                 });
@@ -91,10 +91,10 @@ class DefaultMethodInvocationTest {
 
     @Test
     void invokeSuperOnInheritedDefaultReturnsDefaultImpl() {
-        Child proxy = AcceleratedProxy.proxy(Child.class,
+        Child proxy = OpenProxy.proxy(Child.class,
                 (obj, method, args) -> {
                     if (method.getName().equals("inheritedGreet")) {
-                        return AcceleratedProxy.invokeSuper(obj, method, args);
+                        return OpenProxy.invokeSuper(obj, method, args);
                     }
                     return null;
                 });
@@ -103,26 +103,26 @@ class DefaultMethodInvocationTest {
 
     @Test
     void invokeSuperOnNonDefaultStillThrows() {
-        DirectDefault proxy = AcceleratedProxy.proxy(DirectDefault.class,
+        DirectDefault proxy = OpenProxy.proxy(DirectDefault.class,
                 (obj, method, args) ->
-                        AcceleratedProxy.invokeSuper(obj, method, args));
+                        OpenProxy.invokeSuper(obj, method, args));
         assertThrows(AbstractMethodError.class, () -> proxy.hello("x"));
     }
 
     @Test
     void interceptorCanReplaceDefault() {
-        DirectDefault proxy = AcceleratedProxy.proxy(DirectDefault.class,
+        DirectDefault proxy = OpenProxy.proxy(DirectDefault.class,
                 (obj, method, args) -> "[overridden]");
         assertEquals("[overridden]", proxy.greet());
     }
 
     @Test
     void defaultMethodSeesModifiedArguments() {
-        DirectDefault proxy = AcceleratedProxy.proxy(DirectDefault.class,
+        DirectDefault proxy = OpenProxy.proxy(DirectDefault.class,
                 (obj, method, args) -> {
                     if (method.getName().equals("add")) {
                         args[0] = (int) args[0] + 10;
-                        return AcceleratedProxy.invokeSuper(obj, method, args);
+                        return OpenProxy.invokeSuper(obj, method, args);
                     }
                     return null;
                 });
@@ -131,18 +131,18 @@ class DefaultMethodInvocationTest {
 
     @Test
     void objectMethodsStillDispatchCorrectly() {
-        DirectDefault proxy = AcceleratedProxy.proxy(DirectDefault.class,
+        DirectDefault proxy = OpenProxy.proxy(DirectDefault.class,
                 (obj, method, args) ->
-                        AcceleratedProxy.invokeSuper(obj, method, args));
+                        OpenProxy.invokeSuper(obj, method, args));
         assertNotNull(proxy.toString());
         assertEquals(proxy.hashCode(), proxy.hashCode());
     }
 
     @Test
     void exceptionFromDefaultMethodPropagates() {
-        ThrowingDefault proxy = AcceleratedProxy.proxy(ThrowingDefault.class,
+        ThrowingDefault proxy = OpenProxy.proxy(ThrowingDefault.class,
                 (obj, method, args) ->
-                        AcceleratedProxy.invokeSuper(obj, method, args));
+                        OpenProxy.invokeSuper(obj, method, args));
         assertThrows(IllegalStateException.class, proxy::boom);
     }
 }

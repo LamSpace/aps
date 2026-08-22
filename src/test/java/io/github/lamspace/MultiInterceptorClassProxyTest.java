@@ -36,14 +36,14 @@ class MultiInterceptorClassProxyTest {
 
         Interceptor getterInterceptor = (proxy, method, args) -> {
             getterCalled.set(method.getName());
-            return AcceleratedProxy.invokeSuper(proxy, method, args);
+            return OpenProxy.invokeSuper(proxy, method, args);
         };
         Interceptor setterInterceptor = (proxy, method, args) -> {
             setterCalled.set(method.getName());
-            return AcceleratedProxy.invokeSuper(proxy, method, args);
+            return OpenProxy.invokeSuper(proxy, method, args);
         };
 
-        Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
+        Greeter proxy = OpenProxy.proxy(Greeter.class,
                 Group.of(m -> m.getName().startsWith("get"),
                         getterInterceptor),
                 Group.of(m -> m.getName().startsWith("set"),
@@ -62,10 +62,10 @@ class MultiInterceptorClassProxyTest {
         AtomicInteger interceptorCalls = new AtomicInteger(0);
         Interceptor counting = (proxy, method, args) -> {
             interceptorCalls.incrementAndGet();
-            return AcceleratedProxy.invokeSuper(proxy, method, args);
+            return OpenProxy.invokeSuper(proxy, method, args);
         };
 
-        Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
+        Greeter proxy = OpenProxy.proxy(Greeter.class,
                 Group.of(m -> m.getName().startsWith("set"), counting));
 
         assertEquals("hello", proxy.getGreeting());
@@ -81,11 +81,11 @@ class MultiInterceptorClassProxyTest {
     @Test
     void invokeSuperWorksInAnyGroup() {
         Interceptor a = (proxy, method, args) ->
-                AcceleratedProxy.invokeSuper(proxy, method, args);
+                OpenProxy.invokeSuper(proxy, method, args);
         Interceptor b = (proxy, method, args) ->
-                AcceleratedProxy.invokeSuper(proxy, method, args);
+                OpenProxy.invokeSuper(proxy, method, args);
 
-        Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
+        Greeter proxy = OpenProxy.proxy(Greeter.class,
                 Group.of(m -> m.getName().equals("getGreeting"), a),
                 Group.otherwise(b));
 
@@ -97,9 +97,9 @@ class MultiInterceptorClassProxyTest {
     @Test
     void sharedInterceptorDedup() {
         Interceptor shared = (proxy, method, args) ->
-                AcceleratedProxy.invokeSuper(proxy, method, args);
+                OpenProxy.invokeSuper(proxy, method, args);
 
-        Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
+        Greeter proxy = OpenProxy.proxy(Greeter.class,
                 Group.of(m -> m.getName().startsWith("get"), shared),
                 Group.of(m -> m.getName().startsWith("set"), shared));
 
@@ -114,14 +114,14 @@ class MultiInterceptorClassProxyTest {
 
         Interceptor getter = (proxy, method, args) -> {
             getterCount.incrementAndGet();
-            return AcceleratedProxy.invokeSuper(proxy, method, args);
+            return OpenProxy.invokeSuper(proxy, method, args);
         };
         Interceptor setter = (proxy, method, args) -> {
             setterCount.incrementAndGet();
-            return AcceleratedProxy.invokeSuper(proxy, method, args);
+            return OpenProxy.invokeSuper(proxy, method, args);
         };
 
-        Greeter proxy = AcceleratedProxy.proxy(Greeter.class,
+        Greeter proxy = OpenProxy.proxy(Greeter.class,
                 Group.of(m -> m.getName().startsWith("get"), getter),
                 Group.of(m -> m.getName().startsWith("set"), setter));
 
@@ -138,11 +138,11 @@ class MultiInterceptorClassProxyTest {
         Interceptor a = (p, m, args) -> null;
         Interceptor b = (p, m, args) -> null;
 
-        Greeter p1 = AcceleratedProxy.proxy(Greeter.class,
+        Greeter p1 = OpenProxy.proxy(Greeter.class,
                 Group.of(m -> m.getName().startsWith("get"), a),
                 Group.of(m -> m.getName().startsWith("set"), b));
 
-        Greeter p2 = AcceleratedProxy.proxy(Greeter.class,
+        Greeter p2 = OpenProxy.proxy(Greeter.class,
                 Group.of(m -> m.getName().startsWith("get"), a),
                 Group.of(m -> m.getName().startsWith("set"), b));
 
@@ -154,10 +154,10 @@ class MultiInterceptorClassProxyTest {
         AtomicInteger calls = new AtomicInteger(0);
         Interceptor interceptor = (proxy, method, args) -> {
             calls.incrementAndGet();
-            return AcceleratedProxy.invokeSuper(proxy, method, args);
+            return OpenProxy.invokeSuper(proxy, method, args);
         };
 
-        Greeter proxy = AcceleratedProxy.proxy(Greeter.class, interceptor);
+        Greeter proxy = OpenProxy.proxy(Greeter.class, interceptor);
         proxy.getGreeting();
         proxy.setGreeting("x");
         assertEquals(2, calls.get());

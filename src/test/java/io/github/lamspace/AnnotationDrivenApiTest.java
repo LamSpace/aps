@@ -77,14 +77,14 @@ class AnnotationDrivenApiTest {
         public Object measure(Object proxy, Method method, Object[] args)
                 throws Throwable {
             lastMethod.set(method.getName());
-            return AcceleratedProxy.invokeSuper(proxy, method, args);
+            return OpenProxy.invokeSuper(proxy, method, args);
         }
     }
 
     @Test
     void singleGlobRoutesMatchedMethodsAndPassthroughsOthers() {
         GetterInterceptor interceptor = new GetterInterceptor();
-        Greeter proxy = AcceleratedProxy.intercept(Greeter.class, interceptor);
+        Greeter proxy = OpenProxy.intercept(Greeter.class, interceptor);
 
         assertEquals("hello", proxy.getGreeting());
         assertEquals("getGreeting", interceptor.lastMethod.get());
@@ -123,14 +123,14 @@ class AnnotationDrivenApiTest {
         public Object handle(Object proxy, Method method, Object[] args)
                 throws Throwable {
             calls.incrementAndGet();
-            return AcceleratedProxy.invokeSuper(proxy, method, args);
+            return OpenProxy.invokeSuper(proxy, method, args);
         }
     }
 
     @Test
     void annotatedWithMatchesOnlyAnnotatedMethods() {
         TxInterceptor interceptor = new TxInterceptor();
-        Service proxy = AcceleratedProxy.intercept(Service.class, interceptor);
+        Service proxy = OpenProxy.intercept(Service.class, interceptor);
 
         assertEquals("saved:a", proxy.save("a"));
         assertEquals(1, proxy.load());
@@ -146,14 +146,14 @@ class AnnotationDrivenApiTest {
         public Object handle(Object proxy, Method method, Object[] args)
                 throws Throwable {
             calls.incrementAndGet();
-            return AcceleratedProxy.invokeSuper(proxy, method, args);
+            return OpenProxy.invokeSuper(proxy, method, args);
         }
     }
 
     @Test
     void regexMatchesMethodName() {
         RegexInterceptor interceptor = new RegexInterceptor();
-        Greeter proxy = AcceleratedProxy.intercept(Greeter.class, interceptor);
+        Greeter proxy = OpenProxy.intercept(Greeter.class, interceptor);
 
         assertEquals("hello", proxy.getGreeting());
         assertEquals(1, interceptor.calls.get());
@@ -167,7 +167,7 @@ class AnnotationDrivenApiTest {
         public Object handle(Object proxy, Method method, Object[] args)
                 throws Throwable {
             calls.incrementAndGet();
-            return AcceleratedProxy.invokeSuper(proxy, method, args);
+            return OpenProxy.invokeSuper(proxy, method, args);
         }
     }
 
@@ -185,7 +185,7 @@ class AnnotationDrivenApiTest {
     @Test
     void globAndAnnotatedWithCombineWithAnd() {
         AndInterceptor interceptor = new AndInterceptor();
-        MixedService proxy = AcceleratedProxy.intercept(MixedService.class, interceptor);
+        MixedService proxy = OpenProxy.intercept(MixedService.class, interceptor);
 
         assertEquals("tagged", proxy.getTagged());
         assertEquals("plain", proxy.getPlain());
@@ -200,7 +200,7 @@ class AnnotationDrivenApiTest {
         public Object handle(Object proxy, Method method, Object[] args)
                 throws Throwable {
             last.set(method.getName());
-            return AcceleratedProxy.invokeSuper(proxy, method, args);
+            return OpenProxy.invokeSuper(proxy, method, args);
         }
     }
 
@@ -221,7 +221,7 @@ class AnnotationDrivenApiTest {
     @Test
     void multipleGlobsOrWithinDimension() {
         MultiGlobInterceptor interceptor = new MultiGlobInterceptor();
-        HasGetterAndIsser proxy = AcceleratedProxy.intercept(HasGetterAndIsser.class, interceptor);
+        HasGetterAndIsser proxy = OpenProxy.intercept(HasGetterAndIsser.class, interceptor);
 
         assertEquals("n", proxy.getName());
         assertTrue(proxy.isReady());
@@ -240,7 +240,7 @@ class AnnotationDrivenApiTest {
     @Test
     void invalidRegexFailsFast() {
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.intercept(Greeter.class,
+                () -> OpenProxy.intercept(Greeter.class,
                         new BadRegexInterceptor()));
     }
 
@@ -256,14 +256,14 @@ class AnnotationDrivenApiTest {
             captured[1] = method;
             captured[2] = args;
             sawDispatchTarget.set(proxy instanceof DispatchTarget);
-            return AcceleratedProxy.invokeSuper(proxy, method, args);
+            return OpenProxy.invokeSuper(proxy, method, args);
         }
     }
 
     @Test
     void adapterPassesProxyMethodArgs() {
         ArgsCapturingInterceptor interceptor = new ArgsCapturingInterceptor();
-        Greeter proxy = AcceleratedProxy.intercept(Greeter.class, interceptor);
+        Greeter proxy = OpenProxy.intercept(Greeter.class, interceptor);
 
         assertEquals("hello", proxy.getGreeting());
 
@@ -278,13 +278,13 @@ class AnnotationDrivenApiTest {
         @Around("get*")
         public String shorten(Object proxy, Method method, Object[] args)
                 throws Throwable {
-            return "[" + AcceleratedProxy.invokeSuper(proxy, method, args) + "]";
+            return "[" + OpenProxy.invokeSuper(proxy, method, args) + "]";
         }
     }
 
     @Test
     void subtypeReturnIsWidenedToObject() {
-        Greeter proxy = AcceleratedProxy.intercept(Greeter.class,
+        Greeter proxy = OpenProxy.intercept(Greeter.class,
                 new StringReturnInterceptor());
         assertEquals("[hello]", proxy.getGreeting());
     }
@@ -292,13 +292,13 @@ class AnnotationDrivenApiTest {
     @Test
     void nullTargetFailsFast() {
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.intercept(null, new GetterInterceptor()));
+                () -> OpenProxy.intercept(null, new GetterInterceptor()));
     }
 
     @Test
     void nullInterceptorFailsFast() {
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.intercept(Greeter.class, null));
+                () -> OpenProxy.intercept(Greeter.class, null));
     }
 
     public static class NotAnnotated {
@@ -311,7 +311,7 @@ class AnnotationDrivenApiTest {
     @Test
     void nonInterceptClassFailsFast() {
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.intercept(Greeter.class, new NotAnnotated()));
+                () -> OpenProxy.intercept(Greeter.class, new NotAnnotated()));
     }
 
     @Intercept
@@ -321,7 +321,7 @@ class AnnotationDrivenApiTest {
     @Test
     void noAroundMethodFailsFast() {
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.intercept(Greeter.class, new NoAroundMethod()));
+                () -> OpenProxy.intercept(Greeter.class, new NoAroundMethod()));
     }
 
     @Intercept
@@ -335,7 +335,7 @@ class AnnotationDrivenApiTest {
     @Test
     void wrongParameterCountFailsFast() {
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.intercept(Greeter.class, new WrongParamCount()));
+                () -> OpenProxy.intercept(Greeter.class, new WrongParamCount()));
     }
 
     @Intercept
@@ -348,7 +348,7 @@ class AnnotationDrivenApiTest {
     @Test
     void voidReturnFailsFast() {
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.intercept(Greeter.class, new VoidReturn()));
+                () -> OpenProxy.intercept(Greeter.class, new VoidReturn()));
     }
 
     @Intercept
@@ -362,18 +362,18 @@ class AnnotationDrivenApiTest {
     @Test
     void staticAroundFailsFast() {
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.intercept(Greeter.class, new StaticAround()));
+                () -> OpenProxy.intercept(Greeter.class, new StaticAround()));
     }
 
     @Test
     void annotationDrivenSharesClassWithEquivalentProgrammatic() {
         GetterInterceptor interceptor = new GetterInterceptor();
 
-        Greeter annotationDriven = AcceleratedProxy.intercept(Greeter.class, interceptor);
-        Greeter programmatic = AcceleratedProxy.proxy(Greeter.class,
+        Greeter annotationDriven = OpenProxy.intercept(Greeter.class, interceptor);
+        Greeter programmatic = OpenProxy.proxy(Greeter.class,
                 Group.of(m -> m.getName().startsWith("get"),
                         (obj, method, args) ->
-                                AcceleratedProxy.invokeSuper(obj, method, args)));
+                                OpenProxy.invokeSuper(obj, method, args)));
 
         assertSame(annotationDriven.getClass(), programmatic.getClass());
         assertEquals("hello", annotationDriven.getGreeting());
@@ -388,21 +388,21 @@ class AnnotationDrivenApiTest {
         public Object specific(Object proxy, Method method, Object[] args)
                 throws Throwable {
             winner.set("specific");
-            return AcceleratedProxy.invokeSuper(proxy, method, args);
+            return OpenProxy.invokeSuper(proxy, method, args);
         }
 
         @Around("get*")          // declared second, but sorts first
         public Object getters(Object proxy, Method method, Object[] args)
                 throws Throwable {
             winner.set("getters");
-            return AcceleratedProxy.invokeSuper(proxy, method, args);
+            return OpenProxy.invokeSuper(proxy, method, args);
         }
     }
 
     @Test
     void overlappingPatternsUseDeterministicNameSortedFirstMatch() {
         OverlappingInterceptor interceptor = new OverlappingInterceptor();
-        Greeter proxy = AcceleratedProxy.intercept(Greeter.class, interceptor);
+        Greeter proxy = OpenProxy.intercept(Greeter.class, interceptor);
 
         assertEquals("hello", proxy.getGreeting());
         assertEquals("getters", interceptor.winner.get());
@@ -428,7 +428,7 @@ class AnnotationDrivenApiTest {
     @Test
     void interfaceTargetRoutesMatchedMethodsAndThrowsForUnmatched() {
         IfaceInterceptor interceptor = new IfaceInterceptor();
-        GreeterIface proxy = AcceleratedProxy.intercept(GreeterIface.class, interceptor);
+        GreeterIface proxy = OpenProxy.intercept(GreeterIface.class, interceptor);
 
         assertEquals("hi getGreeting", proxy.getGreeting());
         assertEquals("getGreeting", interceptor.lastMethod.get());
@@ -447,7 +447,7 @@ class AnnotationDrivenApiTest {
     @Test
     void emptyRegexFailsFast() {
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.intercept(Greeter.class,
+                () -> OpenProxy.intercept(Greeter.class,
                         new EmptyRegexInterceptor()));
     }
 
@@ -459,14 +459,14 @@ class AnnotationDrivenApiTest {
         public Object handle(Object proxy, Method method, Object[] args)
                 throws Throwable {
             calls.incrementAndGet();
-            return AcceleratedProxy.invokeSuper(proxy, method, args);
+            return OpenProxy.invokeSuper(proxy, method, args);
         }
     }
 
     @Test
     void questionMarkGlobMatchesSingleCharacter() {
         QuestionGlobInterceptor interceptor = new QuestionGlobInterceptor();
-        Greeter proxy = AcceleratedProxy.intercept(Greeter.class, interceptor);
+        Greeter proxy = OpenProxy.intercept(Greeter.class, interceptor);
 
         assertEquals("hello", proxy.getGreeting());
         assertEquals(1, interceptor.calls.get());

@@ -5,7 +5,7 @@ Lets users route a target class's public static methods through an interceptor b
 ## Requirements
 ### Requirement: Static proxy entry point
 
-The system SHALL provide `AcceleratedProxy.proxyStatic(Class<?> target, Group... groups)` returning a generated proxy `Class<?>`, and a convenience overload `proxyStatic(Class<?> target, Interceptor interceptor)`.
+The system SHALL provide `OpenProxy.proxyStatic(Class<?> target, Group... groups)` returning a generated proxy `Class<?>`, and a convenience overload `proxyStatic(Class<?> target, Interceptor interceptor)`.
 
 #### Scenario: Convenience overload
 

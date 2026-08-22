@@ -23,7 +23,7 @@ import io.github.lamspace.Interceptor;
  * proxy replace its bound interceptors without recreating the instance.
  *
  * <p>Not part of the public API — users call
- * {@link io.github.lamspace.AcceleratedProxy#rebind(Object, Interceptor)}
+ * {@link io.github.lamspace.OpenProxy#rebind(Object, Interceptor)}
  * instead.
  */
 public interface Rebindable {

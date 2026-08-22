@@ -30,7 +30,7 @@ class PublicJdkInterfaceProxyTest {
         // proxyable via MethodHandles.lookup() — no --add-opens required. If
         // the private lookup were applied unconditionally, this would throw an
         // IllegalArgumentException carrying an --add-opens hint.
-        Function<String, String> proxy = AcceleratedProxy.proxy(
+        Function<String, String> proxy = OpenProxy.proxy(
                 Function.class, (o, m, a) -> "intercepted:" + a[0]);
 
         assertEquals("intercepted:abc", proxy.apply("abc"));

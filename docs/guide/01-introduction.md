@@ -9,7 +9,7 @@ OpenProxy class proxies beat CGLib by ~3–5× across scenarios with actual work
 | Highlight                        | What it means for you                                                                      |
 |----------------------------------|--------------------------------------------------------------------------------------------|
 | **Zero-overhead super dispatch** | `invokeSuper` compiles to a direct `super.method()` call; the JIT inlines it               |
-| **One unified API**              | `AcceleratedProxy.proxy(...)` handles classes *and* interfaces                             |
+| **One unified API**              | `OpenProxy.proxy(...)` handles classes *and* interfaces                             |
 | **GC-safe class loading**        | proxy classes use `Lookup.defineHiddenClass()`, so there is no ClassLoader leak            |
 | **Functional API**               | `Interceptor` is a single-method interface — use a lambda                                  |
 | **Selective interception**       | `Group.of(...)` intercepts only the methods you name; the rest pass through with zero cost |
@@ -19,9 +19,9 @@ OpenProxy class proxies beat CGLib by ~3–5× across scenarios with actual work
 ## At a glance
 
 ```java
-Greeter proxy = AcceleratedProxy.proxy(Greeter.class, (obj, method, args) -> {
+Greeter proxy = OpenProxy.proxy(Greeter.class, (obj, method, args) -> {
     System.out.println("before " + method.getName());
-    Object result = AcceleratedProxy.invokeSuper(obj, method, args);
+    Object result = OpenProxy.invokeSuper(obj, method, args);
     System.out.println("after " + method.getName());
     return result;
 });
@@ -34,7 +34,7 @@ String greeting = proxy.hello("World");
 
 ## How it works (30-second version)
 
-1. `AcceleratedProxy.proxy(...)` builds a `Group` chain and matches each proxyable method to an interceptor (`first-match-wins`).
+1. `OpenProxy.proxy(...)` builds a `Group` chain and matches each proxyable method to an interceptor (`first-match-wins`).
 2. A generator (`ClassGenerator` for classes, `InterfaceGenerator` for interfaces)
    emits bytecode: one `_interceptor$N` field per distinct interceptor, one override per method, and a `dispatch(Method, Object[])` method.
 3. The generated class is defined with `defineHiddenClass` and instantiated.

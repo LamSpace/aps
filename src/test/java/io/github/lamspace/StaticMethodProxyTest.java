@@ -113,7 +113,7 @@ class StaticMethodProxyTest {
 
     @Test
     void passthroughCallsOriginal() throws Exception {
-        Class<?> proxyClass = AcceleratedProxy.proxyStatic(Statics.class,
+        Class<?> proxyClass = OpenProxy.proxyStatic(Statics.class,
                 Group.of(m -> false, (o, m, a) -> null));
         assertEquals(5, (Integer) proxyClass
                 .getMethod("add", int.class, int.class).invoke(null, 2, 3));
@@ -124,7 +124,7 @@ class StaticMethodProxyTest {
         AtomicReference<Object> proxyRef = new AtomicReference<>(new Object());
         AtomicReference<Method> methodRef = new AtomicReference<>();
         Object[][] argsRef = new Object[1][];
-        Class<?> proxyClass = AcceleratedProxy.proxyStatic(Statics.class,
+        Class<?> proxyClass = OpenProxy.proxyStatic(Statics.class,
                 Group.otherwise((o, m, a) -> {
                     proxyRef.set(o);
                     methodRef.set(m);
@@ -141,7 +141,7 @@ class StaticMethodProxyTest {
 
     @Test
     void callOriginalReturnsOriginalResult() throws Exception {
-        Class<?> proxyClass = AcceleratedProxy.proxyStatic(Statics.class,
+        Class<?> proxyClass = OpenProxy.proxyStatic(Statics.class,
                 Group.otherwise(callOriginal()));
         assertEquals("Hello, X", proxyClass
                 .getMethod("greet", String.class).invoke(null, "X"));
@@ -149,7 +149,7 @@ class StaticMethodProxyTest {
 
     @Test
     void primitiveAndReferenceReturnTypes() throws Exception {
-        Class<?> proxyClass = AcceleratedProxy.proxyStatic(Statics.class,
+        Class<?> proxyClass = OpenProxy.proxyStatic(Statics.class,
                 Group.otherwise(callOriginal()));
         assertEquals(4L, (Long) proxyClass.getMethod("big", long.class)
                 .invoke(null, 2L));
@@ -163,7 +163,7 @@ class StaticMethodProxyTest {
 
     @Test
     void voidReturnType() throws Exception {
-        Class<?> proxyClass = AcceleratedProxy.proxyStatic(Statics.class,
+        Class<?> proxyClass = OpenProxy.proxyStatic(Statics.class,
                 Group.otherwise(callOriginal()));
         List<String> log = new ArrayList<>();
         Object result = proxyClass.getMethod("sideEffect", List.class)
@@ -174,7 +174,7 @@ class StaticMethodProxyTest {
 
     @Test
     void arrayParameterAndReturn() throws Exception {
-        Class<?> proxyClass = AcceleratedProxy.proxyStatic(Statics.class,
+        Class<?> proxyClass = OpenProxy.proxyStatic(Statics.class,
                 Group.otherwise(callOriginal()));
         assertEquals(6, (Integer) proxyClass.getMethod("sum", int[].class)
                 .invoke(null, new int[]{1, 2, 3}));
@@ -184,7 +184,7 @@ class StaticMethodProxyTest {
 
     @Test
     void overloadedStaticsDispatchByParams() throws Exception {
-        Class<?> proxyClass = AcceleratedProxy.proxyStatic(Statics.class,
+        Class<?> proxyClass = OpenProxy.proxyStatic(Statics.class,
                 Group.otherwise(callOriginal()));
         assertEquals(1, (Integer) proxyClass.getMethod("overloaded").invoke(null));
         assertEquals(3, (Integer) proxyClass.getMethod("overloaded", int.class)
@@ -195,7 +195,7 @@ class StaticMethodProxyTest {
 
     @Test
     void inheritedStaticMethodShadowed() throws Exception {
-        Class<?> proxyClass = AcceleratedProxy.proxyStatic(Child.class,
+        Class<?> proxyClass = OpenProxy.proxyStatic(Child.class,
                 Group.otherwise(callOriginal()));
         assertEquals(10, (Integer) proxyClass.getMethod("inherited").invoke(null));
         assertEquals(20, (Integer) proxyClass.getMethod("own").invoke(null));
@@ -203,14 +203,14 @@ class StaticMethodProxyTest {
 
     @Test
     void redeclaredStaticShadowsParent() throws Exception {
-        Class<?> proxyClass = AcceleratedProxy.proxyStatic(RedeclaredChild.class,
+        Class<?> proxyClass = OpenProxy.proxyStatic(RedeclaredChild.class,
                 Group.otherwise(callOriginal()));
         assertEquals(30, (Integer) proxyClass.getMethod("inherited").invoke(null));
     }
 
     @Test
     void finalAndPrivateStaticsSkipped() throws Exception {
-        Class<?> proxyClass = AcceleratedProxy.proxyStatic(Statics.class,
+        Class<?> proxyClass = OpenProxy.proxyStatic(Statics.class,
                 Group.otherwise(callOriginal()));
         assertThrows(NoSuchMethodException.class,
                 () -> proxyClass.getMethod("finalled"));
@@ -221,7 +221,7 @@ class StaticMethodProxyTest {
     @Test
     void groupMatchingBindsDifferentInterceptors() throws Exception {
         AtomicReference<String> seen = new AtomicReference<>();
-        Class<?> proxyClass = AcceleratedProxy.proxyStatic(Statics.class,
+        Class<?> proxyClass = OpenProxy.proxyStatic(Statics.class,
                 Group.of(m -> m.getName().equals("add"),
                         (o, m, a) -> {
                             seen.set("add");
@@ -244,7 +244,7 @@ class StaticMethodProxyTest {
             count.incrementAndGet();
             return m.invoke(null, a);
         };
-        Class<?> proxyClass = AcceleratedProxy.proxyStatic(Statics.class,
+        Class<?> proxyClass = OpenProxy.proxyStatic(Statics.class,
                 Group.of(m -> m.getName().equals("add"), shared),
                 Group.of(m -> m.getName().equals("greet"), shared));
         proxyClass.getMethod("add", int.class, int.class).invoke(null, 1, 2);
@@ -254,7 +254,7 @@ class StaticMethodProxyTest {
 
     @Test
     void runtimeAndCheckedExceptionsPropagate() throws Exception {
-        Class<?> rt = AcceleratedProxy.proxyStatic(Statics.class,
+        Class<?> rt = OpenProxy.proxyStatic(Statics.class,
                 Group.otherwise((o, m, a) -> {
                     throw new IllegalStateException("boom");
                 }));
@@ -262,7 +262,7 @@ class StaticMethodProxyTest {
                 () -> rt.getMethod("add", int.class, int.class).invoke(null, 1, 2));
         assertInstanceOf(IllegalStateException.class, e.getCause());
 
-        Class<?> ch = AcceleratedProxy.proxyStatic(Statics.class,
+        Class<?> ch = OpenProxy.proxyStatic(Statics.class,
                 Group.otherwise((o, m, a) -> {
                     throw new Exception("checked");
                 }));
@@ -275,7 +275,7 @@ class StaticMethodProxyTest {
 
     @Test
     void errorPropagatesAsIs() throws Exception {
-        Class<?> proxyClass = AcceleratedProxy.proxyStatic(Statics.class,
+        Class<?> proxyClass = OpenProxy.proxyStatic(Statics.class,
                 Group.otherwise((o, m, a) -> {
                     throw new AssertionError("boom");
                 }));
@@ -286,7 +286,7 @@ class StaticMethodProxyTest {
 
     @Test
     void methodHandleInvocationWorks() throws Throwable {
-        Class<?> proxyClass = AcceleratedProxy.proxyStatic(Statics.class,
+        Class<?> proxyClass = OpenProxy.proxyStatic(Statics.class,
                 Group.otherwise(callOriginal()));
         MethodHandle mh = MethodHandles.lookup().findStatic(proxyClass, "add",
                 MethodType.methodType(int.class, int.class, int.class));
@@ -295,16 +295,16 @@ class StaticMethodProxyTest {
 
     @Test
     void eachCallReturnsDistinctClass() {
-        Class<?> a = AcceleratedProxy.proxyStatic(Statics.class,
+        Class<?> a = OpenProxy.proxyStatic(Statics.class,
                 Group.otherwise(callOriginal()));
-        Class<?> b = AcceleratedProxy.proxyStatic(Statics.class,
+        Class<?> b = OpenProxy.proxyStatic(Statics.class,
                 Group.otherwise(callOriginal()));
         assertNotSame(a, b);
     }
 
     @Test
     void convenienceOverloadMatchesOtherwise() throws Exception {
-        Class<?> proxyClass = AcceleratedProxy.proxyStatic(Statics.class,
+        Class<?> proxyClass = OpenProxy.proxyStatic(Statics.class,
                 callOriginal());
         assertEquals(5, (Integer) proxyClass
                 .getMethod("add", int.class, int.class).invoke(null, 2, 3));
@@ -313,14 +313,14 @@ class StaticMethodProxyTest {
     @Test
     void invalidArgumentsRejected() {
         assertThrows(IllegalArgumentException.class, () ->
-                AcceleratedProxy.proxyStatic((Class<?>) null,
+                OpenProxy.proxyStatic((Class<?>) null,
                         Group.otherwise(callOriginal())));
         assertThrows(IllegalArgumentException.class, () ->
-                AcceleratedProxy.proxyStatic(Statics.class));
+                OpenProxy.proxyStatic(Statics.class));
         assertThrows(IllegalArgumentException.class, () ->
-                AcceleratedProxy.proxyStatic(Runnable.class,
+                OpenProxy.proxyStatic(Runnable.class,
                         Group.otherwise(callOriginal())));
         assertThrows(IllegalArgumentException.class, () ->
-                AcceleratedProxy.proxyStatic(Statics.class, (Interceptor) null));
+                OpenProxy.proxyStatic(Statics.class, (Interceptor) null));
     }
 }

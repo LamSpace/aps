@@ -3,7 +3,7 @@
 一个代理对象可以同时实现多个接口。
 
 ```java
-Object p = AcceleratedProxy.proxy(
+Object p = OpenProxy.proxy(
         new Class<?>[]{Greeter.class, Auditable.class},
         (obj, method, args) -> {
             System.out.println("正在调用 " + method.getName());
@@ -35,8 +35,8 @@ interface SecretService {
     default String shout(String s) { return s.toUpperCase(); }
 }
 
-SecretService proxy = AcceleratedProxy.proxy(SecretService.class,
-        (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+SecretService proxy = OpenProxy.proxy(SecretService.class,
+        (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
 
 proxy.greet("world");   // 经拦截器路由
 proxy.shout("hi");      // invokeSuper 调用默认实现

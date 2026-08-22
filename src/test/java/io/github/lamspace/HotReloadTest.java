@@ -30,53 +30,53 @@ class HotReloadTest {
 
     @Test
     void evictForcesRegeneration() {
-        Greeter p1 = AcceleratedProxy.proxy(Greeter.class, (o, m, a) -> null);
+        Greeter p1 = OpenProxy.proxy(Greeter.class, (o, m, a) -> null);
         Class<?> c1 = p1.getClass();
-        Greeter p2 = AcceleratedProxy.proxy(Greeter.class, (o, m, a) -> null);
+        Greeter p2 = OpenProxy.proxy(Greeter.class, (o, m, a) -> null);
         assertSame(c1, p2.getClass());   // cached: same class
 
-        AcceleratedProxy.evict(Greeter.class);
-        Greeter p3 = AcceleratedProxy.proxy(Greeter.class, (o, m, a) -> null);
+        OpenProxy.evict(Greeter.class);
+        Greeter p3 = OpenProxy.proxy(Greeter.class, (o, m, a) -> null);
         assertNotSame(c1, p3.getClass()); // evicted: fresh class
     }
 
     @Test
     void oldInstanceSurvivesEviction() {
-        Greeter p = AcceleratedProxy.proxy(Greeter.class, (o, m, a) -> "intercepted");
-        AcceleratedProxy.evict(Greeter.class);
+        Greeter p = OpenProxy.proxy(Greeter.class, (o, m, a) -> "intercepted");
+        OpenProxy.evict(Greeter.class);
         assertEquals("intercepted", p.hello("x"));
     }
 
     @Test
     void evictClassLoaderEvictsThatLoader() {
-        Greeter p1 = AcceleratedProxy.proxy(Greeter.class, (o, m, a) -> null);
+        Greeter p1 = OpenProxy.proxy(Greeter.class, (o, m, a) -> null);
         Class<?> c1 = p1.getClass();
 
-        AcceleratedProxy.evictClassLoader(Greeter.class.getClassLoader());
-        Greeter p2 = AcceleratedProxy.proxy(Greeter.class, (o, m, a) -> null);
+        OpenProxy.evictClassLoader(Greeter.class.getClassLoader());
+        Greeter p2 = OpenProxy.proxy(Greeter.class, (o, m, a) -> null);
         assertNotSame(c1, p2.getClass());   // evicted: fresh class
     }
 
     @Test
     void evictClassLoaderIgnoresUnrelatedLoader() {
-        Greeter p1 = AcceleratedProxy.proxy(Greeter.class, (o, m, a) -> null);
+        Greeter p1 = OpenProxy.proxy(Greeter.class, (o, m, a) -> null);
         Class<?> c1 = p1.getClass();
 
         ClassLoader unrelated = new ClassLoader() {
         };
-        AcceleratedProxy.evictClassLoader(unrelated);
-        Greeter p2 = AcceleratedProxy.proxy(Greeter.class, (o, m, a) -> null);
+        OpenProxy.evictClassLoader(unrelated);
+        Greeter p2 = OpenProxy.proxy(Greeter.class, (o, m, a) -> null);
         assertSame(c1, p2.getClass());      // untouched: same cached class
     }
 
     @Test
     void evictIsIdempotentAndRejectsNull() {
-        assertDoesNotThrow(() -> AcceleratedProxy.evict(Greeter.class));
-        assertDoesNotThrow(() -> AcceleratedProxy.evictClassLoader(
+        assertDoesNotThrow(() -> OpenProxy.evict(Greeter.class));
+        assertDoesNotThrow(() -> OpenProxy.evictClassLoader(
                 HotReloadTest.class.getClassLoader()));
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.evict(null));
+                () -> OpenProxy.evict(null));
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.evictClassLoader(null));
+                () -> OpenProxy.evictClassLoader(null));
     }
 }

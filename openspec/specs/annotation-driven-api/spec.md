@@ -6,17 +6,17 @@ Let proxy creators declare interception rules as annotations on an interceptor o
 
 ### Requirement: Annotation-driven interception entry point
 
-The system SHALL provide `AcceleratedProxy.intercept(Class<T> target, Object interceptor)` that creates a proxy by reflecting over the `@Around`-annotated methods of `interceptor` and delegating to the existing `proxy(Class<T>, Group...)` pipeline.
+The system SHALL provide `OpenProxy.intercept(Class<T> target, Object interceptor)` that creates a proxy by reflecting over the `@Around`-annotated methods of `interceptor` and delegating to the existing `proxy(Class<T>, Group...)` pipeline.
 
 #### Scenario: Intercept a class with an annotated interceptor
 
-- **WHEN** the user calls `AcceleratedProxy.intercept(Greeter.class, interceptor)` where `interceptor` is an instance of a class annotated `@Intercept` with an `@Around("get*")` method
+- **WHEN** the user calls `OpenProxy.intercept(Greeter.class, interceptor)` where `interceptor` is an instance of a class annotated `@Intercept` with an `@Around("get*")` method
 - **THEN** the returned proxy routes methods matching `get*` through that `@Around` method
 - **AND** methods not matching `get*` pass through to the superclass directly
 
 #### Scenario: Intercept an interface
 
-- **WHEN** the user calls `AcceleratedProxy.intercept(SomeInterface.class, interceptor)`
+- **WHEN** the user calls `OpenProxy.intercept(SomeInterface.class, interceptor)`
 - **THEN** the system produces an interface proxy with the same matching behavior as `proxy(SomeInterface.class, groups)`
 
 ### Requirement: Declarative method-name glob matching
@@ -66,7 +66,7 @@ Each `@Around` method SHALL be a non-static instance method whose parameter type
 
 - **WHEN** an intercepted method is invoked on the proxy
 - **THEN** the `@Around` method receives the proxy instance, the `Method`, and the boxed arguments
-- **AND** may call `AcceleratedProxy.invokeSuper(proxy, method, args)` to invoke the original method
+- **AND** may call `OpenProxy.invokeSuper(proxy, method, args)` to invoke the original method
 
 #### Scenario: Subtype return is widened
 

@@ -38,18 +38,18 @@ class RebindInterfaceProxyTest {
 
     @Test
     void rebindInterfaceProxySwapsInterceptor() {
-        Echo p = AcceleratedProxy.proxy(Echo.class, constant("old"));
+        Echo p = OpenProxy.proxy(Echo.class, constant("old"));
         assertEquals("old", p.echo("x"));
-        AcceleratedProxy.rebind(p, constant("new"));
+        OpenProxy.rebind(p, constant("new"));
         assertEquals("new", p.echo("x"));
     }
 
     @Test
     void rebindIsPerInstance() {
-        Echo p1 = AcceleratedProxy.proxy(Echo.class, constant("one"));
-        Echo p2 = AcceleratedProxy.proxy(Echo.class, constant("two"));
+        Echo p1 = OpenProxy.proxy(Echo.class, constant("one"));
+        Echo p2 = OpenProxy.proxy(Echo.class, constant("two"));
         assertSame(p1.getClass(), p2.getClass());
-        AcceleratedProxy.rebind(p1, constant("one-R"));
+        OpenProxy.rebind(p1, constant("one-R"));
         assertEquals("one-R", p1.echo("x"));
         assertEquals("two", p2.echo("x"));
     }
@@ -57,23 +57,23 @@ class RebindInterfaceProxyTest {
     @Test
     void rebindRejectsNullAndNonProxy() {
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.rebind(new Object(), constant("x")));
-        Echo p = AcceleratedProxy.proxy(Echo.class, constant("old"));
+                () -> OpenProxy.rebind(new Object(), constant("x")));
+        Echo p = OpenProxy.proxy(Echo.class, constant("old"));
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.rebind(p, (Interceptor) null));
+                () -> OpenProxy.rebind(p, (Interceptor) null));
         assertThrows(IllegalArgumentException.class,
-                () -> AcceleratedProxy.rebind(p, (Interceptor[]) null));
+                () -> OpenProxy.rebind(p, (Interceptor[]) null));
     }
 
     @Test
     void rebindMultiInterceptorPreservesIndices() {
-        Multi p = AcceleratedProxy.proxy(Multi.class,
+        Multi p = OpenProxy.proxy(Multi.class,
                 Group.of(m -> m.getName().equals("a"), constant("A1")),
                 Group.otherwise(constant("B1")));
         assertEquals("A1", p.a());
         assertEquals("B1", p.b());
 
-        AcceleratedProxy.rebind(p,
+        OpenProxy.rebind(p,
                 new Interceptor[]{constant("A2"), constant("B2")});
         assertEquals("A2", p.a());
         assertEquals("B2", p.b());

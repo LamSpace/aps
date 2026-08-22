@@ -3,7 +3,7 @@
 One proxy object can implement several interfaces at once.
 
 ```java
-Object p = AcceleratedProxy.proxy(
+Object p = OpenProxy.proxy(
         new Class<?>[]{Greeter.class, Auditable.class},
         (obj, method, args) -> {
             System.out.println("calling " + method.getName());
@@ -35,8 +35,8 @@ interface SecretService {
     default String shout(String s) { return s.toUpperCase(); }
 }
 
-SecretService proxy = AcceleratedProxy.proxy(SecretService.class,
-        (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+SecretService proxy = OpenProxy.proxy(SecretService.class,
+        (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
 
 proxy.greet("world");   // routed through the interceptor
 proxy.shout("hi");      // invokeSuper calls the default implementation

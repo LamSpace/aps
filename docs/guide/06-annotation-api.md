@@ -11,7 +11,7 @@ class MetricsInterceptor {
     Object measure(Object proxy, Method method, Object[] args) throws Throwable {
         long start = System.nanoTime();
         try {
-            return AcceleratedProxy.invokeSuper(proxy, method, args);
+            return OpenProxy.invokeSuper(proxy, method, args);
         } finally {
             System.out.println(method.getName() + " took " +
                     (System.nanoTime() - start) + " ns");
@@ -19,13 +19,13 @@ class MetricsInterceptor {
     }
 }
 
-Greeter proxy = AcceleratedProxy.intercept(Greeter.class, new MetricsInterceptor());
+Greeter proxy = OpenProxy.intercept(Greeter.class, new MetricsInterceptor());
 String s = proxy.getGreeting();   // routed through measure()
 ```
 
 - `@Intercept` marks the container class.
 - `@Around` marks a method to bind as an interceptor for matching target methods.
-- `AcceleratedProxy.intercept(target, interceptorObject)` builds the proxy.
+- `OpenProxy.intercept(target, interceptorObject)` builds the proxy.
 
 The `@Around` method must be an instance method with signature
 `(Object, Method, Object[])` returning a reference type (not `void`/primitive).

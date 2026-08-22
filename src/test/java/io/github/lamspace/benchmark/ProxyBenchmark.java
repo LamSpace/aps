@@ -16,7 +16,7 @@
 
 package io.github.lamspace.benchmark;
 
-import io.github.lamspace.AcceleratedProxy;
+import io.github.lamspace.OpenProxy;
 import io.github.lamspace.Around;
 import io.github.lamspace.Group;
 import io.github.lamspace.Intercept;
@@ -128,8 +128,8 @@ public class ProxyBenchmark {
         @Setup
         public void setup() {
             direct = new RetOpsImpl();
-            proxy = AcceleratedProxy.proxy(RetOpsImpl.class,
-                    (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+            proxy = OpenProxy.proxy(RetOpsImpl.class,
+                    (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
             Enhancer e = new Enhancer();
             e.setSuperclass(RetOpsImpl.class);
             e.setCallback((MethodInterceptor) (obj, method, args, proxy) ->
@@ -244,7 +244,7 @@ public class ProxyBenchmark {
 
         @Setup
         public void setup() {
-            proxy = AcceleratedProxy.proxy(RetOps.class,
+            proxy = OpenProxy.proxy(RetOps.class,
                     (obj, method, args) -> {
                         if (method.getName().equals("intOp")) return (int) args[0] + (int) args[1];
                         if (method.getName().equals("strOp")) return (String) args[0] + (String) args[1];
@@ -364,8 +364,8 @@ public class ProxyBenchmark {
         @Setup
         public void setup() {
             direct = new ParamCountImpl();
-            proxy = AcceleratedProxy.proxy(ParamCountImpl.class,
-                    (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
+            proxy = OpenProxy.proxy(ParamCountImpl.class,
+                    (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
             Enhancer e = new Enhancer();
             e.setSuperclass(ParamCountImpl.class);
             e.setCallback((MethodInterceptor) (obj, method, args, proxy) ->
@@ -442,7 +442,7 @@ public class ProxyBenchmark {
 
         @Setup
         public void setup() {
-            proxy = AcceleratedProxy.proxy(ParamCount.class, (obj, method, args) -> {
+            proxy = OpenProxy.proxy(ParamCount.class, (obj, method, args) -> {
                 if (method.getName().equals("zeroArg")) return "ok";
                 if (method.getName().equals("oneArg")) return args[0];
                 if (method.getName().equals("twoArgs")) return (int) args[0] + (int) args[1];
@@ -527,13 +527,13 @@ public class ProxyBenchmark {
 
         @Setup
         public void setup() {
-            apsNoop = AcceleratedProxy.proxy(EchoImpl.class,
+            apsNoop = OpenProxy.proxy(EchoImpl.class,
                     (obj, method, args) -> "fixed");
-            apsPassthrough = AcceleratedProxy.proxy(EchoImpl.class,
-                    (obj, method, args) -> AcceleratedProxy.invokeSuper(obj, method, args));
-            apsArgMod = AcceleratedProxy.proxy(EchoImpl.class, (obj, method, args) -> {
+            apsPassthrough = OpenProxy.proxy(EchoImpl.class,
+                    (obj, method, args) -> OpenProxy.invokeSuper(obj, method, args));
+            apsArgMod = OpenProxy.proxy(EchoImpl.class, (obj, method, args) -> {
                 args[0] = "[" + args[0] + "]";
-                return AcceleratedProxy.invokeSuper(obj, method, args);
+                return OpenProxy.invokeSuper(obj, method, args);
             });
 
             Enhancer e1 = new Enhancer();
@@ -599,10 +599,10 @@ public class ProxyBenchmark {
 
         @Setup
         public void setup() {
-            apsNoop = AcceleratedProxy.proxy(Echo.class, (obj, method, args) -> "fixed");
-            apsPassthrough = AcceleratedProxy.proxy(Echo.class,
+            apsNoop = OpenProxy.proxy(Echo.class, (obj, method, args) -> "fixed");
+            apsPassthrough = OpenProxy.proxy(Echo.class,
                     (obj, method, args) -> "Hello, " + args[0]);
-            apsArgMod = AcceleratedProxy.proxy(Echo.class, (obj, method, args) -> {
+            apsArgMod = OpenProxy.proxy(Echo.class, (obj, method, args) -> {
                 args[0] = "[" + args[0] + "]";
                 return "Hello, " + args[0];
             });
@@ -680,14 +680,14 @@ public class ProxyBenchmark {
         @Setup
         public void setup() {
             Interceptor passthrough = (obj, method, args) ->
-                    AcceleratedProxy.invokeSuper(obj, method, args);
+                    OpenProxy.invokeSuper(obj, method, args);
 
             // New API: Group.otherwise (functionally equivalent to old single-Interceptor)
-            groupApi = AcceleratedProxy.proxy(MultiGroupTarget.class,
+            groupApi = OpenProxy.proxy(MultiGroupTarget.class,
                     Group.otherwise(passthrough));
 
             // Old API: single Interceptor
-            oldApi = AcceleratedProxy.proxy(MultiGroupTarget.class, passthrough);
+            oldApi = OpenProxy.proxy(MultiGroupTarget.class, passthrough);
 
             direct = new MultiGroupTarget();
         }
@@ -719,19 +719,19 @@ public class ProxyBenchmark {
         @Setup
         public void setup() {
             // 3 Groups: getter, setter, otherwise
-            groups = AcceleratedProxy.proxy(MultiGroupTarget.class,
+            groups = OpenProxy.proxy(MultiGroupTarget.class,
                     Group.of(m -> m.getName().startsWith("get"),
-                            (obj, method, args) -> AcceleratedProxy.invokeSuper(
+                            (obj, method, args) -> OpenProxy.invokeSuper(
                                     obj, method, args)),
                     Group.of(m -> m.getName().startsWith("set"),
-                            (obj, method, args) -> AcceleratedProxy.invokeSuper(
+                            (obj, method, args) -> OpenProxy.invokeSuper(
                                     obj, method, args)),
-                    Group.otherwise((obj, method, args) -> AcceleratedProxy.invokeSuper(
+                    Group.otherwise((obj, method, args) -> OpenProxy.invokeSuper(
                             obj, method, args)));
 
             // Manual dispatch in single interceptor (old pattern)
-            manualDispatch = AcceleratedProxy.proxy(MultiGroupTarget.class,
-                    (obj, method, args) -> AcceleratedProxy.invokeSuper(
+            manualDispatch = OpenProxy.proxy(MultiGroupTarget.class,
+                    (obj, method, args) -> OpenProxy.invokeSuper(
                             obj, method, args));
 
             direct = new MultiGroupTarget();
@@ -788,7 +788,7 @@ public class ProxyBenchmark {
         @Setup
         public void setup() {
             // Only intercept get* — format() is unmatched → passthrough
-            passthrough = AcceleratedProxy.proxy(MultiGroupTarget.class,
+            passthrough = OpenProxy.proxy(MultiGroupTarget.class,
                     Group.of(m -> m.getName().startsWith("get"),
                             (obj, method, args) -> "intercepted"));
 
@@ -825,7 +825,7 @@ public class ProxyBenchmark {
 
         @Setup
         public void setup() {
-            groups = AcceleratedProxy.proxy(MultiGroupIface.class,
+            groups = OpenProxy.proxy(MultiGroupIface.class,
                     Group.of(m -> m.getName().startsWith("get"),
                             (obj, method, args) -> {
                                 if (method.getName().equals("getGreeting"))
@@ -837,7 +837,7 @@ public class ProxyBenchmark {
                             (obj, method, args) -> null),
                     Group.otherwise((obj, method, args) -> "p:ok"));
 
-            single = AcceleratedProxy.proxy(MultiGroupIface.class,
+            single = OpenProxy.proxy(MultiGroupIface.class,
                     (obj, method, args) -> {
                         if (method.getName().equals("getGreeting"))
                             return "hello";
@@ -893,10 +893,10 @@ public class ProxyBenchmark {
 
         @Setup
         public void setup() {
-            proxy = AcceleratedProxy.proxy(DefaultGreeter.class,
+            proxy = OpenProxy.proxy(DefaultGreeter.class,
                     (obj, method, args) -> {
                         if (method.isDefault()) {
-                            return AcceleratedProxy.invokeSuper(
+                            return OpenProxy.invokeSuper(
                                     obj, method, args);
                         }
                         return null;
@@ -962,9 +962,9 @@ public class ProxyBenchmark {
         @Setup
         public void setup() {
             Interceptor interceptor = (obj, method, args) -> "x";
-            single = AcceleratedProxy.proxy(CombinedGreeter.class,
+            single = OpenProxy.proxy(CombinedGreeter.class,
                     interceptor);
-            Object multi = AcceleratedProxy.proxy(
+            Object multi = OpenProxy.proxy(
                     new Class<?>[]{MultiGreeter.class, MultiAuditable.class},
                     interceptor);
             multiA = (MultiGreeter) multi;
@@ -1001,7 +1001,7 @@ public class ProxyBenchmark {
         @Around("get*")
         public Object measure(Object proxy, Method method, Object[] args)
                 throws Throwable {
-            return AcceleratedProxy.invokeSuper(proxy, method, args);
+            return OpenProxy.invokeSuper(proxy, method, args);
         }
     }
 
@@ -1012,12 +1012,12 @@ public class ProxyBenchmark {
 
         @Setup
         public void setup() {
-            annotationDriven = AcceleratedProxy.intercept(
+            annotationDriven = OpenProxy.intercept(
                     MultiGroupTarget.class, new MetricsInterceptor());
-            programmatic = AcceleratedProxy.proxy(MultiGroupTarget.class,
+            programmatic = OpenProxy.proxy(MultiGroupTarget.class,
                     Group.of(m -> m.getName().startsWith("get"),
                             (obj, method, args) ->
-                                    AcceleratedProxy.invokeSuper(obj, method, args)));
+                                    OpenProxy.invokeSuper(obj, method, args)));
         }
     }
 

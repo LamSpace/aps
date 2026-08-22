@@ -31,7 +31,7 @@ class DuplicateMatchWarningTest {
     @Test
     void duplicateMatchLogsWarning() {
         Logger logger = Logger.getLogger(
-                AcceleratedProxy.class.getName());
+                OpenProxy.class.getName());
         TestHandler handler = new TestHandler();
         handler.setLevel(Level.WARNING);
         logger.addHandler(handler);
@@ -39,7 +39,7 @@ class DuplicateMatchWarningTest {
         Interceptor a = (p, m, args) -> null;
         Interceptor b = (p, m, args) -> null;
 
-        AcceleratedProxy.proxy(OverlapTarget.class,
+        OpenProxy.proxy(OverlapTarget.class,
                 Group.of(m -> m.getName().startsWith("get"), a),
                 Group.of(m -> m.getName().startsWith("getUser"), b));
 
@@ -56,7 +56,7 @@ class DuplicateMatchWarningTest {
     @Test
     void otherwiseDoesNotTriggerWarning() {
         Logger logger = Logger.getLogger(
-                AcceleratedProxy.class.getName());
+                OpenProxy.class.getName());
         TestHandler handler = new TestHandler();
         handler.setLevel(Level.WARNING);
         logger.addHandler(handler);
@@ -64,7 +64,7 @@ class DuplicateMatchWarningTest {
         Interceptor a = (p, m, args) -> null;
         Interceptor fallback = (p, m, args) -> null;
 
-        AcceleratedProxy.proxy(OverlapTarget.class,
+        OpenProxy.proxy(OverlapTarget.class,
                 Group.of(m -> m.getName().startsWith("get"), a),
                 Group.otherwise(fallback));
 
@@ -80,7 +80,7 @@ class DuplicateMatchWarningTest {
     @Test
     void distinctPredicatesNoWarning() {
         Logger logger = Logger.getLogger(
-                AcceleratedProxy.class.getName());
+                OpenProxy.class.getName());
         TestHandler handler = new TestHandler();
         handler.setLevel(Level.WARNING);
         logger.addHandler(handler);
@@ -88,7 +88,7 @@ class DuplicateMatchWarningTest {
         Interceptor a = (p, m, args) -> null;
         Interceptor b = (p, m, args) -> null;
 
-        AcceleratedProxy.proxy(OverlapTarget.class,
+        OpenProxy.proxy(OverlapTarget.class,
                 Group.of(m -> m.getName().startsWith("get"), a),
                 Group.of(m -> m.getName().startsWith("set"), b));
 

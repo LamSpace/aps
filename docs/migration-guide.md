@@ -2,6 +2,11 @@
 
 How to migrate from CGLib or `java.lang.reflect.Proxy` to OpenProxy.
 
+> **Rename note (0.1.0):** The entry class `AcceleratedProxy` was renamed to
+> `OpenProxy` (`io.github.lamspace.OpenProxy`) before the first release. If
+> you track pre-release snapshots, replace every `AcceleratedProxy` reference
+> with `OpenProxy`; all method signatures are unchanged.
+
 ## CGLib → OpenProxy
 
 ### Before (CGLib)
@@ -25,11 +30,11 @@ MyService proxy = (MyService) enhancer.create();
 ### After (OpenProxy)
 
 ```java
-import io.github.lamspace.AcceleratedProxy;
+import io.github.lamspace.OpenProxy;
 
-MyService proxy = AcceleratedProxy.proxy(MyService.class, (obj, method, args) -> {
+MyService proxy = OpenProxy.proxy(MyService.class, (obj, method, args) -> {
     System.out.println("before " + method.getName());
-    Object result = AcceleratedProxy.invokeSuper(obj, method, args);
+    Object result = OpenProxy.invokeSuper(obj, method, args);
     System.out.println("after " + method.getName());
     return result;
 });
@@ -40,9 +45,9 @@ MyService proxy = AcceleratedProxy.proxy(MyService.class, (obj, method, args) ->
 
 | CGLib                          | OpenProxy                                               |
 |--------------------------------|---------------------------------------------------|
-| `Enhancer` builder             | `AcceleratedProxy.proxy()` static factory         |
+| `Enhancer` builder             | `OpenProxy.proxy()` static factory         |
 | `MethodInterceptor` (4 args)   | `Interceptor` (3 args, `@FunctionalInterface`)    |
-| `proxy.invokeSuper(obj, args)` | `AcceleratedProxy.invokeSuper(obj, method, args)` |
+| `proxy.invokeSuper(obj, args)` | `OpenProxy.invokeSuper(obj, method, args)` |
 | Requires explicit cast         | Generic inference, no cast                        |
 | Custom ClassLoader             | Hidden class, GC-safe                             |
 
@@ -61,7 +66,7 @@ enhancer.setCallbackFilter(method ->
 **OpenProxy (`Group.of`):**
 
 ```java
-MyService proxy = AcceleratedProxy.proxy(MyService.class,
+MyService proxy = OpenProxy.proxy(MyService.class,
         Group.of(m -> m.getName().startsWith("get"), interceptor));
 // Methods not matching any Group skip interception entirely — zero overhead
 ```
@@ -77,7 +82,7 @@ enhancer.create(new Class[] { String.class }, new Object[] { "arg" });
 **OpenProxy:**
 
 ```java
-AcceleratedProxy.proxy(MyService.class, new Object[]{"arg"},
+OpenProxy.proxy(MyService.class, new Object[]{"arg"},
         Group.otherwise(interceptor));
 ```
 
@@ -104,12 +109,12 @@ Service proxy = (Service) Proxy.newProxyInstance(
 ### After (OpenProxy)
 
 ```java
-import io.github.lamspace.AcceleratedProxy;
+import io.github.lamspace.OpenProxy;
 
-ServiceImpl proxy = AcceleratedProxy.proxy(ServiceImpl.class,
+ServiceImpl proxy = OpenProxy.proxy(ServiceImpl.class,
         (obj, method, args) -> {
             System.out.println("before " + method.getName());
-            return AcceleratedProxy.invokeSuper(obj, method, args);
+            return OpenProxy.invokeSuper(obj, method, args);
         }
 );
 ```
@@ -120,9 +125,9 @@ ServiceImpl proxy = AcceleratedProxy.proxy(ServiceImpl.class,
 |-------------------------------|---------------------------------------------------|
 | Interface-based only          | Concrete class-based                              |
 | `InvocationHandler` (3 args)  | `Interceptor` (3 args, `@FunctionalInterface`)    |
-| `method.invoke(target, args)` | `AcceleratedProxy.invokeSuper(obj, method, args)` |
+| `method.invoke(target, args)` | `OpenProxy.invokeSuper(obj, method, args)` |
 | Requires target instance      | Built-in super-call binding                       |
-| `Proxy.newProxyInstance(...)` | `AcceleratedProxy.proxy(Class, Interceptor)`      |
+| `Proxy.newProxyInstance(...)` | `OpenProxy.proxy(Class, Interceptor)`      |
 
 ### Multi-interface
 
@@ -135,10 +140,10 @@ Object proxy = Proxy.newProxyInstance(
         handler);
 ```
 
-OpenProxy mirrors this with `AcceleratedProxy.proxy(new Class<?>[]{A.class, B.class}, interceptor)`:
+OpenProxy mirrors this with `OpenProxy.proxy(new Class<?>[]{A.class, B.class}, interceptor)`:
 
 ```java
-Object p = AcceleratedProxy.proxy(new Class<?>[]{A.class, B.class},
+Object p = OpenProxy.proxy(new Class<?>[]{A.class, B.class},
         (obj, method, args) -> {
             System.out.println("before " + method.getName());
             return null;

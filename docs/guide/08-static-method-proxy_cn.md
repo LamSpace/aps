@@ -2,14 +2,14 @@
 
 静态方法在编译期绑定，子类无法重写。OpenProxy 因此生成一个 **遮蔽类**，其 `public static` 方法 镜像目标类的静态方法，并把它们路由到同一个 `Interceptor`。
 
-## `AcceleratedProxy.proxyStatic`
+## `OpenProxy.proxyStatic`
 
 ```java
 public class Utils {
     public static int add(int a, int b) { return a + b; }
 }
 
-Class<?> proxyClass = AcceleratedProxy.proxyStatic(Utils.class,
+Class<?> proxyClass = OpenProxy.proxyStatic(Utils.class,
         (proxy, method, args) -> {
             System.out.println("正在调用 " + method.getName());
             return method.invoke(null, args);   // 调用原静态方法
@@ -35,7 +35,7 @@ int result = (int) mh.invoke(2, 3);
 ## 分组支持
 
 ```java
-Class<?> cls = AcceleratedProxy.proxyStatic(Utils.class,
+Class<?> cls = OpenProxy.proxyStatic(Utils.class,
         Group.of(m -> m.getName().startsWith("get"), getterInterceptor),
         Group.otherwise(otherInterceptor));
 ```

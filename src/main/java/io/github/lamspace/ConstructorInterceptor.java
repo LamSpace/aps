@@ -31,7 +31,7 @@ import java.lang.reflect.Constructor;
  * have no superclass constructor to intercept.
  *
  * <pre>{@code
- *   Greeter proxy = AcceleratedProxy.proxy(Greeter.class, interceptor,
+ *   Greeter proxy = OpenProxy.proxy(Greeter.class, interceptor,
  *       (ctor, args) -> {
  *           System.out.println("before " + ctor);
  *           return args;

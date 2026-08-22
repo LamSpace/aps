@@ -29,7 +29,7 @@ import java.util.Objects;
 /**
  * Resolves the merged, deduplicated, conflict-checked method set for a list of
  * interfaces. This is the single source of truth for the method order used by
- * both {@code AcceleratedProxy.matchMethods} and {@code InterfaceGenerator},
+ * both {@code OpenProxy.matchMethods} and {@code InterfaceGenerator},
  * which is what keeps the {@code MethodMapping} indices aligned with the
  * emitted method implementations.
  *

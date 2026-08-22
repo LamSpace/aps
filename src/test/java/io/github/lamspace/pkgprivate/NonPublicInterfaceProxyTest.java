@@ -16,7 +16,7 @@
 
 package io.github.lamspace.pkgprivate;
 
-import io.github.lamspace.AcceleratedProxy;
+import io.github.lamspace.OpenProxy;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,7 +25,7 @@ class NonPublicInterfaceProxyTest {
 
     @Test
     void proxiesPackagePrivateInterface() {
-        SecretService proxy = AcceleratedProxy.proxy(SecretService.class,
+        SecretService proxy = OpenProxy.proxy(SecretService.class,
                 (o, m, a) -> "hi " + a[0]);
 
         assertEquals("hi bob", proxy.greet("bob"));
@@ -33,8 +33,8 @@ class NonPublicInterfaceProxyTest {
 
     @Test
     void invokeSuperCallsPackagePrivateDefaultMethod() {
-        SecretService proxy = AcceleratedProxy.proxy(SecretService.class,
-                (o, m, a) -> AcceleratedProxy.invokeSuper(o, m, a));
+        SecretService proxy = OpenProxy.proxy(SecretService.class,
+                (o, m, a) -> OpenProxy.invokeSuper(o, m, a));
 
         assertEquals("HELLO", proxy.shout("hello"));
     }
@@ -48,7 +48,7 @@ class NonPublicInterfaceProxyTest {
 
     @Test
     void mixedPublicAndPackagePrivateInterfaces() {
-        Object proxy = AcceleratedProxy.proxy(
+        Object proxy = OpenProxy.proxy(
                 new Class<?>[]{PublicMarker.class, SecretService.class},
                 (o, m, a) -> "x");
 
@@ -58,7 +58,7 @@ class NonPublicInterfaceProxyTest {
 
     @Test
     void mixedPublicInDifferentPackageAndPackagePrivate() {
-        Object proxy = AcceleratedProxy.proxy(
+        Object proxy = OpenProxy.proxy(
                 new Class<?>[]{java.util.function.Function.class,
                         SecretService.class},
                 (o, m, a) -> "x");
@@ -75,16 +75,16 @@ class NonPublicInterfaceProxyTest {
                 "io.github.lamspace.otherpkg.OtherSecretService");
 
         assertThrows(IllegalArgumentException.class, () ->
-                AcceleratedProxy.proxy(
+                OpenProxy.proxy(
                         new Class<?>[]{SecretService.class, other},
                         (o, m, a) -> null));
     }
 
     @Test
     void cachesGeneratedClassPerInterface() {
-        SecretService first = AcceleratedProxy.proxy(SecretService.class,
+        SecretService first = OpenProxy.proxy(SecretService.class,
                 (o, m, a) -> "x");
-        SecretService second = AcceleratedProxy.proxy(SecretService.class,
+        SecretService second = OpenProxy.proxy(SecretService.class,
                 (o, m, a) -> "y");
 
         assertSame(first.getClass(), second.getClass());
@@ -92,12 +92,12 @@ class NonPublicInterfaceProxyTest {
 
     @Test
     void evictAndReproxy() {
-        SecretService first = AcceleratedProxy.proxy(SecretService.class,
+        SecretService first = OpenProxy.proxy(SecretService.class,
                 (o, m, a) -> "a");
         Class<?> cls = first.getClass();
 
-        AcceleratedProxy.evict(SecretService.class);
-        SecretService second = AcceleratedProxy.proxy(SecretService.class,
+        OpenProxy.evict(SecretService.class);
+        SecretService second = OpenProxy.proxy(SecretService.class,
                 (o, m, a) -> "b");
 
         assertNotSame(cls, second.getClass());
