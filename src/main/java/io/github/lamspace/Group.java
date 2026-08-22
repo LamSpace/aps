@@ -75,14 +75,30 @@ public final class Group {
         return new Group(m -> true, interceptor, true);
     }
 
+    /**
+     * Returns this Group's method matcher.
+     *
+     * @return the method predicate bound to this Group
+     */
     MethodPredicate predicate() {
         return predicate;
     }
 
+    /**
+     * Returns the interceptor assigned to methods this Group matches.
+     *
+     * @return the interceptor bound to this Group
+     */
     Interceptor interceptor() {
         return interceptor;
     }
 
+    /**
+     * Returns {@code true} if this Group was created via
+     * {@link #otherwise(Interceptor)}.
+     *
+     * @return whether this Group is a catch-all
+     */
     boolean isOtherwise() {
         return otherwise;
     }

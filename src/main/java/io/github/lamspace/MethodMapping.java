@@ -28,6 +28,9 @@ public final class MethodMapping {
     private final int[] indices;
 
     /**
+     * Creates a mapping from the given index array, which is defensively
+     * copied.
+     *
      * @param indices {@code indices[i]} = interceptor index, or -1 for passthrough
      */
     public MethodMapping(int[] indices) {
@@ -37,6 +40,8 @@ public final class MethodMapping {
     /**
      * Returns the number of distinct Interceptor slots needed.
      * Equal to {@code max(indices) + 1}, or 0 if all passthrough.
+     *
+     * @return the number of distinct Interceptor slots
      */
     public int interceptorCount() {
         int max = -1;

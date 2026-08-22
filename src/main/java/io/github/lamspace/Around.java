@@ -43,21 +43,29 @@ public @interface Around {
 
     /**
      * Single name-glob shorthand: {@code @Around("get*")}.
+     *
+     * @return the single name-glob pattern, or empty for none
      */
     String value() default "";
 
     /**
      * Method-name glob patterns. Empty = no glob constraint.
+     *
+     * @return the glob patterns; empty means no glob constraint
      */
     String[] glob() default {};
 
     /**
      * Method-name regex patterns. Empty = no regex constraint.
+     *
+     * @return the regex patterns; empty means no regex constraint
      */
     String[] regex() default {};
 
     /**
      * Annotation types the target method must carry. Empty = no constraint.
+     *
+     * @return the required annotation types; empty means no constraint
      */
     Class<? extends Annotation>[] annotatedWith() default {};
 }

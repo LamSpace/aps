@@ -56,6 +56,10 @@ public final class InterfaceMethodResolver {
      */
     public record ResolvedMethod(Method canonical, Class<?> owner,
                                  List<Method> variants, Class<?> defaultOwner) {
+        /**
+         * Validates the required components and defensively copies
+         * {@code variants}.
+         */
         public ResolvedMethod {
             canonical = Objects.requireNonNull(canonical, "canonical");
             owner = Objects.requireNonNull(owner, "owner");
@@ -140,6 +144,10 @@ public final class InterfaceMethodResolver {
         return result;
     }
 
+    /**
+     * Builds the {@code name(paramTypeName,...)} key identifying a method
+     * signature across interfaces.
+     */
     private static String signatureKey(Method m) {
         StringBuilder sb = new StringBuilder(m.getName()).append('(');
         for (Class<?> p : m.getParameterTypes()) {

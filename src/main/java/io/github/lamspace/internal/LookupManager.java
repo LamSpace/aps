@@ -40,14 +40,8 @@ public final class LookupManager {
     }
 
     /**
-     * Returns a Lookup with private access to {@code targetClass}.
-     * <p>
-     * Attempts {@link MethodHandles#privateLookupIn(Class, MethodHandles.Lookup)}
-     * to obtain full private access. If the target class is in a strongly
-     * encapsulated module whose package is not open, an
-     * {@link IllegalArgumentException} is thrown with an actionable
-     * {@code --add-opens} hint. Primitive and array types (rejected by
-     * {@code privateLookupIn}) fall back to a public lookup.
+     * Returns a Lookup with private access to {@code targetClass}; see the
+     * class-level comment for the resolution and fallback strategy.
      *
      * @param targetClass the class to obtain a Lookup for
      * @return a Lookup with private access to the target class

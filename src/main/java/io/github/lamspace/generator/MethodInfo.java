@@ -30,10 +30,20 @@ import java.lang.reflect.Method;
  */
 record MethodInfo(Method method, String staticFieldName,
                   Class<?> defaultOwner) {
+    /**
+     * Convenience constructor for class proxies (no default owner).
+     *
+     * @param method          the intercepted method
+     * @param staticFieldName the name of the static {@code Method} field in
+     *                        the generated class
+     */
     MethodInfo(Method method, String staticFieldName) {
         this(method, staticFieldName, null);
     }
 
+    /**
+     * Rejects null required components.
+     */
     MethodInfo {
         if (method == null || staticFieldName == null) {
             throw new NullPointerException();

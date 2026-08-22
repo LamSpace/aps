@@ -40,6 +40,9 @@ final class ClinitRegistry {
 
     private final List<Entry> entries = new ArrayList<>();
 
+    /**
+     * Creates an empty registry.
+     */
     ClinitRegistry() {
     }
 

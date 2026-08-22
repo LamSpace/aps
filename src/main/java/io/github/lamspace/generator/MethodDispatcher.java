@@ -95,6 +95,9 @@ public class MethodDispatcher {
         }
     }
 
+    /**
+     * Declares a private static field with the given name and descriptor.
+     */
     private static void addStaticField(ClassWriter cw, String name,
                                        String desc) {
         var fv = cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC,
@@ -102,6 +105,13 @@ public class MethodDispatcher {
         fv.visitEnd();
     }
 
+    /**
+     * Emits one method override. Unmatched methods delegate straight to
+     * {@code super}; matched methods marshal their arguments into an
+     * {@code Object[]}, call {@code Interceptor.intercept}, and unbox the
+     * result. Checked exceptions from the interceptor are wrapped in
+     * {@code UndeclaredThrowableException}.
+     */
     private static void generateOverride(ClassWriter cw, Method method,
                                          String generatedInternal,
                                          boolean shouldIntercept,
@@ -245,6 +255,11 @@ public class MethodDispatcher {
         mv.visitEnd();
     }
 
+    /**
+     * Emits loads for all arguments of {@code method} starting at local
+     * slot 1 ({@code this} occupies slot 0), accounting for the two slots
+     * taken by {@code long}/{@code double} values.
+     */
     private static void loadArguments(MethodVisitor mv, Method method) {
         int slot = 1;
         for (Class<?> type : method.getParameterTypes()) {

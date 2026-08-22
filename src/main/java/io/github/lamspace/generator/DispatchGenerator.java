@@ -44,6 +44,9 @@ public final class DispatchGenerator {
      * this method, avoiding the {@code getParameterTypes()} allocation on the
      * hot path. Using {@code Class.getName()} rather than
      * {@code Class.hashCode()} keeps the result deterministic across JVMs.
+     *
+     * @param method the method to hash
+     * @return a deterministic, collision-resistant dispatch hash
      */
     public static int methodDispatchHash(Method method) {
         int hash = method.hashCode();
@@ -170,6 +173,13 @@ public final class DispatchGenerator {
      * class proxies and Object methods, the {@code default} interface call for
      * default methods, or an {@code AbstractMethodError} for abstract interface
      * methods.
+     *
+     * @param mv            the method visitor (method already opened, in code)
+     * @param info          metadata for the method this branch dispatches
+     * @param superInternal ASM internal name of the superclass (target class
+     *                      for class proxies, "java/lang/Object" for interface)
+     * @param isClassProxy  true = class proxy (direct super calls),
+     *                      false = interface proxy
      */
     private static void emitDispatchBody(MethodVisitor mv, MethodInfo info,
                                          String superInternal,

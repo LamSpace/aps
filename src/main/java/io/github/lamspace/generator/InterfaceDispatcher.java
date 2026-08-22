@@ -76,6 +76,9 @@ final class InterfaceDispatcher {
         }
     }
 
+    /**
+     * Declares a private static field with the given name and descriptor.
+     */
     private static void addStaticField(ClassWriter cw, String name,
                                        String desc) {
         var fv = cw.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC,
@@ -83,6 +86,13 @@ final class InterfaceDispatcher {
         fv.visitEnd();
     }
 
+    /**
+     * Emits one interface method implementation. Unmatched methods throw
+     * {@code AbstractMethodError}; matched methods marshal their arguments
+     * into an {@code Object[]}, call {@code Interceptor.intercept}, and
+     * unbox the result. Checked exceptions from the interceptor are wrapped
+     * in {@code UndeclaredThrowableException}.
+     */
     private static void generateImplementation(ClassWriter cw,
                                                Method method,
                                                String generatedInternal,

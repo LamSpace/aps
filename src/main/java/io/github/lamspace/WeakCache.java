@@ -33,16 +33,18 @@ import java.util.function.Supplier;
  * Keys can be {@code null} and are compared by identity while sub-keys returned by {@code subKeyFactory} or values
  * returned by {@code valueFactory} can not be null. Sub-keys are compared using their {@link #equals(Object)} method.
  * Entries are expunged from cache lazily on each invocation to {@link #get(Object, Object)},
- * {@link #containsValue(Object)} or {@link #size()} methods when the WeakReferences to keys are cleared. Cleared
- * WeakReferences to individual values don't cause expunging, but such entries are logically treated as non-existent
- * and trigger re-evaluation or {@code valueFactory} on request for their key/subKey.
+ * {@link #containsValue(Object)}, {@link #size()} or {@link #removeIf(Predicate)} methods when the WeakReferences
+ * to keys are cleared. Cleared WeakReferences to individual values don't cause expunging, but such entries are
+ * logically treated as non-existent and trigger re-evaluation or {@code valueFactory} on request for their
+ * key/subKey.
+ *
+ * <p>Copied from the JDK's package-private {@code java.lang.reflect.WeakCache}, which is not accessible from
+ * outside its package.
  *
  * @param <K> type of keys
  * @param <P> type of parameters
  * @param <V> type of values
- * @author copied from {@link java.lang.reflect.WeakCache} because that one is not available from outside packages.
  * @version 1.0.0
- * @see java.lang.reflect.WeakCache
  * @since 1.0.0
  */
 final class WeakCache<K, P, V> {
@@ -188,6 +190,10 @@ final class WeakCache<K, P, V> {
         }
     }
 
+    /**
+     * Polls the reference queue and removes every cache entry whose weak key
+     * has been cleared.
+     */
     @SuppressWarnings(value = {"unchecked"})
     private void expungeStaleEntries() {
         WeakCache.CacheKey<K> cacheKey;
@@ -217,6 +223,9 @@ final class WeakCache<K, P, V> {
 
         private final V value;
 
+        /**
+         * Creates a lookup-only holder for the given strongly-held value.
+         */
         LookupValue(V value) {
             this.value = value;
         }
@@ -248,6 +257,10 @@ final class WeakCache<K, P, V> {
 
         private final int hash;
 
+        /**
+         * Wraps the given value in a weak reference, caching its identity
+         * hash.
+         */
         CacheValue(V value) {
             super(value);
             this.hash = System.identityHashCode(value);
@@ -281,11 +294,19 @@ final class WeakCache<K, P, V> {
 
         private final int hash;
 
+        /**
+         * Creates a weak reference to {@code key} registered with
+         * {@code refQueue} so the entry can be expunged once cleared.
+         */
         private CacheKey(K key, ReferenceQueue<K> refQueue) {
             super(key, refQueue);
             this.hash = System.identityHashCode(key);
         }
 
+        /**
+         * Returns the null-key sentinel for a {@code null} key, or a fresh
+         * {@code CacheKey} otherwise.
+         */
         static <K> Object valueOf(K key, ReferenceQueue<K> refQueue) {
             return key == null ? NULL_KEY : new CacheKey<>(key, refQueue);
         }
@@ -302,6 +323,10 @@ final class WeakCache<K, P, V> {
                     obj != null && obj.getClass() == this.getClass() && (key = this.get()) != null && key == ((CacheKey<?>) obj).get();
         }
 
+        /**
+         * Removes this key's entry from {@code map} and drops the reverse
+         * lookups of its values from {@code reverseMap}.
+         */
         void expungeFrom(ConcurrentMap<?, ? extends ConcurrentMap<?, ?>> map,
                          ConcurrentMap<?, Boolean> reverseMap) {
             ConcurrentMap<?, ?> valueMap = map.remove(this);
@@ -328,6 +353,10 @@ final class WeakCache<K, P, V> {
 
         private final ConcurrentMap<Object, Supplier<V>> valuesMap;
 
+        /**
+         * Records the key, parameter, sub-key, and value map the computed
+         * value will be installed into.
+         */
         Factory(K key, P parameter, Object subKey, ConcurrentMap<Object, Supplier<V>> valuesMap) {
             this.key = key;
             this.parameter = parameter;

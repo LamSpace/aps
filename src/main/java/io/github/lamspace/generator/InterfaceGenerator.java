@@ -139,6 +139,10 @@ public class InterfaceGenerator {
         return cw.toByteArray();
     }
 
+    /**
+     * Emits the generated constructor {@code (Interceptor...)}: calls
+     * {@code super()} and stores each interceptor argument into its field.
+     */
     private void generateConstructor(ClassWriter cw,
                                      String generatedInternal,
                                      String interceptorDesc) {
@@ -168,6 +172,10 @@ public class InterfaceGenerator {
         mv.visitEnd();
     }
 
+    /**
+     * Emits the {@code public void rebind(Interceptor[])} method body via
+     * {@link BytecodeUtils#generateRebind}.
+     */
     private void generateRebindMethod(ClassWriter cw, String generatedInternal,
                                       String interceptorDesc) {
         MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "rebind",
@@ -179,6 +187,11 @@ public class InterfaceGenerator {
         mv.visitEnd();
     }
 
+    /**
+     * Emits the {@code <clinit>} block that resolves each registered
+     * {@code Method} object into its static field via {@code Class.getMethod}
+     * on the owning interface. Emits nothing when there are no entries.
+     */
     private void generateClinit(ClassWriter cw, String generatedInternal,
                                 List<ClinitRegistry.Entry> entries) {
         if (entries.isEmpty()) {

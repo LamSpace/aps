@@ -218,6 +218,9 @@ final class BytecodeUtils {
      * Pushes a Class constant onto the stack.
      * For primitives, uses wrapper.TYPE (e.g., Integer.TYPE).
      * For reference types, uses LDC.
+     *
+     * @param mv   the method visitor to emit instructions into
+     * @param type the class constant to push
      */
     static void pushClassConstant(MethodVisitor mv, Class<?> type) {
         if (type.isPrimitive()) {
@@ -228,6 +231,15 @@ final class BytecodeUtils {
         }
     }
 
+    /**
+     * Returns the ASM internal name of the wrapper class for the given
+     * primitive type.
+     *
+     * @param primitiveType a primitive type
+     * @return the wrapper's internal name (e.g. {@code "java/lang/Integer"})
+     * @throws IllegalArgumentException if {@code primitiveType} is not
+     *                                  primitive
+     */
     private static String getWrapperInternalName(Class<?> primitiveType) {
         if (primitiveType == int.class) return "java/lang/Integer";
         if (primitiveType == long.class) return "java/lang/Long";

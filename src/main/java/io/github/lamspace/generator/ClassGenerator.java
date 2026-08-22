@@ -176,6 +176,13 @@ public class ClassGenerator {
         return cw.toByteArray();
     }
 
+    /**
+     * Emits the {@code <clinit>} block: resolves the reflected superclass
+     * {@code Constructor} into {@code _ctor$} when constructor interception
+     * is enabled, then resolves each registered {@code Method} object into
+     * its static field. Emits nothing when there are no entries and no
+     * constructor interception.
+     */
     private void generateClinit(ClassWriter cw, String generatedInternal,
                                 List<ClinitRegistry.Entry> entries,
                                 Constructor<?> superCtor) {
@@ -239,6 +246,14 @@ public class ClassGenerator {
         mv.visitEnd();
     }
 
+    /**
+     * Emits the generated constructor with descriptor
+     * {@code (Interceptor... [ConstructorInterceptor] [superArgs])}. Without
+     * constructor interception it delegates to the resolved superclass
+     * constructor (unboxing/casting each argument to its declared type) and
+     * stores the interceptor fields; otherwise it delegates the whole body
+     * to {@link #generateInterceptedConstructor}.
+     */
     private void generateConstructor(ClassWriter cw,
                                      String generatedInternal,
                                      String targetInternal,
@@ -296,6 +311,14 @@ public class ClassGenerator {
         mv.visitEnd();
     }
 
+    /**
+     * Emits the intercepted-constructor body: boxes the super arguments,
+     * runs {@code ConstructorInterceptor.before} (checked exceptions wrapped
+     * in {@code UndeclaredThrowableException}), invokes {@code super} with
+     * the rewritten arguments, binds the interceptor fields so intercepted
+     * methods are callable from {@code after}, and finally runs
+     * {@code ConstructorInterceptor.after}.
+     */
     private void generateInterceptedConstructor(MethodVisitor mv,
                                                 String generatedInternal,
                                                 String targetInternal,
@@ -397,6 +420,10 @@ public class ClassGenerator {
                         + "[Ljava/lang/Object;)V", true);
     }
 
+    /**
+     * Emits {@code this._interceptor$i = constructorArg(i)} for each
+     * interceptor field.
+     */
     private void storeInterceptorFields(MethodVisitor mv,
                                         String generatedInternal,
                                         String interceptorDesc) {
@@ -408,6 +435,10 @@ public class ClassGenerator {
         }
     }
 
+    /**
+     * Emits the {@code public void rebind(Interceptor[])} method body via
+     * {@link BytecodeUtils#generateRebind}.
+     */
     private void generateRebindMethod(ClassWriter cw, String generatedInternal,
                                       String interceptorDesc) {
         MethodVisitor mv = cw.visitMethod(Opcodes.ACC_PUBLIC, "rebind",
@@ -419,6 +450,10 @@ public class ClassGenerator {
         mv.visitEnd();
     }
 
+    /**
+     * Maps the stored constructor arguments to their runtime types, using
+     * {@code Object.class} for {@code null} arguments.
+     */
     private Class<?>[] superParamTypes() {
         Class<?>[] types = new Class<?>[constructorArgs.length];
         for (int i = 0; i < constructorArgs.length; i++) {
@@ -428,6 +463,14 @@ public class ClassGenerator {
         return types;
     }
 
+    /**
+     * Finds a declared constructor of {@code clazz} whose parameter count
+     * matches {@code args} and whose parameter types are assignable from the
+     * arguments' runtime types (compared after boxing; a {@code null}
+     * argument matches any non-primitive parameter).
+     *
+     * @throws IllegalArgumentException if no matching constructor exists
+     */
     private Constructor<?> findConstructor(Class<?> clazz, Object[] args) {
         outer:
         for (Constructor<?> ctor : clazz.getDeclaredConstructors()) {
@@ -454,6 +497,10 @@ public class ClassGenerator {
                         + clazz.getName());
     }
 
+    /**
+     * Returns the wrapper class for a primitive type; reference types are
+     * returned as-is.
+     */
     private static Class<?> wrap(Class<?> type) {
         if (type == int.class) return Integer.class;
         if (type == long.class) return Long.class;

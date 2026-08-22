@@ -110,6 +110,10 @@ public class StaticMethodGenerator {
         return cw.toByteArray();
     }
 
+    /**
+     * Emits a shadow for an unmapped static method that forwards directly
+     * to the original via {@code INVOKESTATIC}, without interception.
+     */
     private void generatePassthrough(ClassWriter cw, Method method) {
         String name = method.getName();
         String desc = Type.getMethodDescriptor(method);
@@ -126,6 +130,12 @@ public class StaticMethodGenerator {
         mv.visitEnd();
     }
 
+    /**
+     * Emits a shadow for a mapped static method that routes through
+     * {@code Interceptor.intercept} with a {@code null} proxy. Checked
+     * exceptions from the interceptor are wrapped in
+     * {@code UndeclaredThrowableException}.
+     */
     private void generateIntercepted(ClassWriter cw, Method method,
                                      String generatedInternal,
                                      int interceptorIndex, String fieldName) {
@@ -206,6 +216,10 @@ public class StaticMethodGenerator {
         mv.visitEnd();
     }
 
+    /**
+     * Emits {@code public static void __bindStatics(Interceptor[])}, which
+     * stores the given interceptors into the static interceptor fields.
+     */
     private void generateBind(ClassWriter cw, String generatedInternal,
                               int count, String interceptorDesc) {
         MethodVisitor mv = cw.visitMethod(
@@ -225,6 +239,12 @@ public class StaticMethodGenerator {
         mv.visitEnd();
     }
 
+    /**
+     * Emits the {@code <clinit>} block that resolves each registered
+     * {@code Method} object into its static field via
+     * {@code Class.getDeclaredMethod} on the declaring class. Emits nothing
+     * when there are no entries.
+     */
     private void generateClinit(ClassWriter cw, String generatedInternal,
                                 List<ClinitRegistry.Entry> entries) {
         if (entries.isEmpty()) {
@@ -261,6 +281,9 @@ public class StaticMethodGenerator {
         mv.visitEnd();
     }
 
+    /**
+     * Maps the declared exceptions of {@code method} to ASM internal names.
+     */
     private static String[] exceptionNames(Method method) {
         Class<?>[] exceptions = method.getExceptionTypes();
         String[] names = new String[exceptions.length];
@@ -270,6 +293,11 @@ public class StaticMethodGenerator {
         return names;
     }
 
+    /**
+     * Emits loads for all arguments of {@code method} starting at local
+     * slot 0 (static methods have no {@code this}), accounting for the two
+     * slots taken by {@code long}/{@code double} values.
+     */
     private static void loadArguments(MethodVisitor mv, Method method) {
         int slot = 0;
         for (Class<?> type : method.getParameterTypes()) {
@@ -278,6 +306,10 @@ public class StaticMethodGenerator {
         }
     }
 
+    /**
+     * Emits the return instruction matching {@code returnType} for a value
+     * returned directly by the original method (no unboxing needed).
+     */
     private static void returnResult(MethodVisitor mv, Class<?> returnType,
                                      String desc) {
         if (returnType == void.class) {
@@ -289,6 +321,11 @@ public class StaticMethodGenerator {
         }
     }
 
+    /**
+     * Converts a boxed {@code Object} result to the shadow method's return
+     * convention: pops for {@code void}, unboxes for primitives, and
+     * checkcasts for reference types.
+     */
     private static void returnFromObject(MethodVisitor mv,
                                          Class<?> returnType, String desc) {
         if (returnType == void.class) {

@@ -65,9 +65,12 @@ import java.util.regex.PatternSyntaxException;
  * }</pre>
  *
  * <p>Generated proxy classes are cached by
- * {@code {targetClass, interceptors, mapping, constructorArgs}} using
- * {@link WeakCache} so repeated proxy creation for the same configuration
- * reuses the generated class.
+ * {@code {targetClass or first interface, interfaces, mapping,
+ * constructorArgs, ctorIntercept}} using {@link WeakCache} so repeated
+ * proxy creation for the same configuration reuses the generated class.
+ * Interceptor instances are deliberately excluded from the key: two calls
+ * with the same method-to-interceptor shape share one generated class even
+ * when given different Interceptor objects.
  *
  * @see Interceptor
  * @see Group
@@ -140,9 +143,11 @@ public final class AcceleratedProxy {
     }
 
     /**
-     * Cache mapping {@code {targetClass, interceptors, mapping,
-     * constructorArgs}} to generated proxy classes. Keys are weakly
-     * referenced so proxy classes are eligible for GC when no longer in use.
+     * Cache mapping {@code {targetClass or first interface, interfaces,
+     * mapping, constructorArgs, ctorIntercept}} to generated proxy classes.
+     * Interceptor instances are excluded from the key (see
+     * {@link CacheParams}). Keys are weakly referenced so proxy classes
+     * are eligible for GC when no longer in use.
      */
     private static final WeakCache<Class<?>, CacheParams, Class<?>>
             PROXY_CLASS_CACHE = new WeakCache<>(
@@ -773,6 +778,10 @@ public final class AcceleratedProxy {
         return ctor.newInstance(initArgs);
     }
 
+    /**
+     * Throws {@code t} as-is, bypassing compile-time checked-exception
+     * declarations via generic erasure.
+     */
     @SuppressWarnings("unchecked")
     private static <E extends Throwable> void sneakyThrow(Throwable t)
             throws E {
@@ -937,6 +946,10 @@ public final class AcceleratedProxy {
         };
     }
 
+    /**
+     * Collects the effective name-glob patterns of {@code around}: the
+     * {@code value()} shorthand first (if non-empty), then {@code glob()}.
+     */
     private static String[] buildGlobs(Around around) {
         List<String> globs = new ArrayList<>();
         if (!around.value().isEmpty()) {
@@ -946,6 +959,10 @@ public final class AcceleratedProxy {
         return globs.toArray(new String[0]);
     }
 
+    /**
+     * Returns {@code true} if {@code name} matches any of the given glob
+     * patterns.
+     */
     private static boolean matchesAnyGlob(String[] globs, String name) {
         for (String glob : globs) {
             if (globMatches(glob, name)) {
@@ -955,6 +972,11 @@ public final class AcceleratedProxy {
         return false;
     }
 
+    /**
+     * Matches a single glob pattern against {@code name}: {@code *} matches
+     * any sequence, {@code ?} matches exactly one character, all other
+     * characters match literally.
+     */
     private static boolean globMatches(String glob, String name) {
         StringBuilder regex = new StringBuilder();
         for (int i = 0; i < glob.length(); i++) {
@@ -970,6 +992,10 @@ public final class AcceleratedProxy {
         return name.matches(regex.toString());
     }
 
+    /**
+     * Returns {@code true} if {@code name} whole-matches any of the given
+     * regex patterns.
+     */
     private static boolean matchesAnyRegex(String[] regexes, String name) {
         for (String regex : regexes) {
             if (name.matches(regex)) {
@@ -979,6 +1005,10 @@ public final class AcceleratedProxy {
         return false;
     }
 
+    /**
+     * Returns {@code true} if {@code m} is directly annotated with any of
+     * the given annotation types.
+     */
     private static boolean hasAnyAnnotation(Method m,
                                             Class<? extends Annotation>[] annotations) {
         for (Class<? extends Annotation> a : annotations) {
